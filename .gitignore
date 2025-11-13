@@ -76,6 +76,9 @@ dist/*
 
 # backend stuff
 .venv
+src/backend/.venv/
+src/backend/data.db
+.tmp_backend_venv/
 database.database
 database.db
 diagram.png

@@ -9,66 +9,88 @@ Build web applications using React.js for the front end and python/flask for you
 - Use of .env file.
 - SQLAlchemy integration for database abstraction.
 
+## Tapin project layout (migrated from `Tapin_`)
+
+- **Backend**: `src/backend` contains the Tapin Flask API (users, listings, saved searches, email flows). Run it directly with `python src/backend/app.py` or configure your WSGI server to import `backend.app`.
+- **Frontend**: `src/front` is the Vite/React Leaflet SPA copied from `Tapin_/frontend`. `npm` commands live at the repo root and point to this folder through `vite.config.js`.
+- **Build output**: `npm run build` writes to the root `dist/` folder. `src/app.py` serves those files while re-exporting the Flask backend.
+- **Dependencies**: use `python -m venv .venv && pip install -r src/backend/requirements.txt` for the API and `npm install` for the SPA. The top-level `requirements.txt` simply references the backend list.
+- **Environment**: copy `.env.example` to `.env` and fill the variables required by `src/backend/app.py` (database URL, JWT secrets, SMTP settings, etc.). The frontend expects `VITE_BACKEND_URL` to point at the running API.
+
 ### 1) Installation:
 
 > If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node 
 
-It is recomended to install the backend first, make sure you have Python 3.10, Pipenv and a database engine (Posgress recomended)
+It is recommended to install the backend first. Make sure you have Python 3.10+, Node 20, and whichever database engine you plan to use (SQLite works out-of-the-box for local dev).
 
-1. Install the python packages: `$ pipenv install`
-2. Create a .env file based on the .env.example: `$ cp .env.example .env`
-3. Install your database engine and create your database, depending on your database you have to create a DATABASE_URL variable with one of the possible values, make sure you replace the valudes with your database information:
+### Backend (src/backend)
 
-| Engine    | DATABASE_URL                                        |
-| --------- | --------------------------------------------------- |
-| SQLite    | sqlite:////test.db                                  |
-| MySQL     | mysql://username:password@localhost:port/example    |
-| Postgress | postgres://username:password@localhost:5432/example |
+1. Create your virtual environment and install dependencies:
 
-4. Migrate the migrations: `$ pipenv run migrate` (skip if you have not made changes to the models on the `./src/api/models.py`)
-5. Run the migrations: `$ pipenv run upgrade`
-6. Run the application: `$ pipenv run start`
+   ```powershell
+   cd src/backend
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
 
-> Note: Codespaces users can connect to psql by typing: `psql -h localhost -U gitpod example`
+2. Back at the repository root copy the environment template:
 
-### Undo a migration
+   ```powershell
+   cd ../..  # from src/backend back to the repo root
+   copy .env.example .env  # or use cp on mac/linux
+   ```
 
-You are also able to undo a migration by running
+   Set `SQLALCHEMY_DATABASE_URI`, `SECRET_KEY`, `JWT_SECRET_KEY`, email SMTP creds, etc. as required by `src/backend/app.py`.
 
-```sh
-$ pipenv run downgrade
-```
+3. Apply migrations / seed data if needed. The Tapin backend ships with Alembic scripts and helpers such as `manage.py`, `migrate_db.py`, and `seed_data.py`. Example:
 
-### Backend Populate Table Users
+   ```powershell
+   flask --app backend.app db upgrade      # apply migrations
+   python backend/seed_data.py             # optional seed data
+   ```
 
-To insert test users in the database execute the following command:
+4. Run the API:
 
-```sh
-$ flask insert-test-users 5
-```
+   ```powershell
+   python backend/app.py
+   ```
 
-And you will see the following message:
+   The service defaults to SQLite at `src/backend/data.db` but will honor any `SQLALCHEMY_DATABASE_URI` you provide.
 
-```
-  Creating test users
-  test_user1@test.com created.
-  test_user2@test.com created.
-  test_user3@test.com created.
-  test_user4@test.com created.
-  test_user5@test.com created.
-  Users created successfully!
-```
+### Front-End (src/front via root npm scripts)
 
-### **Important note for the database and the data inside it**
+> **Where do npm commands live?**  
+> `package.json` sits at the repository root, so always run `npm install`, `npm run dev`, etc. from the root folder (`.../Tapin_Correct`). Those scripts automatically point to `src/front` via `vite.config.js`.
 
-Every Github codespace environment will have **its own database**, so if you're working with more people eveyone will have a different database and different records inside it. This data **will be lost**, so don't spend too much time manually creating records for testing, instead, you can automate adding records to your database by editing ```commands.py``` file inside ```/src/api``` folder. Edit line 32 function ```insert_test_data``` to insert the data according to your model (use the function ```insert_test_users``` above as an example). Then, all you need to do is run ```pipenv run insert-test-data```.
+1. From the repo root install the Vite dependencies and configure the API URL:
 
-### Front-End Manual Installation:
+   ```powershell
+   cd C:\Users\BOMAU\OneDrive\Desktop\4geeks\Project\adjustments\Tapin_Correct
+   npm install
+   echo VITE_BACKEND_URL=http://localhost:5000 >> .env   # or edit existing .env
+   ```
 
--   Make sure you are using node version 20 and that you have already successfully installed and runned the backend.
+2. Run the dev server and tests:
 
-1. Install the packages: `$ npm install`
-2. Start coding! start the webpack dev server `$ npm run start`
+   ```powershell
+   npm run dev
+   npm run test
+   ```
+
+3. Build for production (output goes to `/dist`, which Flask serves automatically):
+
+   ```powershell
+   npm run build
+   ```
+
+### Start everything locally
+
+1. Back end: `cd src/backend && .\.venv\Scripts\activate && python app.py` (or `flask --app backend.app run`).  
+   - Default SQLite DB lives at `src/backend/data.db`. If you override `SQLALCHEMY_DATABASE_URI`, make sure it resolves from the directory you launch the server in.
+2. Front end: from the repo root run `npm run dev` and open the URL Vite prints (usually `http://localhost:5173`).  
+3. Ensure `.env` has `VITE_BACKEND_URL=http://localhost:5000` (or whatever host/port Flask uses) so the SPA can reach the API.  
+4. For production-style verification run `npm run build` and then hit the Flask root (`http://localhost:5000/`); it serves the files from `dist/`.
 
 ## Publish your website!
 
