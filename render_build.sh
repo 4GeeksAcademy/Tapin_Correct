@@ -5,6 +5,6 @@ set -o errexit
 npm install
 npm run build
 
-pipenv install
+pip install -r src/backend/requirements.txt
 
-pipenv run upgrade
+python src/backend/manage.py upgrade

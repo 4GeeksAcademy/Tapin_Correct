@@ -1,64 +1,44 @@
 """
-This module takes care of starting the API Server, Loading the DB and Adding the endpoints
+Entry point for Tapin_Correct.
+
+Rather than using the default 4Geeks blueprint scaffold, we boot the Tapin_
+backend (now copied under src/backend) and only add the static file serving
+needed for the Vite front-end build in dist/.
 """
 import os
-from flask import Flask, request, jsonify, url_for, send_from_directory
-from flask_migrate import Migrate
-from flask_swagger import swagger
-from api.utils import APIException, generate_sitemap
-from api.models import db
-from api.routes import api
-from api.admin import setup_admin
-from api.commands import setup_commands
-
-# from models import Person
+from flask import send_from_directory
+from backend.app import app as backend_app
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
-static_file_dir = os.path.join(os.path.dirname(
-    os.path.realpath(__file__)), '../dist/')
-app = Flask(__name__)
-app.url_map.strict_slashes = False
+static_file_dir = os.path.join(
+    os.path.dirname(os.path.realpath(__file__)),
+    '../dist/'
+)
 
-# database condiguration
-db_url = os.getenv("DATABASE_URL")
-if db_url is not None:
-    app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace(
-        "postgres://", "postgresql://")
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-MIGRATE = Migrate(app, db, compare_type=True)
-db.init_app(app)
-
-# add the admin
-setup_admin(app)
-
-# add the admin
-setup_commands(app)
-
-# Add all endpoints form the API with a "api" prefix
-app.register_blueprint(api, url_prefix='/api')
-
-# Handle/serialize errors like a JSON object
-
-
-@app.errorhandler(APIException)
-def handle_invalid_usage(error):
-    return jsonify(error.to_dict()), error.status_code
-
-# generate sitemap with all your endpoints
+# Re-export the Tapin backend app so existing deployment scripts keep working.
+app = backend_app
 
 
 @app.route('/')
 def sitemap():
+    """
+    Serve Vite's index.html in production, otherwise fall back to whatever
+    default route the Tapin backend defines for local development.
+    """
     if ENV == "development":
-        return generate_sitemap(app)
+        # Reuse the backend's original "/" route if it exists
+        backend_index = app.view_functions.get('index')
+        if backend_index and backend_index is not sitemap:
+            return backend_index()
     return send_from_directory(static_file_dir, 'index.html')
 
-# any other endpoint will try to serve it like a static file
+
 @app.route('/<path:path>', methods=['GET'])
 def serve_any_other_file(path):
+    """
+    Serve static assets built by Vite. Unknown paths fall back to index.html
+    so the SPA router can handle them.
+    """
     if not os.path.isfile(os.path.join(static_file_dir, path)):
         path = 'index.html'
     response = send_from_directory(static_file_dir, path)
@@ -66,7 +46,6 @@ def serve_any_other_file(path):
     return response
 
 
-# this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3001))
     app.run(host='0.0.0.0', port=PORT, debug=True)
