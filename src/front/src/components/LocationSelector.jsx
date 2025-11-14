@@ -1,43 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import LocationDropdown from './LocationDropdown';
 
-const CITIES = [
-  { name: 'Los Angeles, CA', coords: [34.0522, -118.2437] },
-  { name: 'New York, NY', coords: [40.7128, -74.0060] },
-  { name: 'Chicago, IL', coords: [41.8781, -87.6298] },
-  { name: 'Houston, TX', coords: [29.7604, -95.3698] },
-  { name: 'Phoenix, AZ', coords: [33.4484, -112.0740] },
-  { name: 'Philadelphia, PA', coords: [39.9526, -75.1652] },
-  { name: 'San Antonio, TX', coords: [29.4241, -98.4936] },
-  { name: 'San Diego, CA', coords: [32.7157, -117.1611] },
-  { name: 'Dallas, TX', coords: [32.7767, -96.7970] },
-  { name: 'San Jose, CA', coords: [37.3382, -121.8863] },
-  { name: 'Austin, TX', coords: [30.2672, -97.7431] },
-  { name: 'Seattle, WA', coords: [47.6062, -122.3321] },
-  { name: 'Denver, CO', coords: [39.7392, -104.9903] },
-  { name: 'Boston, MA', coords: [42.3601, -71.0589] },
-  { name: 'Miami, FL', coords: [25.7617, -80.1918] },
-  { name: 'Atlanta, GA', coords: [33.7490, -84.3880] },
-];
-
-export default function LocationSelector({ onLocationSelected }) {
+export default function LocationSelector({ onLocationSelected, externalLocation }) {
   const [selectedCity, setSelectedCity] = useState('');
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState(null);
+  const [userCoords, setUserCoords] = useState(null);
 
-  const handleCitySelect = (e) => {
-    const cityName = e.target.value;
-    setSelectedCity(cityName);
-
-    if (cityName) {
-      const city = CITIES.find(c => c.name === cityName);
-      if (city) {
-        onLocationSelected({
-          coords: city.coords,
-          name: city.name,
-          type: 'city'
-        });
-      }
-    }
+  const handleCitySelect = (city) => {
+    if (!city) return;
+    setSelectedCity(city.name);
+    onLocationSelected({ coords: [city.lat, city.lon], name: city.name, type: 'city' });
   };
 
   const handleUseMyLocation = () => {
@@ -52,11 +25,9 @@ export default function LocationSelector({ onLocationSelected }) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocating(false);
-        onLocationSelected({
-          coords: [position.coords.latitude, position.coords.longitude],
-          name: 'Your Location',
-          type: 'geolocation'
-        });
+        const coords = [position.coords.latitude, position.coords.longitude];
+        setUserCoords(coords);
+        onLocationSelected({ coords, name: 'Your Location', type: 'geolocation' });
       },
       (error) => {
         setLocating(false);
@@ -65,6 +36,13 @@ export default function LocationSelector({ onLocationSelected }) {
       }
     );
   };
+
+  // If parent provides an externalLocation (e.g., map click), reflect it in the display
+  useEffect(() => {
+    if (externalLocation && externalLocation.coords) {
+      setSelectedCity(externalLocation.name || `${externalLocation.coords[0].toFixed(4)}, ${externalLocation.coords[1].toFixed(4)}`);
+    }
+  }, [externalLocation]);
 
   return (
     <div style={{
@@ -151,44 +129,14 @@ export default function LocationSelector({ onLocationSelected }) {
           <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.3)' }}></div>
         </div>
 
-        <div>
-          <label style={{
-            display: 'block',
-            marginBottom: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            textAlign: 'left',
-            opacity: 0.9
-          }}>
-            Select a City
-          </label>
-          <select
+        <div style={{ position: 'relative' }}>
+          <LocationDropdown
             value={selectedCity}
-            onChange={handleCitySelect}
-            style={{
-              width: '100%',
-              padding: '14px 16px',
-              fontSize: '16px',
-              background: 'white',
-              color: '#333',
-              border: 'none',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              appearance: 'none',
-              backgroundImage: 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")',
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center',
-              backgroundSize: '20px',
-              paddingRight: '40px'
-            }}
-          >
-            <option value="">Choose your city...</option>
-            {CITIES.map(city => (
-              <option key={city.name} value={city.name}>
-                {city.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedCity(val)}
+            onSelect={handleCitySelect}
+            userCoords={userCoords}
+            placeholder="Location (e.g., San Francisco, CA)"
+          />
         </div>
 
         {error && (
