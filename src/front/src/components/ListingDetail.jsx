@@ -9,6 +9,7 @@ export default function ListingDetail({
   user,
   onListingUpdated,
   onListingDeleted,
+  userLocation,
 }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -344,6 +345,7 @@ export default function ListingDetail({
           token={token}
           onClose={() => setShowEdit(false)}
           onUpdated={onListingUpdated}
+          userLocation={userLocation}
         />
       )}
 

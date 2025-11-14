@@ -204,10 +204,25 @@ export default function App() {
                   </li>
                 ))}
               </ul>
-            ) : userLocation ? (
-              <MapView listings={listings} onListingClick={handleSelect} userLocation={userLocation} />
             ) : (
-              <LocationSelector onLocationSelected={setUserLocation} />
+              // Map view shows selector + map side-by-side so both stay in sync
+              <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20 }}>
+                <div>
+                  <LocationSelector
+                    externalLocation={userLocation}
+                    onLocationSelected={(loc) => setUserLocation(loc)}
+                  />
+                </div>
+                <div>
+                  <MapView
+                    listings={listings}
+                    onListingClick={handleSelect}
+                    userLocation={userLocation}
+                    selectedLocation={userLocation}
+                    onMapLocationSelect={(loc) => setUserLocation(loc)}
+                  />
+                </div>
+              </div>
             )}
           </section>
         )}
@@ -217,6 +232,7 @@ export default function App() {
             <h3>Create a listing</h3>
             <CreateListingForm
               token={token}
+              userLocation={userLocation}
               onCreated={(data) => {
                 setListings((s) => [data, ...s]);
               }}
@@ -231,6 +247,7 @@ export default function App() {
           onClose={() => setSelected(null)}
           token={token}
           user={user}
+          userLocation={userLocation}
         />
       )}
 
