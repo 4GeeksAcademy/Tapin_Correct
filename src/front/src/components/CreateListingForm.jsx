@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import LocationDropdown from './LocationDropdown';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
-export default function CreateListingForm({ token, onCreated }) {
+export default function CreateListingForm({ token, onCreated, userLocation }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -10,6 +11,7 @@ export default function CreateListingForm({ token, onCreated }) {
   const [category, setCategory] = useState('');
   const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(null);
+  const [selectedCoords, setSelectedCoords] = useState(null);
 
   async function submit(e) {
     e.preventDefault();
@@ -58,11 +60,24 @@ export default function CreateListingForm({ token, onCreated }) {
         placeholder="Title"
         required
       />
-      <input
-        value={location}
-        onChange={(e) => setLocation(e.target.value)}
-        placeholder="Location (e.g., San Francisco, CA)"
-      />
+      <div>
+        <LocationDropdown
+          value={location}
+          onChange={setLocation}
+          onSelect={(city) => {
+            setLatitude(city.lat);
+            setLongitude(city.lon);
+            setSelectedCoords({ lat: city.lat, lon: city.lon });
+          }}
+          userCoords={userLocation?.coords}
+          placeholder="Location (e.g., San Francisco, CA)"
+        />
+        {selectedCoords && (
+          <small style={{ display: 'block', marginTop: '4px', color: '#28a745' }}>
+            ✓ Coordinates: {selectedCoords.lat.toFixed(4)}, {selectedCoords.lon.toFixed(4)}
+          </small>
+        )}
+      </div>
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
