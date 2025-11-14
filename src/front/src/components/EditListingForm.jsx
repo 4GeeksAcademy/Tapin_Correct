@@ -1,13 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import LocationDropdown from './LocationDropdown';
 
-export default function EditListingForm({ listing, token, onClose, onUpdated }) {
+export default function EditListingForm({ listing, token, onClose, onUpdated, userLocation }) {
   const [title, setTitle] = useState(listing.title);
   const [description, setDescription] = useState(listing.description || '');
   const [location, setLocation] = useState(listing.location || '');
   const [latitude, setLatitude] = useState(listing.latitude ?? '');
   const [longitude, setLongitude] = useState(listing.longitude ?? '');
+  const [imageUrl, setImageUrl] = useState(listing.image_url || '');
+  const [category, setCategory] = useState(listing.category || '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showCoordinateHint, setShowCoordinateHint] = useState(false);
+
+  const categories = ['Community', 'Environment', 'Education', 'Health', 'Animals'];
+
+  const handleLocationSelect = (city) => {
+    if (!city) return;
+    setLocation(city.name);
+    setLatitude(city.lat);
+    setLongitude(city.lon);
+    setShowCoordinateHint(true);
+    setTimeout(() => setShowCoordinateHint(false), 3000);
+  };
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -15,7 +30,13 @@ export default function EditListingForm({ listing, token, onClose, onUpdated }) 
     setError(null);
 
     try {
-      const body = { title, description, location };
+      const body = {
+        title,
+        description,
+        location,
+        image_url: imageUrl || null,
+        category: category || null
+      };
 
       // Only include lat/lng if both are provided
       if (latitude && longitude) {
@@ -49,7 +70,7 @@ export default function EditListingForm({ listing, token, onClose, onUpdated }) 
 
   return (
     <div className="modal-overlay">
-      <div className="modal-card">
+      <div className="modal-card" style={{ maxHeight: '90vh', overflowY: 'auto' }}>
         <header className="modal-header">
           <h2>Edit Listing</h2>
           <button className="close" onClick={onClose} aria-label="Close">
@@ -86,17 +107,80 @@ export default function EditListingForm({ listing, token, onClose, onUpdated }) 
           </div>
 
           <div className="form-group">
-            <label htmlFor="edit-location">Location</label>
-            <input
-              id="edit-location"
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            <label htmlFor="edit-category">Category</label>
+            <select
+              id="edit-category"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                fontSize: '14px',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                backgroundColor: 'white',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="">-- Select a category --</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
           </div>
 
-          <details style={{ marginTop: '12px' }}>
-            <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>
+          <div className="form-group">
+            <label htmlFor="edit-location">Location</label>
+            <LocationDropdown
+              value={location}
+              onChange={(val) => setLocation(val)}
+              onSelect={handleLocationSelect}
+              userCoords={userLocation?.coords}
+              placeholder="Enter location or select from list..."
+            />
+            {showCoordinateHint && latitude && longitude && (
+              <small style={{ display: 'block', marginTop: '6px', color: '#28a745', fontWeight: '500' }}>
+                ✓ Coordinates: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+              </small>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="edit-image-url">Image URL</label>
+            <input
+              id="edit-image-url"
+              type="url"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
+            {imageUrl && (
+              <div style={{
+                marginTop: '8px',
+                maxWidth: '200px',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                border: '1px solid #ddd'
+              }}>
+                <img
+                  src={imageUrl}
+                  alt="Preview"
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    maxHeight: '150px',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+          </div>
+
+          <details style={{ marginTop: '12px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '6px', border: '1px solid #e9ecef' }}>
+            <summary style={{ cursor: 'pointer', marginBottom: '8px', fontWeight: '600' }}>
               📍 Update map coordinates (optional)
             </summary>
             <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
