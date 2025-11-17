@@ -313,6 +313,78 @@ Event.images = db.relationship(
 )
 
 
+class UserEventInteraction(db.Model):
+    """Track user interactions with events for personalization."""
+
+    __tablename__ = "user_event_interaction"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    event_id = db.Column(db.String(36), db.ForeignKey("event.id"), nullable=False, index=True)
+    interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
+    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "event_id": self.event_id,
+            "interaction_type": self.interaction_type,
+            "metadata": self.metadata,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }
+
+
+class UserAchievement(db.Model):
+    """Track user achievements and badges for gamification."""
+
+    __tablename__ = "user_achievement"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    achievement_type = db.Column(db.String(50), nullable=False)  # weekend_warrior, category_completionist, etc.
+    progress = db.Column(db.Integer, default=0)  # Progress towards achievement
+    unlocked = db.Column(db.Boolean, default=False, index=True)
+    unlocked_at = db.Column(db.DateTime, nullable=True)
+    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "achievement_type": self.achievement_type,
+            "progress": self.progress,
+            "unlocked": self.unlocked,
+            "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
+            "metadata": self.metadata,
+        }
+
+
+class UserProfile(db.Model):
+    """Extended user profile for personalization."""
+
+    __tablename__ = "user_profile"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True, index=True)
+    taste_profile = db.Column(db.Text, nullable=True)  # JSON with category preferences, etc.
+    adventure_level = db.Column(db.Float, default=0.5)  # 0-1 scale
+    price_sensitivity = db.Column(db.String(20), default='medium')  # low, medium, high
+    favorite_venues = db.Column(db.Text, nullable=True)  # JSON array
+    notification_preferences = db.Column(db.Text, nullable=True)  # JSON
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "taste_profile": self.taste_profile,
+            "adventure_level": self.adventure_level,
+            "price_sensitivity": self.price_sensitivity,
+            "favorite_venues": self.favorite_venues,
+            "notification_preferences": self.notification_preferences,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 def get_serializer():
     return URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
@@ -957,6 +1029,229 @@ def discover_tonight():
         import traceback
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/events/interact', methods=['POST'])
+@jwt_required()
+def record_event_interaction():
+    """Record user interaction with an event (like, dislike, view, attend, etc.)."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    data = request.get_json() or {}
+    event_id = data.get('event_id')
+    interaction_type = data.get('interaction_type')  # view, like, dislike, attend, skip, super_like
+    metadata = data.get('metadata', {})
+
+    if not event_id or not interaction_type:
+        return jsonify({"error": "event_id and interaction_type required"}), 400
+
+    # Record interaction
+    interaction = UserEventInteraction(
+        user_id=uid_int,
+        event_id=event_id,
+        interaction_type=interaction_type,
+        metadata=json.dumps(metadata) if metadata else None
+    )
+    db.session.add(interaction)
+    db.session.commit()
+
+    # Update user achievements based on interaction
+    from backend.event_discovery.gamification import GamificationEngine
+    gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+    gamification.check_achievements(uid_int)
+
+    return jsonify({
+        "message": "interaction recorded",
+        "interaction": interaction.to_dict()
+    }), 201
+
+
+@app.route('/api/events/personalized', methods=['POST'])
+@jwt_required()
+def get_personalized_events():
+    """Get personalized event feed with match scores."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 20)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # Get events
+        import asyncio
+        from event_discovery import EventCacheManager
+        manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit=100)  # Get more events for personalization
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        # Personalize the feed
+        from backend.event_discovery.personalization import PersonalizationEngine
+        engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
+        personalized = engine.get_personalized_feed(uid_int, events, limit=limit)
+
+        return jsonify({
+            "events": personalized,
+            "location": f"{city}, {state}",
+            "count": len(personalized),
+            "personalized": True
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/profile/taste', methods=['GET'])
+@jwt_required()
+def get_taste_profile():
+    """Get user's taste profile (category preferences, etc.)."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    from backend.event_discovery.personalization import PersonalizationEngine
+    engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
+    profile = engine.calculate_user_taste_profile(uid_int)
+
+    return jsonify({
+        "profile": profile,
+        "user_id": uid_int
+    }), 200
+
+
+@app.route('/api/events/surprise-me', methods=['POST'])
+@jwt_required()
+def surprise_me():
+    """Get surprise event recommendation based on mood and constraints."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    mood = data.get('mood', 'adventurous')  # energetic, chill, creative, social, romantic, adventurous
+    budget = data.get('budget', 50)  # max price
+    time_available = data.get('time_available', 3)  # hours
+    adventure_level = data.get('adventure_level', 'high')  # low, medium, high
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({"error": "location must be 'City, ST' format"}), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # Get events
+        import asyncio
+        from event_discovery import EventCacheManager
+        manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit=100)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        # Filter and select surprise event
+        from backend.event_discovery.surprise_engine import SurpriseEngine
+        surprise_engine = SurpriseEngine(db, User, Event, UserEventInteraction)
+
+        surprise_event = surprise_engine.generate_surprise(
+            user_id=uid_int,
+            events=events,
+            mood=mood,
+            budget=budget,
+            time_available=time_available,
+            adventure_level=adventure_level
+        )
+
+        if not surprise_event:
+            return jsonify({"error": "No surprising events found"}), 404
+
+        return jsonify({
+            "event": surprise_event,
+            "surprise": True,
+            "mood": mood,
+            "explanation": surprise_event.get('surprise_explanation', '')
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/achievements', methods=['GET'])
+@jwt_required()
+def get_achievements():
+    """Get user's achievements and progress."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+
+    return jsonify({
+        "achievements": [a.to_dict() for a in achievements],
+        "unlocked_count": sum(1 for a in achievements if a.unlocked),
+        "total_count": len(achievements)
+    }), 200
 
 
 if __name__ == '__main__':
