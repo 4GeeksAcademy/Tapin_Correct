@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
 from backend.auth import token_for
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import smtplib
@@ -217,6 +217,96 @@ class Review(db.Model):
             "created_at": (self.created_at.isoformat()
                            if self.created_at else None),
         }
+
+
+class Event(db.Model):
+    """Cached scraped volunteer events for geohash-based lookup."""
+
+    id = db.Column(db.String(36), primary_key=True)
+    title = db.Column(db.Text, nullable=False)
+    organization = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    date_start = db.Column(db.DateTime, nullable=True)
+    location_address = db.Column(db.Text)
+    location_city = db.Column(db.String(120))
+    location_state = db.Column(db.String(10))
+    location_zip = db.Column(db.String(20))
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
+    geohash_4 = db.Column(db.String(8))
+    geohash_6 = db.Column(db.String(12), index=True)
+    category = db.Column(db.String(100))
+    url = db.Column(db.String(1000), unique=False)
+    source = db.Column(db.String(200))
+    scraped_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    cache_expires_at = db.Column(db.DateTime, nullable=True, index=True)
+    # Optional image link (single) and multiple image links (JSON text)
+    image_url = db.Column(db.String(1000), nullable=True)
+    image_urls = db.Column(db.Text, nullable=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "organization": self.organization,
+            "description": self.description,
+            "date_start": (
+                self.date_start.isoformat() if self.date_start else None
+            ),
+            "location_address": self.location_address,
+            "city": self.location_city,
+            "state": self.location_state,
+            "zip": self.location_zip,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "category": self.category,
+            "url": self.url,
+            "source": self.source,
+            "scraped_at": (
+                self.scraped_at.isoformat() if self.scraped_at else None
+            ),
+            "image_url": self.image_url,
+            "image_urls": self.image_urls,
+        }
+
+
+class EventImage(db.Model):
+    """Normalized event images table. One row per image per event."""
+
+    __tablename__ = "event_image"
+    id = db.Column(db.Integer, primary_key=True)
+    event_id = db.Column(
+        db.String(36), db.ForeignKey("event.id"), nullable=False, index=True
+    )
+    url = db.Column(db.String(1000), nullable=False)
+    caption = db.Column(db.Text, nullable=True)
+    position = db.Column(db.Integer, nullable=True)  # ordering of images
+    created_at = db.Column(
+        db.DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "event_id": self.event_id,
+            "url": self.url,
+            "caption": self.caption,
+            "position": self.position,
+            "created_at": (
+                self.created_at.isoformat() if self.created_at else None
+            ),
+        }
+
+
+# Add relationship on Event to access images
+Event.images = db.relationship(
+    "EventImage",
+    backref="event",
+    cascade="all, delete-orphan",
+    lazy="dynamic"
+)
 
 
 def get_serializer():
@@ -720,56 +810,48 @@ def get_listing_average_rating(id):
 @app.route('/api/discover-events', methods=['POST'])
 @jwt_required()
 def discover_events():
-    """Discover volunteer opportunities using AI agent for a location"""
-    from event_discovery import EventDiscoveryAgent
+    """Discover volunteer opportunities using hybrid LLM and web scraping.
+
+    Searches for volunteer events by city/state, using EventCacheManager
+    which automatically caches results in the Event table with geohash.
+    """
+    import asyncio
+    from event_discovery import EventCacheManager
 
     data = request.get_json() or {}
     location = data.get('location')
-    limit = data.get('limit', 10)
-    auto_create = data.get('auto_create', False)
 
     if not location:
         return jsonify({"error": "location required"}), 400
 
+    # Parse location into city and state
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
     try:
-        # Initialize discovery agent
-        agent = EventDiscoveryAgent()
+        # EventCacheManager uses async/await
+        manager = EventCacheManager()
 
-        # Discover events
-        discovered = agent.discover_events(location, limit)
-
-        # Optionally create listings from discovered events
-        created_listings = []
-        if auto_create:
-            owner_id = int(get_jwt_identity())
-            for event_data in discovered:
-                # Clean and structure the event
-                clean_event = agent.clean_and_structure(event_data)
-
-                # Create listing
-                listing = Listing(
-                    title=clean_event['title'],
-                    description=clean_event['description'],
-                    location=clean_event['location'],
-                    latitude=clean_event.get('latitude'),
-                    longitude=clean_event.get('longitude'),
-                    category=clean_event.get('category'),
-                    owner_id=owner_id
-                )
-                db.session.add(listing)
-                created_listings.append(listing)
-
-            db.session.commit()
-            created_listings = [l.to_dict() for l in created_listings]
+        # Run async search in Flask context
+        with app.app_context():
+            events = asyncio.run(manager.search_by_location(city, state))
 
         return jsonify({
-            "discovered": discovered,
-            "created": created_listings if auto_create else [],
-            "location": location,
-            "count": len(discovered)
+            "events": events,
+            "location": f"{city}, {state}",
+            "count": len(events),
+            "cached": True  # EventCacheManager auto-caches to DB
         }), 200
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 

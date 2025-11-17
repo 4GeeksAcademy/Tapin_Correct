@@ -34,8 +34,19 @@ pytest>=7.0
 gunicorn>=20.1  # WSGI HTTP server for production
 
 
-# LangChain for AI-powered event discovery
+# Event discovery with hybrid LLM support
+# LangChain providers (all optional via try/except in code)
 langchain>=0.1.0
 langchain-openai>=0.0.5
 langchain-community>=0.0.20
+langchain-google-genai>=0.0.5
 openai>=1.6.0
+
+# Web scraping and geocoding for event discovery
+beautifulsoup4>=4.11
+lxml>=4.9
+geopy>=2.3
+pygeohash>=1.2  # pure Python geohash (geohash2 has build issues)
+
+# Optional: Playwright for JavaScript-rendered pages (install with: playwright install chromium)
+playwright>=1.40
