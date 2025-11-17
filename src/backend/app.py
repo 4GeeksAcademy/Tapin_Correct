@@ -717,5 +717,61 @@ def get_listing_average_rating(id):
     })
 
 
+@app.route('/api/discover-events', methods=['POST'])
+@jwt_required()
+def discover_events():
+    """Discover volunteer opportunities using AI agent for a location"""
+    from event_discovery import EventDiscoveryAgent
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 10)
+    auto_create = data.get('auto_create', False)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    try:
+        # Initialize discovery agent
+        agent = EventDiscoveryAgent()
+
+        # Discover events
+        discovered = agent.discover_events(location, limit)
+
+        # Optionally create listings from discovered events
+        created_listings = []
+        if auto_create:
+            owner_id = int(get_jwt_identity())
+            for event_data in discovered:
+                # Clean and structure the event
+                clean_event = agent.clean_and_structure(event_data)
+
+                # Create listing
+                listing = Listing(
+                    title=clean_event['title'],
+                    description=clean_event['description'],
+                    location=clean_event['location'],
+                    latitude=clean_event.get('latitude'),
+                    longitude=clean_event.get('longitude'),
+                    category=clean_event.get('category'),
+                    owner_id=owner_id
+                )
+                db.session.add(listing)
+                created_listings.append(listing)
+
+            db.session.commit()
+            created_listings = [l.to_dict() for l in created_listings]
+
+        return jsonify({
+            "discovered": discovered,
+            "created": created_listings if auto_create else [],
+            "location": location,
+            "count": len(discovered)
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
