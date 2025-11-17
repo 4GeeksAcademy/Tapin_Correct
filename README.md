@@ -17,6 +17,128 @@ Build web applications using React.js for the front end and python/flask for you
 - **Dependencies**: use `python -m venv .venv && pip install -r src/backend/requirements.txt` for the API and `npm install` for the SPA. The top-level `requirements.txt` simply references the backend list.
 - **Environment**: copy `.env.example` to `.env` and fill the variables required by `src/backend/app.py` (database URL, JWT secrets, SMTP settings, etc.). The frontend expects `VITE_BACKEND_URL` to point at the running API.
 
+## 🎉 AI-Powered Event Discovery System
+
+Tapin now features a comprehensive **AI-powered event discovery platform** that finds local events happening tonight and volunteer opportunities across your city!
+
+### Features
+
+**🤖 AI-Powered Search**
+- Natural language search powered by LangChain
+- Hybrid LLM architecture (Gemini → Ollama → Perplexity → Mock fallback)
+- Smart categorization and content extraction
+
+**🎭 Comprehensive Event Categories (23 total)**
+- **Entertainment & Culture**: Music & Concerts, Comedy, Arts & Theater, Film & Media, Books & Literature
+- **Food & Drink**: Food & Dining, Wine & Beer
+- **Active & Sports**: Sports, Fitness, Outdoor
+- **Social & Professional**: Nightlife, Networking, Tech & Innovation
+- **Volunteer & Social Impact**: Volunteer, Hunger Relief, Animal Welfare, Environment, Education, Seniors
+- **Family & Community**: Family, Community, Markets & Fairs
+
+**📍 Multi-Source Discovery**
+- Eventbrite events
+- Meetup groups
+- Facebook local events (public pages only, compliance-focused)
+- City event calendars
+- Volunteer opportunities from nonprofits
+
+**🎨 Modern UI**
+- Beautiful gradient design with icons
+- Image galleries with carousel navigation
+- Category-coded color borders
+- Mobile-first responsive design
+- Real-time filtering
+
+### New API Endpoints
+
+```bash
+# Get all event categories with metadata
+GET /api/categories
+
+# Discover tonight's local events
+POST /api/local-events/tonight
+{
+  "location": "Dallas, TX",
+  "limit": 20
+}
+
+# Discover volunteer opportunities
+POST /api/discover-events
+{
+  "location": "Dallas, TX"
+}
+```
+
+### Event Discovery Architecture
+
+**Backend Components:**
+- `event_discovery/local_events_scraper.py` - Scrapes local events from multiple sources
+- `event_discovery/facebook_scraper.py` - Nonprofit volunteer events from Facebook
+- `event_discovery/event_categories.py` - Unified category system
+- `event_discovery/cache_manager.py` - Geohash-based caching and async coordination
+- `event_discovery/llm_impl.py` - Hybrid LLM with multiple provider support
+
+**Frontend Components:**
+- `pages/EventDiscovery.jsx` - Main event discovery page
+- `components/EventCard.jsx` - Event card with image gallery
+- `components/CategoryFilter.jsx` - Dynamic category filtering
+
+**Database Models:**
+- `Event` - Cached events with geohash indexing
+- `EventImage` - Normalized image gallery support
+
+### Configuration
+
+Set these environment variables for full functionality:
+
+```bash
+# LLM Providers (optional - falls back to mock if not set)
+GEMINI_API_KEY=your_gemini_key
+PERPLEXITY_API_KEY=your_perplexity_key
+
+# LLM Provider Selection (default: mock for testing)
+LLM_PROVIDER=mock  # or 'gemini', 'ollama', 'perplexity'
+```
+
+### Quick Start - Event Discovery
+
+1. **Start the backend** (with LLM in mock mode for testing):
+   ```bash
+   cd src/backend
+   PYTHONPATH=../../src LLM_PROVIDER=mock python3 app.py
+   ```
+
+2. **Test the API**:
+   ```bash
+   # Register a user
+   curl -X POST http://127.0.0.1:5000/register \
+     -H "Content-Type: application/json" \
+     -d '{"email":"test@example.com","password":"test123"}'
+
+   # Get the token from response, then discover tonight's events
+   curl -X POST http://127.0.0.1:5000/api/local-events/tonight \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"location": "Dallas, TX", "limit": 10}'
+   ```
+
+3. **Frontend integration**: The `EventDiscovery` component automatically fetches and displays events with category filtering and AI search.
+
+### Testing
+
+Run the included test script:
+```bash
+chmod +x /tmp/test_tonight_events.sh
+/tmp/test_tonight_events.sh
+```
+
+Expected output:
+- ✓ Events discovered: 7+
+- ✓ Multiple categories (Music, Comedy, Food, etc.)
+- ✓ All events have images
+- ✓ Events sorted by start time
+
 ### 1) Installation:
 
 > If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node 
