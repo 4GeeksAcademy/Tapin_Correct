@@ -33,3 +33,9 @@ pytest>=7.0
 # Production server
 gunicorn>=20.1  # WSGI HTTP server for production
 
+
+# LangChain for AI-powered event discovery
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-community>=0.0.20
+openai>=1.6.0
