@@ -1119,10 +1119,26 @@ def get_personalized_events():
         finally:
             loop.close()
 
-        # Personalize the feed
+        # Personalize the feed with AI
         from backend.event_discovery.personalization import PersonalizationEngine
         engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
-        personalized = engine.get_personalized_feed(uid_int, events, limit=limit)
+
+        # Use AI-powered personalization
+        loop2 = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop2)
+
+        try:
+            ctx2 = app.app_context()
+            ctx2.push()
+
+            try:
+                personalized = loop2.run_until_complete(
+                    engine.get_ai_personalized_recommendations(uid_int, events, limit=limit)
+                )
+            finally:
+                ctx2.pop()
+        finally:
+            loop2.close()
 
         return jsonify({
             "events": personalized,
@@ -1206,18 +1222,33 @@ def surprise_me():
         finally:
             loop.close()
 
-        # Filter and select surprise event
+        # Generate AI-powered surprise event
         from backend.event_discovery.surprise_engine import SurpriseEngine
         surprise_engine = SurpriseEngine(db, User, Event, UserEventInteraction)
 
-        surprise_event = surprise_engine.generate_surprise(
-            user_id=uid_int,
-            events=events,
-            mood=mood,
-            budget=budget,
-            time_available=time_available,
-            adventure_level=adventure_level
-        )
+        # Use AI to generate surprise
+        loop2 = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop2)
+
+        try:
+            ctx2 = app.app_context()
+            ctx2.push()
+
+            try:
+                surprise_event = loop2.run_until_complete(
+                    surprise_engine.generate_ai_surprise(
+                        user_id=uid_int,
+                        location=city,
+                        mood=mood,
+                        budget=budget,
+                        time_available=time_available * 60,  # Convert hours to minutes
+                        adventure_level=adventure_level
+                    )
+                )
+            finally:
+                ctx2.pop()
+        finally:
+            loop2.close()
 
         if not surprise_event:
             return jsonify({"error": "No surprising events found"}), 404

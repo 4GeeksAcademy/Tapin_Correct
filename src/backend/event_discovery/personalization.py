@@ -10,6 +10,8 @@ from typing import List, Dict, Optional
 import json
 from collections import defaultdict, Counter
 import math
+import asyncio
+from .llm import HybridLLM
 
 
 class PersonalizationEngine:
@@ -18,7 +20,7 @@ class PersonalizationEngine:
     and provides personalized event recommendations.
     """
 
-    def __init__(self, db, user_model, event_model, interaction_model):
+    def __init__(self, db, user_model, event_model, interaction_model, llm_provider=None):
         """
         Initialize the personalization engine.
 
@@ -27,11 +29,13 @@ class PersonalizationEngine:
             user_model: User model class
             event_model: Event model class
             interaction_model: UserEventInteraction model class
+            llm_provider: LLM provider (perplexity, ollama, gemini)
         """
         self.db = db
         self.User = user_model
         self.Event = event_model
         self.Interaction = interaction_model
+        self.llm = HybridLLM(provider=llm_provider or "perplexity")
 
     def calculate_user_taste_profile(self, user_id: int) -> Dict:
         """
@@ -400,3 +404,170 @@ class PersonalizationEngine:
             return True  # High spenders accept anything
 
         return True
+
+    async def get_ai_personalized_recommendations(
+        self,
+        user_id: int,
+        events: List[Dict],
+        limit: int = 10
+    ) -> List[Dict]:
+        """
+        Use AI (HybridLLM) to generate highly personalized event recommendations
+        with natural language explanations.
+
+        Args:
+            user_id: User ID
+            events: List of candidate events
+            limit: Number of recommendations to return
+
+        Returns:
+            List of events with AI-generated match scores and explanations
+        """
+        # Get user profile
+        profile = self.calculate_user_taste_profile(user_id)
+
+        # Get recent interactions for context
+        recent_interactions = self.Interaction.query.filter_by(
+            user_id=user_id
+        ).order_by(self.Interaction.timestamp.desc()).limit(10).all()
+
+        # Build context for AI
+        liked_events = []
+        disliked_events = []
+
+        for interaction in recent_interactions:
+            if interaction.event:
+                event_desc = f"{interaction.event.title} ({interaction.event.category})"
+                if interaction.interaction_type in ['like', 'super_like', 'attend']:
+                    liked_events.append(event_desc)
+                elif interaction.interaction_type == 'dislike':
+                    disliked_events.append(event_desc)
+
+        # Prepare candidate events (top 20 by basic scoring)
+        scored_events = []
+        for event in events[:50]:  # Limit to top 50 candidates
+            score, _ = self._score_event(event, profile)
+            scored_events.append((score, event))
+
+        scored_events.sort(reverse=True, key=lambda x: x[0])
+        candidates = [event for _, event in scored_events[:20]]
+
+        # Build prompt for AI
+        prompt = self._build_personalization_prompt(
+            profile, liked_events, disliked_events, candidates, limit
+        )
+
+        try:
+            # Call AI
+            response = await self.llm.ainvoke(prompt)
+            ai_recommendations = self._parse_ai_response(response.content, candidates)
+
+            if ai_recommendations:
+                return ai_recommendations[:limit]
+        except Exception as e:
+            print(f"AI personalization error: {e}")
+
+        # Fallback to basic personalization
+        return self.get_personalized_feed(user_id, events, limit)
+
+    def _build_personalization_prompt(
+        self,
+        profile: Dict,
+        liked_events: List[str],
+        disliked_events: List[str],
+        candidates: List[Dict],
+        limit: int
+    ) -> str:
+        """Build prompt for AI personalization."""
+        liked_str = "\n".join(f"- {e}" for e in liked_events[:5]) if liked_events else "None yet"
+        disliked_str = "\n".join(f"- {e}" for e in disliked_events[:5]) if disliked_events else "None"
+
+        categories_str = ", ".join(
+            f"{cat} ({score:.0f}%)"
+            for cat, score in sorted(
+                profile['category_preferences'].items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:5]
+        ) if profile['category_preferences'] else "Still learning preferences"
+
+        candidates_str = ""
+        for i, event in enumerate(candidates[:15], 1):
+            candidates_str += f"\n{i}. {event.get('title', 'Untitled')} - {event.get('category', 'Unknown')} at {event.get('venue', 'TBD')}"
+            if event.get('description'):
+                desc = event['description'][:100]
+                candidates_str += f"\n   Description: {desc}..."
+
+        prompt = f"""You are an expert event recommendation AI. Analyze this user's preferences and recommend the {limit} best events from the candidates below.
+
+USER PROFILE:
+- Favorite Categories: {categories_str}
+- Price Sensitivity: {profile.get('price_sensitivity', 'medium')}
+- Adventure Level: {profile.get('adventure_level', 0.5):.0%}
+- Typical Planning Lead Time: {profile.get('average_lead_time', 7)} days
+
+EVENTS THEY LIKED:
+{liked_str}
+
+EVENTS THEY DISLIKED:
+{disliked_str}
+
+CANDIDATE EVENTS:
+{candidates_str}
+
+TASK: Select the top {limit} events that best match this user's preferences. For each, provide:
+1. Event number (from candidates list)
+2. Match score (0-100)
+3. Brief explanation (1-2 sentences) of why it's a good match
+
+Return ONLY a valid JSON array like this:
+[
+  {{"event_num": 1, "match_score": 95, "explanation": "Perfect match because..."}},
+  {{"event_num": 3, "match_score": 88, "explanation": "Great fit since..."}}
+]
+
+Respond with ONLY the JSON array, no other text."""
+
+        return prompt
+
+    def _parse_ai_response(self, response_text: str, candidates: List[Dict]) -> List[Dict]:
+        """Parse AI response and attach recommendations to events."""
+        try:
+            # Extract JSON from response
+            response_text = response_text.strip()
+
+            # Find JSON array in response
+            start_idx = response_text.find('[')
+            end_idx = response_text.rfind(']') + 1
+
+            if start_idx == -1 or end_idx == 0:
+                return []
+
+            json_str = response_text[start_idx:end_idx]
+            recommendations = json.loads(json_str)
+
+            if not isinstance(recommendations, list):
+                return []
+
+            # Attach AI recommendations to events
+            result = []
+            for rec in recommendations:
+                if not isinstance(rec, dict):
+                    continue
+
+                event_num = rec.get('event_num')
+                if event_num is None or event_num < 1 or event_num > len(candidates):
+                    continue
+
+                # Get the corresponding event (1-indexed)
+                event = candidates[event_num - 1].copy()
+                event['ai_match_score'] = rec.get('match_score', 50)
+                event['ai_explanation'] = rec.get('explanation', 'AI-recommended for you')
+
+                result.append(event)
+
+            return result
+
+        except Exception as e:
+            print(f"Error parsing AI response: {e}")
+            return []
