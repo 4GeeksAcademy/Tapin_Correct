@@ -73,7 +73,7 @@ jwt = JWTManager(app)
 
 
 def _warn_on_default_secrets():
-    """Log a warning if important secret env vars are left at their dev defaults.
+    """Log warning if secret env vars are left at their dev defaults.
 
     This is only advisory and will not stop the app from running. It's helpful
     for local dev and in CI to call out missing secret configuration.
@@ -144,7 +144,8 @@ class Listing(db.Model):
             "category": self.category,
             "image_url": self.image_url,
             "owner_id": self.owner_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
@@ -185,7 +186,8 @@ class SignUp(db.Model):
             "listing_id": self.listing_id,
             "status": self.status,
             "message": self.message,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
@@ -212,7 +214,8 @@ class Review(db.Model):
             "listing_id": self.listing_id,
             "rating": self.rating,
             "comment": self.comment,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
@@ -243,7 +246,8 @@ def api_health():
         health_status["components"]["database"] = {
             "status": "connected",
             "uri_prefix": app.config['SQLALCHEMY_DATABASE_URI'][:20] + "...",
-            "pool_size": db.engine.pool.size() if hasattr(db.engine.pool, 'size') else 'N/A'
+            "pool_size": (db.engine.pool.size()
+                          if hasattr(db.engine.pool, 'size') else 'N/A')
         }
     except Exception as e:
         health_status["status"] = "degraded"
@@ -293,8 +297,11 @@ def register_user():
     from backend.auth import token_pair
 
     tokens = token_pair(user)
-    return jsonify({"message": "user created",
-                   "user": user.to_dict(), **tokens}), 201
+    return jsonify({
+        "message": "user created",
+        "user": user.to_dict(),
+        **tokens
+    }), 201
 
 
 @app.route('/login', methods=['POST'])
@@ -309,8 +316,11 @@ def login_user():
     from backend.auth import token_pair
 
     tokens = token_pair(user)
-    return jsonify({"message": "login successful",
-                   "user": user.to_dict(), **tokens})
+    return jsonify({
+        "message": "login successful",
+        "user": user.to_dict(),
+        **tokens
+    })
 
 
 @app.route('/refresh', methods=['POST'])
@@ -386,11 +396,12 @@ def reset_password():
     user = User.query.filter_by(email=email).first()
     if not user:
         # Do not reveal whether the email exists
-        return jsonify(
-            {"message": "If an account exists for that email, a reset link has been sent."})
+        msg = "If an account exists for that email, a reset link was sent."
+        return jsonify({"message": msg})
 
     serializer = get_serializer()
-    token = serializer.dumps(email, salt=app.config['SECURITY_PASSWORD_SALT'])
+    token = serializer.dumps(
+        email, salt=app.config['SECURITY_PASSWORD_SALT'])
     reset_url = url_for('confirm_reset', token=token, _external=True)
 
     sent, info = send_reset_email(email, reset_url)
@@ -398,8 +409,11 @@ def reset_password():
         return jsonify({"message": "reset email sent"})
     else:
         # Fallback in dev: return the reset_url so developers can use it
-        return jsonify({"message": "smtp not configured, returning reset link (dev)",
-                       "reset_url": reset_url, "error": info})
+        return jsonify({
+            "message": "smtp not configured, returning reset link (dev)",
+            "reset_url": reset_url,
+            "error": info
+        })
 
 
 @app.route('/reset-password/confirm/<token>', methods=['POST'])
@@ -411,7 +425,9 @@ def confirm_reset(token):
     serializer = get_serializer()
     try:
         email = serializer.loads(
-            token, salt=app.config['SECURITY_PASSWORD_SALT'], max_age=3600)
+            token,
+            salt=app.config['SECURITY_PASSWORD_SALT'],
+            max_age=3600)
     except SignatureExpired:
         return jsonify({"error": "token expired"}), 400
     except BadSignature:
@@ -604,7 +620,7 @@ def get_listing_signups(id):
 @app.route('/signups/<int:id>', methods=['PUT'])
 @jwt_required()
 def update_signup_status(id):
-    """Update sign-up status (owner can accept/decline, volunteer can cancel)."""
+    """Update sign-up status (owner accept/decline, volunteer cancel)."""
     signup = SignUp.query.get_or_404(id)
     user_id = int(get_jwt_identity())
     data = request.get_json() or {}
@@ -621,8 +637,8 @@ def update_signup_status(id):
     # Owner can accept/decline, volunteer can cancel
     if listing.owner_id == user_id:
         if new_status not in ['accepted', 'declined']:
-            return jsonify(
-                {"error": "owner can only set status to accepted or declined"}), 400
+            err = "owner can only set status to accepted or declined"
+            return jsonify({"error": err}), 400
     elif signup.user_id == user_id:
         if new_status != 'cancelled':
             return jsonify({"error": "volunteer can only cancel sign-up"}), 400
@@ -651,8 +667,8 @@ def create_review(id):
     rating = data.get('rating')
 
     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-        return jsonify(
-            {"error": "rating must be an integer between 1 and 5"}), 400
+        err = "rating must be an integer between 1 and 5"
+        return jsonify({"error": err}), 400
 
     review = Review(
         user_id=user_id,

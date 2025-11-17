@@ -1,5 +1,5 @@
 """
-Database migration script to add category and image_url columns to listing table
+Database migration script to add category and image_url columns to listing.
 """
 import sqlite3
 import os
