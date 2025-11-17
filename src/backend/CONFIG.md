@@ -12,6 +12,30 @@ Optional but recommended:
 - `SQLALCHEMY_DATABASE_URI` — Connection string for the database. Defaults to `sqlite:///backend/data.db`.
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_USE_TLS` — Mail server settings for sending password reset emails.
 
+## Event Discovery / LLM Configuration
+
+The event discovery feature uses an LLM to extract volunteer opportunities from nonprofit websites. Configure the following:
+
+- `LLM_PROVIDER` — Which LLM backend to use. Options:
+  - `gemini` (default) — Google Gemini API (recommended for production)
+  - `ollama` — Local Ollama instance (for development/testing)
+  - `mock` — Returns mock data (for testing without API keys)
+
+- `GEMINI_API_KEY` — Your Google Gemini API key. Required when `LLM_PROVIDER=gemini`.
+  - Get a key at: https://aistudio.google.com/app/apikey
+  - Alternative: Set `GOOGLE_API_KEY` or `GOOGLE_APPLICATION_CREDENTIALS`
+
+- `GEMINI_MODEL` — Gemini model to use. Default: `gemini-2.5-flash-lite`
+  - Options: `gemini-2.5-flash-lite` (fast, cheap), `gemini-1.5-flash`, `gemini-1.5-pro`
+
+- `OLLAMA_MODEL` — Ollama model for local inference. Default: `mistral`
+  - Requires Ollama running locally: https://ollama.ai
+
+**Cost Considerations:**
+- Gemini Flash-Lite: ~$0.075 per 1M input tokens (very cost-effective)
+- Estimated cost: $150/month for nationwide coverage
+- Free tier available for development (60 requests/minute)
+
 ## Local development
 
 1. Copy `.env.sample` to `.env` in the repository root and edit values.
@@ -44,8 +68,52 @@ env:
   JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
   SECURITY_PASSWORD_SALT: ${{ secrets.SECURITY_PASSWORD_SALT }}
   SQLALCHEMY_DATABASE_URI: sqlite:///backend/data.db
+  LLM_PROVIDER: mock  # Use mock for CI tests
+  # For production with real LLM:
+  # LLM_PROVIDER: gemini
+  # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 ```
 
 Notes:
 - Do not commit real secrets into the repository.
 - For production, prefer a managed secret store (cloud provider secrets, HashiCorp Vault, etc.).
+
+## Production Deployment Checklist
+
+### Event Discovery Setup
+
+1. **Get Gemini API Key:**
+   ```bash
+   # Visit https://aistudio.google.com/app/apikey
+   # Create a new API key for your project
+   ```
+
+2. **Set Environment Variables:**
+   ```bash
+   export LLM_PROVIDER=gemini
+   export GEMINI_API_KEY=your-api-key-here
+   export GEMINI_MODEL=gemini-2.5-flash-lite
+   ```
+
+3. **Database Migration:**
+   ```bash
+   cd src/backend
+   pipenv run alembic upgrade head
+   ```
+
+4. **Test the Setup:**
+   ```bash
+   curl "http://localhost:5000/events/search?city=Austin&state=TX"
+   ```
+
+5. **Monitor Usage:**
+   - Check Google Cloud Console for API usage
+   - Monitor cache hit rates in application logs
+   - Events are cached for 30 days by default
+
+### Scaling Considerations
+
+- **Cache Strategy:** Events are cached by geohash (precision 6 for city-level)
+- **Parallel Scraping:** Up to 10 nonprofits per state scraped concurrently
+- **TTL Management:** Run `scripts/cleanup_cache.py` daily via cron to remove expired entries
+- **Database:** Consider PostgreSQL for production (Supabase-compatible)
