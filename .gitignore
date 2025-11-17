@@ -83,3 +83,6 @@ database.database
 database.db
 diagram.png
 __pycache__/
+
+# local env file (should not be committed)
+.env

@@ -10,6 +10,7 @@ import DashboardLanding from './pages/DashboardLanding';
 import MapView from './components/MapView';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
+import EventSearch from './components/EventSearch';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   const [userLocation, setUserLocation] = useState(null); // Store user's selected location
+  const [showEventSearch, setShowEventSearch] = useState(false); // Toggle event discovery
 
   // Helper: fetch listings optionally filtered by q
   async function fetchListings(filter) {
@@ -154,6 +156,29 @@ export default function App() {
       </div>
 
       <main>
+        {/* Event Discovery Toggle */}
+        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+          <button
+            onClick={() => setShowEventSearch(!showEventSearch)}
+            style={{
+              padding: '10px 20px',
+              background: showEventSearch ? '#667eea' : '#fff',
+              color: showEventSearch ? '#fff' : '#667eea',
+              border: '2px solid #667eea',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+              transition: 'all 0.3s ease',
+            }}
+          >
+            {showEventSearch ? 'Hide Event Discovery' : 'Discover Volunteer Events'}
+          </button>
+        </div>
+
+        {/* Event Search Component */}
+        {showEventSearch && <EventSearch onEventsLoaded={(evts) => console.log('Events loaded:', evts)} />}
+
         {/* View Mode Toggle */}
         {!loading && !error && listings.length > 0 && (
           <div style={{ marginBottom: '20px', textAlign: 'center' }}>
@@ -169,7 +194,7 @@ export default function App() {
                 fontWeight: viewMode === 'list' ? 'bold' : 'normal',
               }}
             >
-              📋 List
+              List
             </button>
             <button
               onClick={() => setViewMode('map')}
@@ -184,7 +209,7 @@ export default function App() {
                 fontWeight: viewMode === 'map' ? 'bold' : 'normal',
               }}
             >
-              🗺️ Map
+              Map
             </button>
           </div>
         )}
