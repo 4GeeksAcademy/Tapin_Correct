@@ -1,5 +1,5 @@
-from auth import token_for
-from app import app
+from backend.auth import token_for
+from backend.app import app
 
 
 def test_register_and_login(client):
