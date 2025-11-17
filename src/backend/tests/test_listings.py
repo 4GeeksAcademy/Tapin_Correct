@@ -7,7 +7,8 @@ def test_create_and_crud_listing(client, create_user):
     headers = {'Authorization': f'Bearer {token}'}
 
     # create
-    resp = client.post('/listings', json={'title': 'L1', 'description': 'D1'}, headers=headers)
+    payload = {'title': 'L1', 'description': 'D1'}
+    resp = client.post('/listings', json=payload, headers=headers)
     assert resp.status_code == 201
     listing = resp.get_json()
     lid = listing['id']
@@ -17,7 +18,8 @@ def test_create_and_crud_listing(client, create_user):
     assert r2.status_code == 200
 
     # update
-    r3 = client.put(f'/listings/{lid}', json={'title': 'L1-Updated'}, headers=headers)
+    update_data = {'title': 'L1-Updated'}
+    r3 = client.put(f'/listings/{lid}', json=update_data, headers=headers)
     assert r3.status_code == 200
     assert r3.get_json()['title'] == 'L1-Updated'
 

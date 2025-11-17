@@ -24,7 +24,8 @@ def create_user():
         with app.app_context():
             if email is None:
                 email = f"user+{uuid4().hex}@example.com"
-            user = User(email=email, password_hash=generate_password_hash(password))
+            pw_hash = generate_password_hash(password)
+            user = User(email=email, password_hash=pw_hash)
             db.session.add(user)
             db.session.commit()
             return user.id

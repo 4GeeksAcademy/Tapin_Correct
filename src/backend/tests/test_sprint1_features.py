@@ -30,7 +30,8 @@ def create_listing(create_user):
 class TestSignUpFeature:
     """Tests for Story 1.1: Sign-up/Connect to Listings"""
 
-    def test_sign_up_to_listing_success(self, client, create_user, create_listing):
+    def test_sign_up_to_listing_success(
+            self, client, create_user, create_listing):
         """Test volunteer can sign up for a listing"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -62,7 +63,8 @@ class TestSignUpFeature:
 
         assert resp.status_code == 401
 
-    def test_sign_up_duplicate_prevention(self, client, create_user, create_listing):
+    def test_sign_up_duplicate_prevention(
+            self, client, create_user, create_listing):
         """Test user cannot sign up twice for same listing"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -88,7 +90,8 @@ class TestSignUpFeature:
         assert resp2.status_code == 400
         assert "already signed up" in resp2.get_json()["error"].lower()
 
-    def test_sign_up_optional_message(self, client, create_user, create_listing):
+    def test_sign_up_optional_message(
+            self, client, create_user, create_listing):
         """Test sign-up works without message"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -107,7 +110,8 @@ class TestSignUpFeature:
         data = resp.get_json()
         assert data["message"] is None or data["message"] == ""
 
-    def test_get_listing_signups_owner_only(self, client, create_user, create_listing):
+    def test_get_listing_signups_owner_only(
+            self, client, create_user, create_listing):
         """Test only listing owner can view sign-ups"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -142,7 +146,8 @@ class TestSignUpFeature:
         )
         assert resp_other.status_code == 403
 
-    def test_update_signup_status_owner(self, client, create_user, create_listing):
+    def test_update_signup_status_owner(
+            self, client, create_user, create_listing):
         """Test owner can accept/decline sign-ups"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -168,7 +173,8 @@ class TestSignUpFeature:
         assert resp.status_code == 200
         assert resp.get_json()["status"] == "accepted"
 
-    def test_update_signup_status_volunteer_cancel(self, client, create_user, create_listing):
+    def test_update_signup_status_volunteer_cancel(
+            self, client, create_user, create_listing):
         """Test volunteer can cancel their own sign-up"""
         owner_id = create_user(email="owner@test.com")
         volunteer_id = create_user(email="volunteer@test.com")
@@ -218,7 +224,8 @@ class TestReviewFeature:
         assert data["comment"] == "Great experience!"
         assert "id" in data
 
-    def test_create_review_requires_authentication(self, client, create_listing):
+    def test_create_review_requires_authentication(
+            self, client, create_listing):
         """Test review creation requires JWT token"""
         listing_id = create_listing()
 
@@ -229,7 +236,8 @@ class TestReviewFeature:
 
         assert resp.status_code == 401
 
-    def test_review_rating_validation(self, client, create_user, create_listing):
+    def test_review_rating_validation(
+            self, client, create_user, create_listing):
         """Test rating must be between 1-5"""
         owner_id = create_user(email="owner@test.com")
         reviewer_id = create_user(email="reviewer@test.com")
@@ -262,7 +270,8 @@ class TestReviewFeature:
         )
         assert resp_valid.status_code == 201
 
-    def test_review_duplicate_prevention(self, client, create_user, create_listing):
+    def test_review_duplicate_prevention(
+            self, client, create_user, create_listing):
         """Test user cannot review same listing twice"""
         owner_id = create_user(email="owner@test.com")
         reviewer_id = create_user(email="reviewer@test.com")
@@ -288,7 +297,8 @@ class TestReviewFeature:
         assert resp2.status_code == 400
         assert "already reviewed" in resp2.get_json()["error"].lower()
 
-    def test_review_optional_comment(self, client, create_user, create_listing):
+    def test_review_optional_comment(
+            self, client, create_user, create_listing):
         """Test review works with just rating, no comment"""
         owner_id = create_user(email="owner@test.com")
         reviewer_id = create_user(email="reviewer@test.com")

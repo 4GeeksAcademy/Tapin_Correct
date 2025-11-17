@@ -6,7 +6,7 @@ Provides a small Click-based wrapper around Alembic for local development.
 Commands:
   upgrade [rev]        Run alembic upgrade (default: head)
   downgrade <rev>      Run alembic downgrade to specified revision
-  revision             Create a new autogenerate revision (passes -m and --autogenerate)
+  revision             Create new autogenerate revision (-m/--autogenerate)
   current              Show current revision
   history              Show revision history
 """
