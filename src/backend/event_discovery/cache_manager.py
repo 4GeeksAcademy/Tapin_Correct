@@ -10,6 +10,7 @@ from .llm_impl import HybridLLM
 from datetime import datetime, timedelta, timezone
 from .state_nonprofits import STATE_NONPROFITS
 from .facebook_scraper import FacebookEventScraper
+from .local_events_scraper import LocalEventsScraper
 
 # Try to import playwright for JavaScript rendering
 try:
@@ -37,6 +38,7 @@ class EventCacheManager:
         self.llm = HybridLLM()
         self.geocoder = Nominatim(user_agent="tapin_app", timeout=10)
         self.facebook_scraper = FacebookEventScraper()
+        self.local_scraper = LocalEventsScraper()
         # Store db and models if provided, otherwise get them later
         self.db = db
         self.Event = event_model
@@ -544,3 +546,170 @@ JSON OUTPUT:"""
             import traceback
             traceback.print_exc()
             return []
+
+    async def discover_tonight(self, city: str, state: str, limit: int = 20):
+        """
+        Discover ALL types of local events happening tonight (not just volunteer).
+
+        Uses LocalEventsScraper to find events across multiple platforms:
+        - Eventbrite
+        - Meetup
+        - Facebook local events
+        - City event calendars
+
+        Args:
+            city: City name
+            state: State code
+            limit: Maximum events to return
+
+        Returns:
+            List of event dictionaries with images
+        """
+        # Use provided models or get them from app context
+        if self.db is None or self.Event is None:
+            db = _get_db()
+            Event, EventImage = _get_models()
+        else:
+            db = self.db
+            Event = self.Event
+            EventImage = self.EventImage
+
+        # Geocode location
+        location = self.geocoder.geocode(f"{city}, {state}, USA")
+        if not location:
+            return []
+
+        lat, lon = location.latitude, location.longitude
+
+        # Check cache first
+        gh = geohash.encode(lat, lon, precision=6)
+        now = datetime.now(timezone.utc)
+
+        # For tonight's events, cache for shorter period (4 hours)
+        cache_key = f"tonight_{gh}"
+        cached_q = Event.query.filter(
+            Event.geohash_6 == gh,
+            Event.category.notin_(['Hunger Relief', 'Animals', 'Environment',
+                                    'Education', 'Seniors'])  # Exclude volunteer categories
+        ).filter(
+            sa.or_(
+                Event.cache_expires_at.is_(None),
+                Event.cache_expires_at > now,
+            )
+        )
+        cached = cached_q.limit(limit).all()
+
+        if cached and len(cached) >= limit / 2:  # If we have at least half the requested events
+            return [e.to_dict() for e in cached][:limit]
+
+        # Cache miss -> discover tonight's events
+        events = await self.local_scraper.discover_tonight(city, state, limit)
+
+        # Persist to database
+        persisted = []
+        for event in events:
+            try:
+                ev_lat = event.get("latitude") or lat
+                ev_lon = event.get("longitude") or lon
+                gh6 = geohash.encode(float(ev_lat), float(ev_lon), precision=6)
+                gh4 = geohash.encode(float(ev_lat), float(ev_lon), precision=4)
+
+                # Shorter cache for tonight's events (4 hours)
+                expires_at = datetime.now(timezone.utc) + timedelta(hours=4)
+
+                # Check if event already exists
+                existing = None
+                url = event.get("url")
+                if url:
+                    existing = Event.query.filter_by(url=url).first()
+
+                if existing:
+                    # Update existing event
+                    existing.title = event.get("title")
+                    existing.description = event.get("description")
+                    existing.latitude = float(ev_lat)
+                    existing.longitude = float(ev_lon)
+                    existing.geohash_6 = gh6
+                    existing.geohash_4 = gh4
+                    existing.cache_expires_at = expires_at
+                    existing.scraped_at = datetime.now(timezone.utc)
+                    existing.category = event.get("category")
+                    existing.venue = event.get("venue")
+                    existing.price = event.get("price")
+
+                    # Update images
+                    imgs = event.get("image_urls") or []
+                    if isinstance(imgs, str):
+                        try:
+                            imgs = json.loads(imgs)
+                        except:
+                            imgs = []
+                    existing.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    existing.image_urls = json.dumps(imgs) if imgs else None
+
+                    persisted.append(existing.to_dict())
+                else:
+                    # Create new event
+                    # Parse start_time if available
+                    start_time = event.get("start_time")
+                    if start_time and isinstance(start_time, str):
+                        try:
+                            start_time = datetime.fromisoformat(start_time)
+                        except:
+                            start_time = None
+
+                    ev = Event(
+                        id=str(uuid.uuid4()),
+                        title=event.get("title", "Untitled Event"),
+                        organization=event.get("source", "Local Event"),
+                        description=event.get("description", ""),
+                        location_city=city,
+                        location_state=state.upper(),
+                        location_address=event.get("address"),
+                        latitude=float(ev_lat),
+                        longitude=float(ev_lon),
+                        geohash_6=gh6,
+                        geohash_4=gh4,
+                        category=event.get("category", "Community"),
+                        date_start=start_time,
+                        url=url or f"https://tapin.org/events/{city.lower()}-{uuid.uuid4()}",
+                        venue=event.get("venue"),
+                        price=event.get("price"),
+                        scraped_at=datetime.now(timezone.utc),
+                        cache_expires_at=expires_at,
+                    )
+
+                    # Add images
+                    imgs = event.get("image_urls") or []
+                    if isinstance(imgs, str):
+                        try:
+                            imgs = json.loads(imgs)
+                        except:
+                            imgs = []
+
+                    ev.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    ev.image_urls = json.dumps(imgs) if imgs else None
+
+                    db.session.add(ev)
+
+                    # Add normalized EventImage rows
+                    for idx, img_url in enumerate(imgs):
+                        ei = EventImage(
+                            event_id=ev.id,
+                            url=img_url,
+                            caption=None,
+                            position=idx,
+                        )
+                        db.session.add(ei)
+
+                    persisted.append(ev.to_dict())
+            except Exception as e:
+                print(f"Error persisting tonight event {event.get('title')}: {e}")
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"DB commit error for tonight's events: {e}")
+
+        return persisted[:limit]

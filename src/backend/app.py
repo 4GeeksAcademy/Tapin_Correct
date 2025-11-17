@@ -238,6 +238,8 @@ class Event(db.Model):
     category = db.Column(db.String(100))
     url = db.Column(db.String(1000), unique=False)
     source = db.Column(db.String(200))
+    venue = db.Column(db.String(200), nullable=True)  # Event venue name
+    price = db.Column(db.String(100), nullable=True)  # Event price/cost
     scraped_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -264,6 +266,8 @@ class Event(db.Model):
             "category": self.category,
             "url": self.url,
             "source": self.source,
+            "venue": self.venue,
+            "price": self.price,
             "scraped_at": (
                 self.scraped_at.isoformat() if self.scraped_at else None
             ),
@@ -863,6 +867,89 @@ def discover_events():
             "events": events,
             "location": f"{city}, {state}",
             "count": len(events),
+            "cached": True  # EventCacheManager auto-caches to DB
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    """Get all event categories with metadata (icons, colors, descriptions)."""
+    from event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
+
+    return jsonify({
+        "categories": EVENT_CATEGORIES,
+        "grouped": get_categories_by_type(),
+        "count": len(EVENT_CATEGORIES)
+    }), 200
+
+
+@app.route('/api/local-events/tonight', methods=['POST'])
+@jwt_required()
+def discover_tonight():
+    """Discover ALL types of local events happening tonight (not just volunteer).
+
+    Uses LocalEventsScraper to find events across multiple platforms:
+    - Eventbrite
+    - Meetup
+    - Facebook local events
+    - City event calendars
+
+    Returns events with images, sorted by start time.
+    """
+    import asyncio
+    from event_discovery import EventCacheManager
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 20)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location into city and state
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # EventCacheManager uses async/await
+        manager = EventCacheManager(db=db, event_model=Event,
+                                     event_image_model=EventImage)
+
+        # Create a new event loop and run async code
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Push Flask app context for database operations
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                # Run async code with app context active
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        return jsonify({
+            "events": events,
+            "location": f"{city}, {state}",
+            "count": len(events),
+            "timeframe": "tonight",
             "cached": True  # EventCacheManager auto-caches to DB
         }), 200
 
