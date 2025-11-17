@@ -11,10 +11,10 @@ def seed_data():
         # Clear existing data
         print("Clearing existing data...")
         Listing.query.delete()
-        
+
         # Create sample users (organizations)
         print("Creating sample users/organizations...")
-        
+
         users = [
             User(
                 email="deathrow@records.com",
@@ -29,22 +29,24 @@ def seed_data():
                 password_hash=generate_password_hash("sample123")
             ),
         ]
-        
+
         for user in users:
             existing = User.query.filter_by(email=user.email).first()
             if not existing:
                 db.session.add(user)
-        
+
         db.session.commit()
-        
+
         # Get the user IDs
-        deathrow_user = User.query.filter_by(email="deathrow@records.com").first()
+        deathrow_user = User.query.filter_by(
+            email="deathrow@records.com").first()
         nwa_user = User.query.filter_by(email="nwa@compton.com").first()
-        badboy_user = User.query.filter_by(email="badboy@entertainment.com").first()
-        
+        badboy_user = User.query.filter_by(
+    email="badboy@entertainment.com").first()
+
         # Create sample listings
         print("Creating sample listings...")
-        
+
         listings = [
             Listing(
                 title="Death Row Records - Janitorial Services",
@@ -95,12 +97,12 @@ def seed_data():
                 owner_id=deathrow_user.id if deathrow_user else 1
             ),
         ]
-        
+
         for listing in listings:
             db.session.add(listing)
-        
+
         db.session.commit()
-        
+
         print(f"\n✅ Successfully created {len(listings)} sample listings!")
         print("\nSample organizations:")
         print("- Death Row Records (deathrow@records.com)")

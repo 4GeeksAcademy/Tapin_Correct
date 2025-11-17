@@ -1,7 +1,7 @@
 import pytest
 from uuid import uuid4
 
-from app import app, db, User
+from backend.app import app, db, User
 from werkzeug.security import generate_password_hash
 
 

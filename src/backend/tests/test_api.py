@@ -1,14 +1,14 @@
-import pytest
-
-from app import app, db, Item, User
-from auth import token_for
-from werkzeug.security import generate_password_hash
+from backend.app import app, db, Item
+from backend.auth import token_for
 
 
 def test_health(client):
     resp = client.get("/api/health")
     assert resp.status_code == 200
-    assert resp.get_json() == {"status": "ok"}
+    data = resp.get_json()
+    assert data["status"] == "ok"
+    assert "components" in data
+    assert data["components"]["database"]["status"] == "connected"
 
 
 def test_list_items(client):

@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
-from auth import token_for
+from backend.auth import token_for
 from flask_cors import CORS
 from datetime import datetime
 import os
@@ -27,12 +27,15 @@ try:
             load_dotenv(env_path)
             break
 except Exception:
-    # python-dotenv not installed or .env missing; proceed with environment variables
+    # python-dotenv not installed or .env missing; proceed with environment
+    # variables
     pass
 
-# Allow overriding the database URL via environment (useful for CI or production)
+# Allow overriding the database URL via environment (useful for CI or
+# production)
 default_db = 'sqlite:///' + os.path.join(base_dir, 'data.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', default_db)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'SQLALCHEMY_DATABASE_URI', default_db)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Supabase connection pooling configuration for transaction mode (port 6543)
 # Configure SQLAlchemy engine options; adapt connect_args by driver
@@ -51,14 +54,17 @@ if isinstance(db_url, str) and db_url.lower().startswith('postgresql'):
         'options': '-c statement_timeout=30000',
     }
 elif isinstance(db_url, str) and db_url.lower().startswith('sqlite'):
-    # SQLite does not accept the above options; leave empty or set sqlite-specific options
+    # SQLite does not accept the above options; leave empty or set
+    # sqlite-specific options
     engine_options['connect_args'] = {}
 
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 # Secret key used for serializer tokens and other Flask features
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY', app.config['SECRET_KEY'])
-app.config['SECURITY_PASSWORD_SALT'] = os.environ.get('SECURITY_PASSWORD_SALT', 'dev-salt')
+app.config['JWT_SECRET_KEY'] = os.environ.get(
+    'JWT_SECRET_KEY', app.config['SECRET_KEY'])
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get(
+    'SECURITY_PASSWORD_SALT', 'dev-salt')
 
 CORS(app)
 
@@ -81,9 +87,13 @@ def _warn_on_default_secrets():
         val = os.environ.get(key, app.config.get(key))
         if not val or (isinstance(val, str) and val == default_val):
             missing.append(key)
-    # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the same as the dev key
-    jwt_key = os.environ.get('JWT_SECRET_KEY', app.config.get('JWT_SECRET_KEY'))
-    if not jwt_key or jwt_key == app.config.get('SECRET_KEY') == defaults['SECRET_KEY']:
+    # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the same as
+    # the dev key
+    jwt_key = os.environ.get(
+    'JWT_SECRET_KEY',
+     app.config.get('JWT_SECRET_KEY'))
+    if not jwt_key or jwt_key == app.config.get(
+        'SECRET_KEY') == defaults['SECRET_KEY']:
         missing.append('JWT_SECRET_KEY')
 
     if missing:
@@ -117,8 +127,11 @@ class Listing(db.Model):
     location = db.Column(db.String(200))
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
-    category = db.Column(db.String(100), nullable=True)  # Community, Environment, Education, Health, Animals
-    image_url = db.Column(db.String(500), nullable=True)  # URL to listing image
+    # Community, Environment, Education, Health, Animals
+    category = db.Column(db.String(100), nullable=True)
+    image_url = db.Column(
+    db.String(500),
+     nullable=True)  # URL to listing image
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -144,21 +157,31 @@ class Item(db.Model):
     description = db.Column(db.Text)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name, "description": self.description}
+        return {"id": self.id, "name": self.name,
+            "description": self.description}
 
 
 class SignUp(db.Model):
     """Track volunteer sign-ups for listings."""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'), nullable=False)
-    status = db.Column(db.String(50), default='pending')  # pending, accepted, declined, cancelled
+    listing_id = db.Column(
+    db.Integer,
+    db.ForeignKey('listing.id'),
+     nullable=False)
+    # pending, accepted, declined, cancelled
+    status = db.Column(db.String(50), default='pending')
     message = db.Column(db.Text)  # Optional message from volunteer
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Add unique constraint to prevent duplicate sign-ups
-    __table_args__ = (db.UniqueConstraint('user_id', 'listing_id', name='_user_listing_uc'),)
-    
+    __table_args__ = (
+    db.UniqueConstraint(
+        'user_id',
+        'listing_id',
+        name='_user_listing_uc'),
+        )
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -174,14 +197,22 @@ class Review(db.Model):
     """User reviews for listings."""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey('listing.id'), nullable=False)
+    listing_id = db.Column(
+    db.Integer,
+    db.ForeignKey('listing.id'),
+     nullable=False)
     rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
     comment = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
+
     # Add unique constraint to prevent multiple reviews from same user
-    __table_args__ = (db.UniqueConstraint('user_id', 'listing_id', name='_user_listing_review_uc'),)
-    
+    __table_args__ = (
+    db.UniqueConstraint(
+        'user_id',
+        'listing_id',
+        name='_user_listing_review_uc'),
+        )
+
     def to_dict(self):
         return {
             "id": self.id,
@@ -267,10 +298,11 @@ def register_user():
     db.session.add(user)
     db.session.commit()
     # return both access and refresh tokens (identity stored as string)
-    from auth import token_pair
+    from backend.auth import token_pair
 
     tokens = token_pair(user)
-    return jsonify({"message": "user created", "user": user.to_dict(), **tokens}), 201
+    return jsonify({"message": "user created",
+                   "user": user.to_dict(), **tokens}), 201
 
 
 @app.route('/login', methods=['POST'])
@@ -282,10 +314,11 @@ def login_user():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
     # return both access and refresh tokens to the client
-    from auth import token_pair
+    from backend.auth import token_pair
 
     tokens = token_pair(user)
-    return jsonify({"message": "login successful", "user": user.to_dict(), **tokens})
+    return jsonify({"message": "login successful",
+                   "user": user.to_dict(), **tokens})
 
 
 @app.route('/refresh', methods=['POST'])
@@ -313,7 +346,8 @@ def me():
         uid_int = int(uid)
     except Exception:
         uid_int = uid
-    # Use Session.get() which is the modern SQLAlchemy API (avoids LegacyAPIWarning)
+    # Use Session.get() which is the modern SQLAlchemy API (avoids
+    # LegacyAPIWarning)
     user = db.session.get(User, uid_int)
     if not user:
         return jsonify({"error": "user not found"}), 404
@@ -327,7 +361,12 @@ def send_reset_email(to_email, reset_url):
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
     smtp_user = os.environ.get('SMTP_USER')
     smtp_pass = os.environ.get('SMTP_PASS')
-    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() in ('1', 'true', 'yes')
+    use_tls = os.environ.get(
+    'SMTP_USE_TLS',
+    'true').lower() in (
+        '1',
+        'true',
+         'yes')
 
     msg = EmailMessage()
     msg['Subject'] = 'Tapin Password Reset'
@@ -359,7 +398,8 @@ def reset_password():
     user = User.query.filter_by(email=email).first()
     if not user:
         # Do not reveal whether the email exists
-        return jsonify({"message": "If an account exists for that email, a reset link has been sent."})
+        return jsonify(
+            {"message": "If an account exists for that email, a reset link has been sent."})
 
     serializer = get_serializer()
     token = serializer.dumps(email, salt=app.config['SECURITY_PASSWORD_SALT'])
@@ -370,7 +410,8 @@ def reset_password():
         return jsonify({"message": "reset email sent"})
     else:
         # Fallback in dev: return the reset_url so developers can use it
-        return jsonify({"message": "smtp not configured, returning reset link (dev)", "reset_url": reset_url, "error": info})
+        return jsonify({"message": "smtp not configured, returning reset link (dev)",
+                       "reset_url": reset_url, "error": info})
 
 
 @app.route('/reset-password/confirm/<token>', methods=['POST'])
@@ -381,7 +422,10 @@ def confirm_reset(token):
         return jsonify({"error": "password required"}), 400
     serializer = get_serializer()
     try:
-        email = serializer.loads(token, salt=app.config['SECURITY_PASSWORD_SALT'], max_age=3600)
+        email = serializer.loads(
+    token,
+    salt=app.config['SECURITY_PASSWORD_SALT'],
+     max_age=3600)
     except SignatureExpired:
         return jsonify({"error": "token expired"}), 400
     except BadSignature:
@@ -397,26 +441,34 @@ def confirm_reset(token):
 
 @app.route('/listings', methods=['GET'])
 def get_listings():
-    # Support simple filtering via query params: q (text search on title/description or category), location
+    # Support simple filtering via query params: q (text search on
+    # title/description or category), location
     q = request.args.get('q', type=str)
     location = request.args.get('location', type=str)
 
     query = Listing.query
     if q:
         # Check if q matches a category exactly (case-insensitive)
-        categories = ['Community', 'Environment', 'Education', 'Health', 'Animals']
+        categories = [
+    'Community',
+    'Environment',
+    'Education',
+    'Health',
+     'Animals']
         if q.lower() in [c.lower() for c in categories]:
             # Filter by category
             query = query.filter(Listing.category.ilike(q))
         else:
             # Text search on title/description
             like = f"%{q}%"
-            query = query.filter((Listing.title.ilike(like)) | (Listing.description.ilike(like)))
+            query = query.filter(
+    (Listing.title.ilike(like)) | (
+        Listing.description.ilike(like)))
     if location:
         query = query.filter(Listing.location.ilike(f"%{location}%"))
 
     listings = query.order_by(Listing.created_at.desc()).all()
-    return jsonify([l.to_dict() for l in listings])
+    return jsonify([lst.to_dict() for lst in listings])
 
 
 @app.route('/listings', methods=['POST'])
@@ -471,7 +523,8 @@ def update_listing(id):
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
     data = request.get_json() or {}
     listing.title = data.get('title', listing.title)
     listing.description = data.get('description', listing.description)
@@ -479,7 +532,12 @@ def update_listing(id):
     # Optional fields
     if 'category' in data:
         category = data.get('category')
-        allowed = ['Community', 'Environment', 'Education', 'Health', 'Animals']
+        allowed = [
+    'Community',
+    'Environment',
+    'Education',
+    'Health',
+     'Animals']
         if category and category not in allowed:
             return jsonify({"error": "invalid category"}), 400
         listing.category = category
@@ -488,9 +546,11 @@ def update_listing(id):
     if 'latitude' in data or 'longitude' in data:
         try:
             if 'latitude' in data:
-                listing.latitude = float(data.get('latitude')) if data.get('latitude') is not None else None
+                listing.latitude = float(data.get('latitude')) if data.get(
+                    'latitude') is not None else None
             if 'longitude' in data:
-                listing.longitude = float(data.get('longitude')) if data.get('longitude') is not None else None
+                listing.longitude = float(data.get('longitude')) if data.get(
+                    'longitude') is not None else None
         except (TypeError, ValueError):
             return jsonify({"error": "invalid coordinates"}), 400
     db.session.commit()
@@ -504,7 +564,8 @@ def delete_listing(id):
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
     db.session.delete(listing)
     db.session.commit()
     return jsonify({"message": "deleted"})
@@ -514,14 +575,14 @@ def delete_listing(id):
 @jwt_required()
 def signup_for_listing(id):
     """Volunteer signs up for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
     user_id = int(get_jwt_identity())
-    
+
     # Check if already signed up
     existing = SignUp.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
         return jsonify({"error": "already signed up for this listing"}), 400
-    
+
     data = request.get_json() or {}
     signup = SignUp(
         user_id=user_id,
@@ -531,7 +592,7 @@ def signup_for_listing(id):
     )
     db.session.add(signup)
     db.session.commit()
-    
+
     return jsonify(signup.to_dict()), 201
 
 
@@ -541,13 +602,16 @@ def get_listing_signups(id):
     """Get all sign-ups for a listing (owner only)."""
     listing = Listing.query.get_or_404(id)
     owner_id = int(get_jwt_identity())
-    
+
     # Verify ownership
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
-    
-    signups = SignUp.query.filter_by(listing_id=id).order_by(SignUp.created_at.desc()).all()
-    
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
+
+    signups = SignUp.query.filter_by(
+    listing_id=id).order_by(
+        SignUp.created_at.desc()).all()
+
     # Include user email with each sign-up
     results = []
     for signup in signups:
@@ -556,7 +620,7 @@ def get_listing_signups(id):
         if user:
             signup_dict['user_email'] = user.email
         results.append(signup_dict)
-    
+
     return jsonify(results)
 
 
@@ -568,25 +632,26 @@ def update_signup_status(id):
     user_id = int(get_jwt_identity())
     data = request.get_json() or {}
     new_status = data.get('status')
-    
+
     if not new_status:
         return jsonify({"error": "status required"}), 400
-    
+
     # Get the listing to check ownership
     listing = db.session.get(Listing, signup.listing_id)
     if not listing:
         return jsonify({"error": "listing not found"}), 404
-    
+
     # Owner can accept/decline, volunteer can cancel
     if listing.owner_id == user_id:
         if new_status not in ['accepted', 'declined']:
-            return jsonify({"error": "owner can only set status to accepted or declined"}), 400
+            return jsonify(
+                {"error": "owner can only set status to accepted or declined"}), 400
     elif signup.user_id == user_id:
         if new_status != 'cancelled':
             return jsonify({"error": "volunteer can only cancel sign-up"}), 400
     else:
         return jsonify({"error": "unauthorized"}), 403
-    
+
     signup.status = new_status
     db.session.commit()
     return jsonify(signup.to_dict())
@@ -596,20 +661,22 @@ def update_signup_status(id):
 @jwt_required()
 def create_review(id):
     """Create a review for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
     user_id = int(get_jwt_identity())
-    
+
     # Check if already reviewed
     existing = Review.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
-        return jsonify({"error": "you have already reviewed this listing"}), 400
-    
+        return jsonify(
+            {"error": "you have already reviewed this listing"}), 400
+
     data = request.get_json() or {}
     rating = data.get('rating')
-    
+
     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-        return jsonify({"error": "rating must be an integer between 1 and 5"}), 400
-    
+        return jsonify(
+            {"error": "rating must be an integer between 1 and 5"}), 400
+
     review = Review(
         user_id=user_id,
         listing_id=id,
@@ -618,16 +685,18 @@ def create_review(id):
     )
     db.session.add(review)
     db.session.commit()
-    
+
     return jsonify(review.to_dict()), 201
 
 
 @app.route('/listings/<int:id>/reviews', methods=['GET'])
 def get_listing_reviews(id):
     """Get all reviews for a listing."""
-    listing = Listing.query.get_or_404(id)
-    reviews = Review.query.filter_by(listing_id=id).order_by(Review.created_at.desc()).all()
-    
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    reviews = Review.query.filter_by(
+    listing_id=id).order_by(
+        Review.created_at.desc()).all()
+
     # Include user email with each review
     results = []
     for review in reviews:
@@ -636,19 +705,19 @@ def get_listing_reviews(id):
         if user:
             review_dict['user_email'] = user.email
         results.append(review_dict)
-    
+
     return jsonify(results)
 
 
 @app.route('/listings/<int:id>/average-rating', methods=['GET'])
 def get_listing_average_rating(id):
     """Get average rating for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
     reviews = Review.query.filter_by(listing_id=id).all()
-    
+
     if not reviews:
         return jsonify({"average_rating": 0, "review_count": 0})
-    
+
     avg_rating = sum(r.rating for r in reviews) / len(reviews)
     return jsonify({
         "average_rating": round(avg_rating, 1),

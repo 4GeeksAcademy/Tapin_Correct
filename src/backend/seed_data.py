@@ -4,14 +4,13 @@ Run with: python backend/seed_data.py
 """
 import sys
 import os
-from datetime import datetime, timedelta
-import random
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
 from app import app, db, User, Listing, Item, SignUp, Review
 from werkzeug.security import generate_password_hash
+
 
 def clear_database():
     """Clear all data from the database"""
@@ -25,10 +24,11 @@ def clear_database():
         db.session.commit()
     print("✓ Database cleared")
 
+
 def create_sample_users():
     """Create sample users"""
     print("\n👥 Creating sample users...")
-    
+
     users_data = [
         {
             'email': 'volunteer1@example.com',
@@ -61,7 +61,7 @@ def create_sample_users():
             'role': 'user'
         },
     ]
-    
+
     users = []
     with app.app_context():
         for data in users_data:
@@ -72,7 +72,7 @@ def create_sample_users():
             )
             db.session.add(user)
             users.append(user)
-        
+
         db.session.commit()
         # Refresh to get IDs
         for user in users:
@@ -80,10 +80,11 @@ def create_sample_users():
         print(f"✓ Created {len(users)} users")
         return [u.id for u in users]
 
+
 def create_sample_listings(user_ids):
     """Create sample volunteer opportunity listings"""
     print("\n📋 Creating sample listings...")
-    
+
     listings_data = [
         {
             'title': 'Community Beach Cleanup',
@@ -221,7 +222,7 @@ def create_sample_listings(user_ids):
             'image_url': 'https://images.unsplash.com/photo-1425082661705-1834bfd09dca?w=800&h=600&fit=crop',
         },
     ]
-    
+
     listings = []
     with app.app_context():
         for i, data in enumerate(listings_data):
@@ -237,25 +238,27 @@ def create_sample_listings(user_ids):
             )
             db.session.add(listing)
             listings.append(listing)
-        
+
         db.session.commit()
         print(f"✓ Created {len(listings)} listings")
-        return [l.id for l in listings]
+        return [lst.id for lst in listings]
+
 
 def create_sample_signups(user_ids, listing_ids):
     """Create sample volunteer sign-ups"""
     print("\n✋ Creating sample sign-ups...")
-    
+
     signups = []
     used_pairs = set()
-    
+
     with app.app_context():
         # Create some accepted sign-ups
         for i in range(8):
             user_idx = i % len(user_ids)
-            listing_idx = (i + 3) % len(listing_ids)  # Offset to avoid conflicts
+            # Offset to avoid conflicts
+            listing_idx = (i + 3) % len(listing_ids)
             pair = (user_ids[user_idx], listing_ids[listing_idx])
-            
+
             if pair not in used_pairs:
                 used_pairs.add(pair)
                 signup = SignUp(
@@ -266,13 +269,13 @@ def create_sample_signups(user_ids, listing_ids):
                 )
                 db.session.add(signup)
                 signups.append(signup)
-        
+
         # Create some pending sign-ups
         for i in range(5):
             user_idx = (i + 2) % len(user_ids)
             listing_idx = (i * 2) % len(listing_ids)  # Different offset
             pair = (user_ids[user_idx], listing_ids[listing_idx])
-            
+
             if pair not in used_pairs:
                 used_pairs.add(pair)
                 signup = SignUp(
@@ -283,14 +286,15 @@ def create_sample_signups(user_ids, listing_ids):
                 )
                 db.session.add(signup)
                 signups.append(signup)
-        
+
         db.session.commit()
         print(f"✓ Created {len(signups)} sign-ups")
+
 
 def create_sample_reviews(user_ids, listing_ids):
     """Create sample reviews"""
     print("\n⭐ Creating sample reviews...")
-    
+
     reviews_data = [
         {'rating': 5, 'comment': 'Amazing experience! The organizers were so welcoming and everything was well-planned.'},
         {'rating': 5, 'comment': 'Loved volunteering here. Made a real difference and met great people!'},
@@ -303,11 +307,12 @@ def create_sample_reviews(user_ids, listing_ids):
         {'rating': 4, 'comment': 'Really enjoyed it! Great way to spend a Saturday morning.'},
         {'rating': 5, 'comment': 'Exceeded my expectations. Very professionally run and impactful work.'},
     ]
-    
+
     reviews = []
     with app.app_context():
         for i, data in enumerate(reviews_data):
-            # Only create reviews where the user has signed up (simulating completed volunteering)
+            # Only create reviews where the user has signed up (simulating
+            # completed volunteering)
             review = Review(
                 user_id=user_ids[i % len(user_ids)],
                 listing_id=listing_ids[i % len(listing_ids)],
@@ -316,24 +321,25 @@ def create_sample_reviews(user_ids, listing_ids):
             )
             db.session.add(review)
             reviews.append(review)
-        
+
         db.session.commit()
         print(f"✓ Created {len(reviews)} reviews")
+
 
 def main():
     """Main seeding function"""
     print("🌱 Starting database seeding...")
     print("=" * 50)
-    
+
     # Clear existing data
     clear_database()
-    
+
     # Create sample data
     user_ids = create_sample_users()
     listing_ids = create_sample_listings(user_ids)
     create_sample_signups(user_ids, listing_ids)
     create_sample_reviews(user_ids, listing_ids)
-    
+
     print("\n" + "=" * 50)
     print("✅ Database seeding completed successfully!")
     print("\n📝 Sample Accounts:")
@@ -346,6 +352,7 @@ def main():
     print("   - org2@example.com / password123")
     print("   - org3@example.com / password123")
     print("\n🌐 You can now test the UI with realistic data!")
+
 
 if __name__ == '__main__':
     main()
