@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from .llm_impl import HybridLLM
 from datetime import datetime, timedelta, timezone
 from .state_nonprofits import STATE_NONPROFITS
+from .facebook_scraper import FacebookEventScraper
 
 # Try to import playwright for JavaScript rendering
 try:
@@ -35,6 +36,7 @@ class EventCacheManager:
         # HybridLLM prefers Gemini; falls back to Ollama or a mock.
         self.llm = HybridLLM()
         self.geocoder = Nominatim(user_agent="tapin_app", timeout=10)
+        self.facebook_scraper = FacebookEventScraper()
         # Store db and models if provided, otherwise get them later
         self.db = db
         self.Event = event_model
@@ -237,44 +239,105 @@ class EventCacheManager:
     async def scrape_city_events(self, city: str, state: str):
         """Scrape events ONLY for the user's specific city location.
 
-        Uses VolunteerMatch's city-specific search. Playwright renders JavaScript content.
-        Falls back to sample data if scraping fails (SPA sites with anti-bot detection).
-        """
-        # Build a city-specific search URL (single location only)
-        city_slug = city.replace(" ", "%20") if city else ""
-        state_upper = state.upper() if state else ""
+        Combines multiple sources:
+        1. Facebook nonprofit pages (with images)
+        2. VolunteerMatch search
+        3. Sample events fallback
 
-        # Primary source: VolunteerMatch with city+state specific search
+        Falls back gracefully if scraping fails.
+        """
+        state_upper = state.upper() if state else ""
+        all_events = []
+
+        # Try Facebook nonprofit pages first (includes images)
+        try:
+            fb_events = await self.facebook_scraper.search_events(
+                city, state_upper, limit=3
+            )
+            # Process Facebook events to extract images
+            for event in fb_events:
+                # Convert Facebook image format to our format
+                if 'images' in event and event['images']:
+                    event['image_urls'] = [
+                        img['url'] for img in event['images']
+                    ]
+                    event['image_url'] = event['images'][0]['url']
+                all_events.extend(fb_events)
+        except Exception as e:
+            print(f"Facebook scraping failed: {e}")
+
+        # Try VolunteerMatch
+        city_slug = city.replace(" ", "%20") if city else ""
         volunteer_match_url = (
-            f"https://www.volunteermatch.org/search?l={city_slug}%2C+{state_upper}"
+            f"https://www.volunteermatch.org/search?"
+            f"l={city_slug}%2C+{state_upper}"
         )
         org_name = f"VolunteerMatch {city}, {state_upper}"
 
-        # Scrape ONLY this single city-specific source
-        events = await self.scrape_nonprofit(volunteer_match_url, org_name)
+        vm_events = await self.scrape_nonprofit(volunteer_match_url, org_name)
+        all_events.extend(vm_events)
 
-        # If scraping fails (SPA anti-bot detection), generate localized sample events
-        # This demonstrates the system while providing useful volunteer opportunity suggestions
-        if not events:
-            print(f"Scraping returned no results for {city}, {state_upper}. Generating sample events.")
-            events = self._generate_sample_events(city, state_upper)
+        # If no events found, generate samples with images
+        if not all_events:
+            print(
+                f"No events found for {city}, {state_upper}. "
+                "Generating sample events."
+            )
+            all_events = self._generate_sample_events_with_images(
+                city, state_upper
+            )
 
-        # Filter to ensure all events are tagged with the user's city
-        for event in events:
+        # Ensure all events have city/state
+        for event in all_events:
             if not event.get("city"):
                 event["city"] = city
             if not event.get("state"):
                 event["state"] = state_upper
 
-        return events
+        return all_events
 
-    def _generate_sample_events(self, city: str, state: str):
-        """Generate localized sample volunteer events when scraping fails.
+    def _generate_sample_events_with_images(self, city: str, state: str):
+        """Generate localized sample volunteer events WITH IMAGES.
 
-        These represent common volunteer opportunities available in most cities.
+        These represent common volunteer opportunities with realistic images.
         Each event has a unique URL to avoid deduplication.
         """
         base_url = f"https://volunteermatch.org/search?l={city}%2C+{state}"
+
+        # Placeholder images for different categories
+        images = {
+            "food": [
+                "https://via.placeholder.com/800x600/4CAF50/ffffff"
+                "?text=Food+Bank+Volunteers",
+                "https://via.placeholder.com/800x600/4CAF50/ffffff"
+                "?text=Food+Distribution"
+            ],
+            "animals": [
+                "https://via.placeholder.com/800x600/FF9800/ffffff"
+                "?text=Shelter+Dogs",
+                "https://via.placeholder.com/800x600/FF9800/ffffff"
+                "?text=Dog+Walking"
+            ],
+            "environment": [
+                "https://via.placeholder.com/800x600/2196F3/ffffff"
+                "?text=Park+Cleanup",
+                "https://via.placeholder.com/800x600/2196F3/ffffff"
+                "?text=Tree+Planting"
+            ],
+            "education": [
+                "https://via.placeholder.com/800x600/9C27B0/ffffff"
+                "?text=Tutoring+Session",
+                "https://via.placeholder.com/800x600/9C27B0/ffffff"
+                "?text=Library+Program"
+            ],
+            "seniors": [
+                "https://via.placeholder.com/800x600/F44336/ffffff"
+                "?text=Senior+Center",
+                "https://via.placeholder.com/800x600/F44336/ffffff"
+                "?text=Companion+Program"
+            ],
+        }
+
         return [
             {
                 "title": f"Community Food Bank Sorting",
@@ -287,6 +350,8 @@ class EventCacheManager:
                 "url": f"{base_url}#foodbank",
                 "date": "2025-01-25",
                 "category": "Hunger Relief",
+                "image_url": images["food"][0],
+                "image_urls": images["food"],
             },
             {
                 "title": f"Animal Shelter Dog Walking",
@@ -299,6 +364,8 @@ class EventCacheManager:
                 "url": f"{base_url}#animals",
                 "date": "2025-01-26",
                 "category": "Animals",
+                "image_url": images["animals"][0],
+                "image_urls": images["animals"],
             },
             {
                 "title": f"Park Cleanup & Beautification",
@@ -311,6 +378,8 @@ class EventCacheManager:
                 "url": f"{base_url}#environment",
                 "date": "2025-02-01",
                 "category": "Environment",
+                "image_url": images["environment"][0],
+                "image_urls": images["environment"],
             },
             {
                 "title": f"Youth Tutoring Program",
@@ -323,6 +392,8 @@ class EventCacheManager:
                 "url": f"{base_url}#education",
                 "date": "2025-02-08",
                 "category": "Education",
+                "image_url": images["education"][0],
+                "image_urls": images["education"],
             },
             {
                 "title": f"Senior Center Companion",
@@ -335,8 +406,15 @@ class EventCacheManager:
                 "url": f"{base_url}#seniors",
                 "date": "2025-02-15",
                 "category": "Seniors",
+                "image_url": images["seniors"][0],
+                "image_urls": images["seniors"],
             },
         ]
+
+    # Keep old method name for compatibility
+    def _generate_sample_events(self, city: str, state: str):
+        """Backwards compatibility - calls new method with images."""
+        return self._generate_sample_events_with_images(city, state)
 
     async def scrape_state_nonprofits(self, state: str):
         # Use the curated STATE_NONPROFITS mapping; fall back to a minimal list
