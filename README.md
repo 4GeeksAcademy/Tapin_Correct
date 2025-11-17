@@ -28,7 +28,7 @@ Tapin now features a comprehensive **AI-powered event discovery platform** that 
 - Hybrid LLM architecture (Gemini → Ollama → Perplexity → Mock fallback)
 - Smart categorization and content extraction
 
-**🎭 Comprehensive Event Categories (23 total)**
+**🎭 Comprehensive Event Categories (22 total)**
 - **Entertainment & Culture**: Music & Concerts, Comedy, Arts & Theater, Film & Media, Books & Literature
 - **Food & Drink**: Food & Dining, Wine & Beer
 - **Active & Sports**: Sports, Fitness, Outdoor
