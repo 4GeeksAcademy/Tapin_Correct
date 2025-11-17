@@ -836,11 +836,28 @@ def discover_events():
 
     try:
         # EventCacheManager uses async/await
-        manager = EventCacheManager()
+        # Pass db and models explicitly to avoid app context issues
+        manager = EventCacheManager(db=db, event_model=Event,
+                                     event_image_model=EventImage)
 
-        # Run async search in Flask context
-        with app.app_context():
-            events = asyncio.run(manager.search_by_location(city, state))
+        # Create a new event loop and run async code
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Push Flask app context for database operations
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                # Run async code with app context active
+                events = loop.run_until_complete(
+                    manager.search_by_location(city, state)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
 
         return jsonify({
             "events": events,

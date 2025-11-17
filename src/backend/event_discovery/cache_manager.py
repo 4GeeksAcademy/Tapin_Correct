@@ -20,26 +20,35 @@ except ImportError:
 # Import DB models from the application package
 # Use late binding to avoid circular import issues with Flask app context
 def _get_db():
-    from flask import current_app
-    from app import db
+    from backend.app import db
     return db
 
 
 def _get_models():
-    from app import Event, EventImage
+    from backend.app import Event, EventImage
     return Event, EventImage
 
 
 class EventCacheManager:
 
-    def __init__(self):
+    def __init__(self, db=None, event_model=None, event_image_model=None):
         # HybridLLM prefers Gemini; falls back to Ollama or a mock.
         self.llm = HybridLLM()
         self.geocoder = Nominatim(user_agent="tapin_app", timeout=10)
+        # Store db and models if provided, otherwise get them later
+        self.db = db
+        self.Event = event_model
+        self.EventImage = event_image_model
 
     async def search_by_location(self, city: str, state: str):
-        db = _get_db()
-        Event, EventImage = _get_models()
+        # Use provided models or get them from app context
+        if self.db is None or self.Event is None:
+            db = _get_db()
+            Event, EventImage = _get_models()
+        else:
+            db = self.db
+            Event = self.Event
+            EventImage = self.EventImage
 
         location = self.geocoder.geocode(f"{city}, {state}, USA")
         if not location:
@@ -263,7 +272,9 @@ class EventCacheManager:
         """Generate localized sample volunteer events when scraping fails.
 
         These represent common volunteer opportunities available in most cities.
+        Each event has a unique URL to avoid deduplication.
         """
+        base_url = f"https://volunteermatch.org/search?l={city}%2C+{state}"
         return [
             {
                 "title": f"Community Food Bank Sorting",
@@ -273,7 +284,7 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#foodbank",
                 "date": "2025-01-25",
                 "category": "Hunger Relief",
             },
@@ -285,7 +296,7 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#animals",
                 "date": "2025-01-26",
                 "category": "Animals",
             },
@@ -297,7 +308,7 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#environment",
                 "date": "2025-02-01",
                 "category": "Environment",
             },
@@ -309,7 +320,7 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#education",
                 "date": "2025-02-08",
                 "category": "Education",
             },
@@ -321,7 +332,7 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#seniors",
                 "date": "2025-02-15",
                 "category": "Seniors",
             },
