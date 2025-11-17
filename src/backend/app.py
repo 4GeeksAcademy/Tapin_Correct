@@ -90,10 +90,10 @@ def _warn_on_default_secrets():
     # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the same as
     # the dev key
     jwt_key = os.environ.get(
-    'JWT_SECRET_KEY',
-     app.config.get('JWT_SECRET_KEY'))
-    if not jwt_key or jwt_key == app.config.get(
-        'SECRET_KEY') == defaults['SECRET_KEY']:
+        'JWT_SECRET_KEY',
+        app.config.get('JWT_SECRET_KEY'))
+    if not jwt_key or (jwt_key == app.config.get('SECRET_KEY')
+                       == defaults['SECRET_KEY']):
         missing.append('JWT_SECRET_KEY')
 
     if missing:
@@ -129,9 +129,7 @@ class Listing(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     # Community, Environment, Education, Health, Animals
     category = db.Column(db.String(100), nullable=True)
-    image_url = db.Column(
-    db.String(500),
-     nullable=True)  # URL to listing image
+    image_url = db.Column(db.String(500), nullable=True)
     owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -157,8 +155,11 @@ class Item(db.Model):
     description = db.Column(db.Text)
 
     def to_dict(self):
-        return {"id": self.id, "name": self.name,
-            "description": self.description}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "description": self.description
+        }
 
 
 class SignUp(db.Model):
@@ -166,9 +167,7 @@ class SignUp(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     listing_id = db.Column(
-    db.Integer,
-    db.ForeignKey('listing.id'),
-     nullable=False)
+        db.Integer, db.ForeignKey('listing.id'), nullable=False)
     # pending, accepted, declined, cancelled
     status = db.Column(db.String(50), default='pending')
     message = db.Column(db.Text)  # Optional message from volunteer
@@ -176,11 +175,8 @@ class SignUp(db.Model):
 
     # Add unique constraint to prevent duplicate sign-ups
     __table_args__ = (
-    db.UniqueConstraint(
-        'user_id',
-        'listing_id',
-        name='_user_listing_uc'),
-        )
+        db.UniqueConstraint('user_id', 'listing_id', name='_user_listing_uc'),
+    )
 
     def to_dict(self):
         return {
@@ -198,20 +194,16 @@ class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     listing_id = db.Column(
-    db.Integer,
-    db.ForeignKey('listing.id'),
-     nullable=False)
+        db.Integer, db.ForeignKey('listing.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
     comment = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Add unique constraint to prevent multiple reviews from same user
     __table_args__ = (
-    db.UniqueConstraint(
-        'user_id',
-        'listing_id',
-        name='_user_listing_review_uc'),
-        )
+        db.UniqueConstraint(
+            'user_id', 'listing_id', name='_user_listing_review_uc'),
+    )
 
     def to_dict(self):
         return {
@@ -361,12 +353,8 @@ def send_reset_email(to_email, reset_url):
     smtp_port = int(os.environ.get('SMTP_PORT', 587))
     smtp_user = os.environ.get('SMTP_USER')
     smtp_pass = os.environ.get('SMTP_PASS')
-    use_tls = os.environ.get(
-    'SMTP_USE_TLS',
-    'true').lower() in (
-        '1',
-        'true',
-         'yes')
+    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() in (
+        '1', 'true', 'yes')
 
     msg = EmailMessage()
     msg['Subject'] = 'Tapin Password Reset'
@@ -423,9 +411,7 @@ def confirm_reset(token):
     serializer = get_serializer()
     try:
         email = serializer.loads(
-    token,
-    salt=app.config['SECURITY_PASSWORD_SALT'],
-     max_age=3600)
+            token, salt=app.config['SECURITY_PASSWORD_SALT'], max_age=3600)
     except SignatureExpired:
         return jsonify({"error": "token expired"}), 400
     except BadSignature:
@@ -450,11 +436,7 @@ def get_listings():
     if q:
         # Check if q matches a category exactly (case-insensitive)
         categories = [
-    'Community',
-    'Environment',
-    'Education',
-    'Health',
-     'Animals']
+            'Community', 'Environment', 'Education', 'Health', 'Animals']
         if q.lower() in [c.lower() for c in categories]:
             # Filter by category
             query = query.filter(Listing.category.ilike(q))
@@ -462,8 +444,8 @@ def get_listings():
             # Text search on title/description
             like = f"%{q}%"
             query = query.filter(
-    (Listing.title.ilike(like)) | (
-        Listing.description.ilike(like)))
+                (Listing.title.ilike(like)) |
+                (Listing.description.ilike(like)))
     if location:
         query = query.filter(Listing.location.ilike(f"%{location}%"))
 
@@ -533,11 +515,7 @@ def update_listing(id):
     if 'category' in data:
         category = data.get('category')
         allowed = [
-    'Community',
-    'Environment',
-    'Education',
-    'Health',
-     'Animals']
+            'Community', 'Environment', 'Education', 'Health', 'Animals']
         if category and category not in allowed:
             return jsonify({"error": "invalid category"}), 400
         listing.category = category
@@ -608,8 +586,7 @@ def get_listing_signups(id):
         return jsonify(
             {"error": "unauthorized - you don't own this listing"}), 403
 
-    signups = SignUp.query.filter_by(
-    listing_id=id).order_by(
+    signups = SignUp.query.filter_by(listing_id=id).order_by(
         SignUp.created_at.desc()).all()
 
     # Include user email with each sign-up
@@ -693,8 +670,7 @@ def create_review(id):
 def get_listing_reviews(id):
     """Get all reviews for a listing."""
     _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
-    reviews = Review.query.filter_by(
-    listing_id=id).order_by(
+    reviews = Review.query.filter_by(listing_id=id).order_by(
         Review.created_at.desc()).all()
 
     # Include user email with each review
