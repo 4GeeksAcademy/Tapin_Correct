@@ -12,7 +12,10 @@ STRICT COMPLIANCE RULES:
 8. Include proper attribution and source URLs
 """
 import asyncio
+import logging
 import time
+
+logger = logging.getLogger(__name__)
 from typing import List, Dict
 from bs4 import BeautifulSoup
 import re
@@ -81,7 +84,7 @@ class FacebookEventScraper:
         state_pages = self.NONPROFIT_PAGES.get(state.upper(), [])
 
         if not state_pages:
-            print(
+            logger.info(
                 f"No Facebook nonprofit pages configured for {state}. "
                 "Using sample data."
             )
@@ -104,7 +107,7 @@ class FacebookEventScraper:
                 if len(all_events) >= limit:
                     break
             except Exception as e:
-                print(f"Error scraping Facebook page {page_id}: {e}")
+                logger.info(f"Error scraping Facebook page {page_id}: {e}")
                 continue
 
         return all_events[:limit]
@@ -116,7 +119,7 @@ class FacebookEventScraper:
 
         if time_since_last < self.min_request_interval:
             wait_time = self.min_request_interval - time_since_last
-            print(f"Rate limiting: waiting {wait_time:.1f}s...")
+            logger.info(f"Rate limiting: waiting {wait_time:.1f}s...")
             await asyncio.sleep(wait_time)
 
         self.last_request_time = time.time()
