@@ -106,6 +106,9 @@ export default function LocationDropdown({ value, onChange, onSelect, userCoords
         <div ref={containerRef} style={{ position: 'relative' }}>
             <div style={{ position: 'relative' }}>
                 <input
+                    id="location-input"
+                    type="text"
+                    autoComplete="off"
                     value={value}
                     onChange={(e) => {
                         onChange(e.target.value);

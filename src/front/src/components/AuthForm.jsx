@@ -111,41 +111,49 @@ export default function AuthForm({ onLogin }) {
 
           {mode === 'register' && role === 'organization' && (
             <input
+              id="organization-name"
               type="text"
               placeholder="Organization Name"
               value={organizationName}
               onChange={(e) => setOrganizationName(e.target.value)}
               required
               className="form-input"
+              autoComplete="organization"
             />
           )}
 
           <input
+            id="email"
             type="email"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             className="form-input"
+            autoComplete="email"
           />
 
           <input
+            id="password"
             type="password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             className="form-input"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
           />
 
           {mode === 'register' && (
             <input
+              id="confirm-password"
               type="password"
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
               className="form-input"
+              autoComplete="new-password"
             />
           )}
 

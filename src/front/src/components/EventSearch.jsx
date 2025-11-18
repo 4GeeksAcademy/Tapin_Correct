@@ -117,6 +117,7 @@ export default function EventSearch({ onEventsLoaded }) {
       >
         <div style={{ flex: 1 }}>
           <label
+            htmlFor="location-input"
             style={{
               display: 'block',
               marginBottom: '8px',
