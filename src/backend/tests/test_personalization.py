@@ -181,7 +181,7 @@ class TestPersonalizedEvents:
             json={'location': 'Austin, TX'}
         )
 
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json
         assert 'events' in data
         assert isinstance(data['events'], list)
@@ -218,7 +218,7 @@ class TestPersonalizedEvents:
             json={'location': 'Austin, TX', 'limit': 5}
         )
 
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json
         assert len(data['events']) <= 5
 
@@ -230,7 +230,7 @@ class TestTasteProfile:
         """Test taste profile for user with no interactions."""
         response = client.get('/api/profile/taste', headers=auth_headers)
 
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json
         assert 'profile' in data
         assert 'user_id' in data
@@ -253,7 +253,7 @@ class TestTasteProfile:
         # Get taste profile
         response = client.get('/api/profile/taste', headers=auth_headers)
 
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json
         assert 'profile' in data
         profile = data['profile']
@@ -283,7 +283,7 @@ class TestSurpriseMe:
             }
         )
 
-        assert response.status_code == 201
+        assert response.status_code == 200
         data = response.json
         assert 'event' in data or 'message' in data
 

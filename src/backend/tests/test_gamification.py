@@ -229,7 +229,7 @@ class TestGamificationIntegration:
                 headers=volunteer_auth,
                 json=action
             )
-            assert response.status_code == 200
+            assert response.status_code == 201
 
         # Step 3: Check updated achievements
         updated_response = client.get('/api/achievements', headers=volunteer_auth)
