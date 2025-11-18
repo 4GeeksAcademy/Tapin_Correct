@@ -112,12 +112,19 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    # simple role column for basic RBAC (default: "user")
-    role = db.Column(db.String(50), default='user')
+    # Role: 'volunteer', 'organization', or 'user' (default)
+    role = db.Column(db.String(50), default='volunteer')
+    # Organization name (only for role='organization')
+    organization_name = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {"id": self.id, "email": self.email}
+        return {
+            "id": self.id,
+            "email": self.email,
+            "role": self.role,
+            "organization_name": self.organization_name
+        }
 
 
 class Listing(db.Model):
@@ -240,6 +247,10 @@ class Event(db.Model):
     source = db.Column(db.String(200))
     venue = db.Column(db.String(200), nullable=True)  # Event venue name
     price = db.Column(db.String(100), nullable=True)  # Event price/cost
+    # Contact information for volunteer events
+    contact_email = db.Column(db.String(200), nullable=True)
+    contact_phone = db.Column(db.String(50), nullable=True)
+    contact_person = db.Column(db.String(200), nullable=True)
     scraped_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -268,6 +279,9 @@ class Event(db.Model):
             "source": self.source,
             "venue": self.venue,
             "price": self.price,
+            "contact_email": self.contact_email,
+            "contact_phone": self.contact_phone,
+            "contact_person": self.contact_person,
             "scraped_at": (
                 self.scraped_at.isoformat() if self.scraped_at else None
             ),
@@ -451,14 +465,29 @@ def register_user():
     data = request.get_json() or {}
     email = data.get('email')
     password = data.get('password')
+    role = data.get('role', 'volunteer')  # Default to volunteer
+    organization_name = data.get('organization_name')
+
     if not email or not password:
         return jsonify({"error": "email and password required"}), 400
+
+    # Validate organization name if role is organization
+    if role == 'organization' and not organization_name:
+        return jsonify({"error": "organization name required for organizations"}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "user already exists"}), 400
+
     pw_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=pw_hash)
+    user = User(
+        email=email,
+        password_hash=pw_hash,
+        role=role,
+        organization_name=organization_name if role == 'organization' else None
+    )
     db.session.add(user)
     db.session.commit()
+
     # return both access and refresh tokens (identity stored as string)
     from backend.auth import token_pair
 
