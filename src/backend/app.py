@@ -6,6 +6,7 @@ from backend.auth import token_for
 from flask_cors import CORS
 from datetime import datetime, timezone
 import os
+import json
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import smtplib
 from email.message import EmailMessage
@@ -337,6 +338,9 @@ class UserEventInteraction(db.Model):
     interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
     interaction_data = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    # Relationships
+    event = db.relationship('Event', backref='interactions', lazy=True)
 
     def to_dict(self):
         return {
