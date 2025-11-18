@@ -40,6 +40,7 @@ Thumbs.db
 *.log
 *.sql
 *.sqlite
+*.db
 
 # ignore compiled files
 *.com
@@ -84,6 +85,11 @@ database.database
 database.db
 diagram.png
 __pycache__/
+*.pyc
+
+# Flask instance folders (contain local database files)
+instance/
+*/instance/
 
 # local env file (should not be committed)
 .env

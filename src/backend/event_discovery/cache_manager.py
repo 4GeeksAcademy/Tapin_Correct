@@ -1,6 +1,7 @@
 import asyncio
 import json
 import uuid
+import logging
 import pygeohash as geohash
 from geopy.geocoders import Nominatim
 import sqlalchemy as sa
@@ -11,6 +12,8 @@ from datetime import datetime, timedelta, timezone
 from .state_nonprofits import STATE_NONPROFITS
 from .facebook_scraper import FacebookEventScraper
 from .local_events_scraper import LocalEventsScraper
+
+logger = logging.getLogger(__name__)
 
 # Try to import playwright for JavaScript rendering
 try:
@@ -250,13 +253,13 @@ class EventCacheManager:
                         db.session.add(ei)
                     persisted.append(ev.to_dict())
             except Exception as e:
-                print(f"DB upsert error for event {event.get('title')}: {e}")
+                logger.error(f"DB upsert error for event {event.get('title')}: {e}")
 
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"DB commit error: {e}")
+            logger.error(f"DB commit error: {e}")
 
         # Return persisted records (or empty list)
         return persisted
@@ -289,7 +292,7 @@ class EventCacheManager:
                     event['image_url'] = event['images'][0]['url']
                 all_events.extend(fb_events)
         except Exception as e:
-            print(f"Facebook scraping failed: {e}")
+            logger.warning(f"Facebook scraping failed: {e}")
 
         # Try VolunteerMatch
         city_slug = city.replace(" ", "%20") if city else ""
@@ -304,7 +307,7 @@ class EventCacheManager:
 
         # If no events found, generate samples with images
         if not all_events:
-            print(
+            logger.info(
                 f"No events found for {city}, {state_upper}. "
                 "Generating sample events."
             )
@@ -480,7 +483,7 @@ class EventCacheManager:
                     await browser.close()
                     return content
             except Exception as e:
-                print(f"Playwright fetch failed: {e}, falling back to basic HTTP")
+                logger.info(f"Playwright fetch failed: {e}, falling back to basic HTTP")
 
         # Fallback to basic HTTP fetch
         loader = AsyncHtmlLoader([url])
@@ -494,7 +497,7 @@ class EventCacheManager:
             # Fetch page content (with JS rendering if Playwright available)
             raw_html = await self._fetch_page_content(url)
             if not raw_html:
-                print(f"No content loaded from {url}")
+                logger.info(f"No content loaded from {url}")
                 return []
             # Extract text content from HTML using BeautifulSoup
             soup = BeautifulSoup(raw_html, "html.parser")
@@ -561,11 +564,11 @@ JSON OUTPUT:"""
                 content = content[start:end]
             return json.loads(content)
         except json.JSONDecodeError as e:
-            print(f"JSON parse error for {org_name}: {e}")
-            print(f"Raw response: {result.content[:500]}...")
+            logger.info(f"JSON parse error for {org_name}: {e}")
+            logger.info(f"Raw response: {result.content[:500]}...")
             return []
         except Exception as e:
-            print(f"Error scraping {org_name}: {e}")
+            logger.info(f"Error scraping {org_name}: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -734,12 +737,12 @@ JSON OUTPUT:"""
 
                     persisted.append(ev.to_dict())
             except Exception as e:
-                print(f"Error persisting tonight event {event.get('title')}: {e}")
+                logger.info(f"Error persisting tonight event {event.get('title')}: {e}")
 
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            print(f"DB commit error for tonight's events: {e}")
+            logger.error(f"DB commit error for tonight's events: {e}")
 
         return persisted[:limit]

@@ -1,7 +1,10 @@
 import os
 import asyncio
 import json
+import logging
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 try:
     from langchain_google_genai import ChatGoogleGenerativeAI
@@ -58,7 +61,7 @@ class HybridLLM:
                 # Prefer HTTP fallback for Ollama to avoid asyncio event loop issues
                 if self._check_ollama_http():
                     self._ollama_http_available = True
-                    print(f"Using Ollama HTTP API with model: {os.environ.get('OLLAMA_MODEL', 'mistral')}")
+                    logger.info(f"Using Ollama HTTP API with model: {os.environ.get('OLLAMA_MODEL', 'mistral')}")
                     return
                 # Fallback to LangChain wrapper if HTTP not available
                 if Ollama is not None:
@@ -70,7 +73,7 @@ class HybridLLM:
                 api_key = os.environ.get("PERPLEXITY_API_KEY")
                 if api_key:
                     # Use direct HTTP API for Perplexity
-                    print(f"Using Perplexity HTTP API with model: {os.environ.get('PERPLEXITY_MODEL', 'sonar')}")
+                    logger.info(f"Using Perplexity HTTP API with model: {os.environ.get('PERPLEXITY_MODEL', 'sonar')}")
                     return
 
             if (
@@ -144,7 +147,7 @@ class HybridLLM:
                     except Exception:
                         return data
             except Exception as e:
-                print(f"Ollama HTTP error: {e}")
+                logger.info(f"Ollama HTTP error: {e}")
                 return None
 
         return await asyncio.to_thread(_sync_call)
@@ -188,7 +191,7 @@ class HybridLLM:
                                 return first["text"]
                     return json.dumps(parsed)
             except Exception as e:
-                print(f"Perplexity HTTP error: {e}")
+                logger.info(f"Perplexity HTTP error: {e}")
                 return None
 
         return await asyncio.to_thread(_sync_call)
@@ -225,7 +228,7 @@ class HybridLLM:
                 return Resp(json.dumps(result))
 
             except Exception as exc:  # noqa: S110 - logging only
-                print(f"LLM invocation error: {exc}")
+                logger.info(f"LLM invocation error: {exc}")
 
         if self._ollama_http_available or (self.provider == "ollama"):
             if not self._ollama_http_available:

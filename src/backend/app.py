@@ -7,10 +7,21 @@ from flask_cors import CORS
 from datetime import datetime, timezone
 import os
 import json
+import logging
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import smtplib
 from email.message import EmailMessage
 
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('backend/app.log')
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 base_dir = os.path.abspath(os.path.dirname(__file__))

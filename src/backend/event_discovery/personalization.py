@@ -8,10 +8,13 @@ using collaborative filtering and content-based approaches.
 from datetime import datetime, timezone
 from typing import List, Dict, Optional
 import json
+import logging
 from collections import defaultdict, Counter
 import math
 import asyncio
 from .llm import HybridLLM
+
+logger = logging.getLogger(__name__)
 
 
 class PersonalizationEngine:
@@ -465,7 +468,7 @@ class PersonalizationEngine:
             if ai_recommendations:
                 return ai_recommendations[:limit]
         except Exception as e:
-            print(f"AI personalization error: {e}")
+            logger.error(f"AI personalization error: {e}")
 
         # Fallback to basic personalization
         return self.get_personalized_feed(user_id, events, limit)
@@ -569,5 +572,5 @@ Respond with ONLY the JSON array, no other text."""
             return result
 
         except Exception as e:
-            print(f"Error parsing AI response: {e}")
+            logger.error(f"Error parsing AI response: {e}")
             return []
