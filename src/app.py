@@ -8,7 +8,17 @@ needed for the Vite front-end build in dist/.
 
 import os
 from flask import send_from_directory
-from backend.app import app as backend_app, db, User
+from backend.app import (
+    app as backend_app,
+    db,
+    User,
+    Listing,
+    Item,
+    Event,
+    EventImage,
+    SignUp,
+    Review,
+)
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../dist/")
