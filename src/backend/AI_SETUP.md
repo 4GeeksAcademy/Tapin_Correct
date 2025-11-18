@@ -132,14 +132,16 @@ LLM_PROVIDER=mock
 ### Production (Best Quality)
 ```bash
 LLM_PROVIDER=gemini
-GEMINI_API_KEY=AIzaSyD...
+# NOTE: do NOT commit real API keys. Replace the value in your local `.env`.
+GEMINI_API_KEY=REDACTED_GOOGLE  # revoke and rotate if this was ever committed
 GEMINI_MODEL=gemini-2.5-flash-lite
 ```
 
 ### Alternative Production
 ```bash
 LLM_PROVIDER=perplexity
-PERPLEXITY_API_KEY=pplx-...
+# NOTE: do NOT commit real API keys. Set this locally or in CI secrets.
+PERPLEXITY_API_KEY=REDACTED_PERPLEXITY  # revoke and rotate if this was ever committed
 PERPLEXITY_MODEL=sonar
 ```
 

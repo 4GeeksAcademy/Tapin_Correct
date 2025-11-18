@@ -5,6 +5,7 @@ This guide explains how to set up and use the AI-powered personalization and sur
 ## Overview
 
 The cutting-edge features now use **AI (LLM)** to provide:
+
 - **AI-Powered Personalization**: Intelligent event recommendations with natural language explanations
 - **Surprise Me AI**: Creative, unexpected event suggestions based on mood and context
 
@@ -117,6 +118,7 @@ curl -X POST http://localhost:5000/api/events/personalized \
 ```
 
 Expected response:
+
 ```json
 {
   "events": [
@@ -147,6 +149,7 @@ curl -X POST http://localhost:5000/api/events/surprise-me \
 ```
 
 Expected response:
+
 ```json
 {
   "event": {
@@ -185,6 +188,7 @@ Expected response:
 ## Fallback Behavior
 
 If the LLM is unavailable or returns errors, the system automatically falls back to:
+
 - **Personalization**: Basic collaborative filtering + content-based scoring
 - **Surprise**: Rule-based mood matching with random selection
 
@@ -193,18 +197,21 @@ This ensures the features always work, even without AI!
 ## Performance Considerations
 
 ### Perplexity
+
 - **Latency**: ~1-3 seconds per request
 - **Cost**: Pay per request (check Perplexity pricing)
 - **Quality**: Excellent, uses latest AI models
 - **Best for**: Production deployments
 
 ### Ollama
+
 - **Latency**: ~2-10 seconds depending on model and hardware
 - **Cost**: Free (runs locally)
 - **Quality**: Good to excellent (depends on model)
 - **Best for**: Development, self-hosted deployments
 
 ### Gemini
+
 - **Latency**: ~1-2 seconds per request
 - **Cost**: Free tier available, then pay-per-use
 - **Quality**: Excellent
@@ -234,6 +241,7 @@ logging.basicConfig(level=logging.DEBUG)
 ```
 
 Check logs for:
+
 - `Using Perplexity HTTP API` - Confirms Perplexity connection
 - `Using Ollama HTTP API` - Confirms Ollama connection
 - `AI personalization error` - LLM call failed
@@ -246,7 +254,7 @@ Check logs for:
 LLM_PROVIDER=perplexity          # Options: perplexity, ollama, gemini
 
 # Perplexity Configuration
-PERPLEXITY_API_KEY=pplx-xxx
+PERPLEXITY_API_KEY=REDACTED_PERPLEXITY  # do NOT commit real keys; store in local .env
 PERPLEXITY_MODEL=sonar           # Options: sonar, sonar-pro, sonar-reasoning
 
 # Ollama Configuration
@@ -254,7 +262,7 @@ OLLAMA_API_URL=http://localhost:11434
 OLLAMA_MODEL=mistral             # Options: mistral, llama3, qwen2.5, etc.
 
 # Gemini Configuration
-GEMINI_API_KEY=AIza-xxx
+GEMINI_API_KEY=REDACTED_GOOGLE  # do NOT commit real keys; store in local .env
 GEMINI_MODEL=gemini-2.5-flash-lite  # Options: gemini-2.0-flash, gemini-pro
 ```
 
@@ -263,12 +271,14 @@ GEMINI_MODEL=gemini-2.5-flash-lite  # Options: gemini-2.0-flash, gemini-pro
 ### "AI personalization error" in logs
 
 **Check:**
+
 1. Is the API key correct?
 2. Is the LLM service running (for Ollama)?
 3. Do you have internet connection (for Perplexity/Gemini)?
 4. Check rate limits on your API key
 
 **Solution:**
+
 - Verify environment variables are set correctly
 - Test API key with curl:
   ```bash
@@ -281,6 +291,7 @@ GEMINI_MODEL=gemini-2.5-flash-lite  # Options: gemini-2.0-flash, gemini-pro
 ### Slow responses
 
 **Solutions:**
+
 - Use faster models (sonar instead of sonar-pro)
 - Reduce candidate event count in prompts
 - Implement caching
@@ -291,6 +302,7 @@ GEMINI_MODEL=gemini-2.5-flash-lite  # Options: gemini-2.0-flash, gemini-pro
 **Cause:** LLM failed, system fell back to basic algorithm
 
 **Check:**
+
 - Look for error messages in logs
 - Verify LLM configuration
 - Test LLM independently
@@ -306,11 +318,13 @@ GEMINI_MODEL=gemini-2.5-flash-lite  # Options: gemini-2.0-flash, gemini-pro
 ## Support
 
 For issues with:
+
 - **Perplexity**: https://docs.perplexity.ai/
 - **Ollama**: https://ollama.com/
 - **Gemini**: https://ai.google.dev/docs
 
 For issues with this integration, check the HybridLLM implementation in:
+
 - `src/backend/event_discovery/llm_impl.py`
 - `src/backend/event_discovery/personalization.py`
 - `src/backend/event_discovery/surprise_engine.py`

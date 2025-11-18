@@ -18,11 +18,14 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ## Features Implemented
 
 ### 1. AI-Powered Personalization Engine ✅
+
 **Files:**
+
 - `src/backend/event_discovery/personalization.py` (NEW)
 - Modified: `src/backend/app.py`
 
 **What it does:**
+
 - Tracks user interactions (view, like, dislike, super_like, attend, skip)
 - Calculates user taste profile (category preferences, price sensitivity, adventure level)
 - Collaborative filtering to find similar users
@@ -30,11 +33,13 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - **AI Integration:** Uses HybridLLM to generate personalized rankings with natural language explanations
 
 **Key Methods:**
+
 - `calculate_user_taste_profile(user_id)` - Analyzes user behavior
 - `get_personalized_feed(user_id, events, limit)` - Basic personalization
 - `get_ai_personalized_recommendations(user_id, events, limit)` - AI-powered (NEW)
 
 **API Endpoint:**
+
 - `POST /api/events/personalized`
 - Body: `{"location": "City, ST", "limit": 20}`
 - Returns events with `ai_match_score` and `ai_explanation`
@@ -42,10 +47,13 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ---
 
 ### 2. Event Dating Swipe Interface ✅
+
 **Files:**
+
 - `src/front/src/components/EventSwiper.jsx` (NEW)
 
 **What it does:**
+
 - Tinder-style swipe interface for event discovery
 - Touch gesture support (swipe left = dislike, right = like, up = super like)
 - Smooth animations and transitions
@@ -53,16 +61,20 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Match badges and visual feedback
 
 **Integration:**
+
 - Calls `POST /api/events/interact` to record swipes
 - Supports interaction types: like, dislike, super_like, skip
 
 ---
 
 ### 3. Social Discovery Layer ✅
+
 **Files:**
+
 - `src/front/src/components/SocialDiscovery.jsx` (NEW)
 
 **What it does:**
+
 - "See Who's Going" feature with avatar stacks
 - Friend invitation system
 - Event chat/discussion interface
@@ -70,6 +82,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Social proof to drive engagement
 
 **Features:**
+
 - Avatar stack showing first 5 attendees
 - Friend invite buttons
 - Event chat placeholder
@@ -78,10 +91,13 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ---
 
 ### 4. Immersive Event Previews ✅
+
 **Files:**
+
 - `src/front/src/components/EventPreview.jsx` (NEW)
 
 **What it does:**
+
 - Multi-tab modal interface for event details
 - 4 tabs: Photos, Venue, Vibe, Reviews
 - Image gallery with carousel navigation
@@ -90,6 +106,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Review system with ratings
 
 **Features:**
+
 - Thumbnail strip for quick photo browsing
 - Venue amenities display
 - Mood indicators (energetic, social, fun)
@@ -98,10 +115,13 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ---
 
 ### 5. AR Wayfinding & Live Map ✅
+
 **Files:**
+
 - `src/front/src/components/ARWayfinding.jsx` (NEW)
 
 **What it does:**
+
 - Dual-mode navigation: Map view and AR camera view
 - Live GPS tracking with real-time updates
 - Device compass integration for heading
@@ -111,6 +131,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - AR overlays with directional indicators
 
 **Features:**
+
 - Interactive map with user marker and event marker
 - AR camera mode with HUD
 - Bearing calculations and direction arrows
@@ -121,18 +142,22 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ---
 
 ### 6. Surprise Me AI Generator ✅
+
 **Files:**
+
 - `src/backend/event_discovery/surprise_engine.py` (NEW)
 - `src/front/src/components/SurpriseMe.jsx` (NEW)
 - Modified: `src/backend/app.py`
 
 **What it does:**
+
 - Mood-based event recommendations (6 moods: energetic, chill, creative, social, romantic, adventurous)
 - Budget and time constraint filtering
 - Adventure level consideration (low, medium, high)
 - **AI Integration:** Uses HybridLLM to pick surprising but relevant events
 
 **Moods Supported:**
+
 - Energetic → Sports, Fitness, Music, Nightlife
 - Chill → Yoga, Parks, Books, Wine & Beer
 - Creative → Arts, Film, Literature, Markets
@@ -141,10 +166,12 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Adventurous → Outdoor, Sports, Tech, New Experiences
 
 **Key Methods:**
+
 - `generate_surprise()` - Basic rule-based surprise
 - `generate_ai_surprise()` - AI-powered (NEW)
 
 **API Endpoint:**
+
 - `POST /api/events/surprise-me`
 - Body: `{"location": "City, ST", "mood": "adventurous", "budget": 50, "time_available": 3, "adventure_level": "high"}`
 - Returns event with `surprise_score` and `surprise_explanation`
@@ -152,18 +179,22 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ---
 
 ### 7. Gamification & Achievements ✅
+
 **Files:**
+
 - `src/backend/event_discovery/gamification.py` (NEW)
 - `src/front/src/components/AchievementsPanel.jsx` (NEW)
 - Modified: `src/backend/app.py`
 
 **What it does:**
+
 - 10 achievements with progress tracking
 - XP and leveling system (levels 1-50+)
 - User titles based on level (Newbie → Explorer → Enthusiast → Guru → Master → Legend)
 - Achievement unlocking with timestamps
 
 **Achievements:**
+
 1. Weekend Warrior - Attend events 5 weekends in a row
 2. Category Completionist - Try all 22 event categories
 3. Early Bird - Attend 10 events discovered >1 week before
@@ -176,6 +207,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 10. Culture Vulture - Attend 15 arts/theater/museum events
 
 **XP System:**
+
 - View: 1 XP
 - Like: 5 XP
 - Super Like: 10 XP
@@ -184,16 +216,20 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Level = (XP / 500) + 1
 
 **API Endpoint:**
+
 - `GET /api/achievements`
 - Returns all achievements with progress
 
 ---
 
 ### 8. Modern UI Enhancements ✅
+
 **Files:**
+
 - `src/front/src/components/GlassCard.jsx` (NEW)
 
 **What it does:**
+
 - Glassmorphism design component
 - Backdrop blur and transparency effects
 - Dark mode support
@@ -201,6 +237,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 - Gradient variants (default, success, warning)
 
 **Features:**
+
 - Reusable component for modern UI
 - CSS-in-JS with styled-jsx
 - Micro-interactions
@@ -210,6 +247,7 @@ Successfully implemented 8 cutting-edge features for the Tapin event discovery p
 ## Database Models Added
 
 ### UserEventInteraction
+
 ```python
 id: Integer (PK)
 user_id: Integer (FK to User, indexed)
@@ -220,6 +258,7 @@ timestamp: DateTime (indexed)
 ```
 
 ### UserAchievement
+
 ```python
 id: Integer (PK)
 user_id: Integer (FK to User, indexed)
@@ -230,6 +269,7 @@ unlocked_at: DateTime (nullable)
 ```
 
 ### UserProfile
+
 ```python
 id: Integer (PK)
 user_id: Integer (FK to User, unique)
@@ -276,9 +316,11 @@ updated_at: DateTime
 ## AI/LLM Integration Details
 
 ### HybridLLM System
+
 The implementation uses the existing `HybridLLM` class from `src/backend/event_discovery/llm_impl.py`.
 
 **Supported Providers:**
+
 1. **Perplexity** (Default for production)
    - HTTP API at `https://api.perplexity.ai/chat/completions`
    - Model: `sonar` (or sonar-pro, sonar-reasoning)
@@ -297,6 +339,7 @@ The implementation uses the existing `HybridLLM` class from `src/backend/event_d
 ### AI-Enhanced Methods
 
 **PersonalizationEngine.get_ai_personalized_recommendations():**
+
 - Builds context with user profile, liked/disliked events
 - Sends top 20 candidates to AI
 - Prompts AI to rank and explain matches
@@ -304,6 +347,7 @@ The implementation uses the existing `HybridLLM` class from `src/backend/event_d
 - Falls back to basic personalization on error
 
 **SurpriseEngine.generate_ai_surprise():**
+
 - Builds context with mood, constraints, user history
 - Sends 20 random candidates to AI
 - Prompts AI to pick ONE surprising event
@@ -311,7 +355,9 @@ The implementation uses the existing `HybridLLM` class from `src/backend/event_d
 - Falls back to rule-based surprise on error
 
 ### Async/Await Pattern
+
 Both AI methods are async and called from Flask endpoints using:
+
 ```python
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -331,8 +377,10 @@ finally:
 ## Git History
 
 ### Commit 1: Part 1 - Core Features
+
 **Commit Hash:** (First commit)
 **Files:** 7 new files, 1 modified
+
 - personalization.py
 - surprise_engine.py
 - gamification.py
@@ -343,19 +391,25 @@ finally:
 - app.py (modified)
 
 ### Commit 2: Part 2 - Social & Immersive
+
 **Commit Hash:** b25ddd3
 **Files:** 2 new files
+
 - SocialDiscovery.jsx
 - EventPreview.jsx
 
 ### Commit 3: Part 3 - AR Wayfinding
+
 **Commit Hash:** 2b460fd
 **Files:** 1 new file
+
 - ARWayfinding.jsx
 
 ### Commit 4: AI Integration
+
 **Commit Hash:** 0b32cef (Latest)
 **Files:** 4 files modified/added
+
 - personalization.py (added AI methods)
 - surprise_engine.py (added AI methods)
 - app.py (updated endpoints to use AI)
@@ -368,12 +422,14 @@ finally:
 ## Testing Checklist for IDE Agent
 
 ### Prerequisites
+
 - [ ] Verify branch checked out: `claude/cutting-edge-features-011TEbFEyE1jHzGBJw82CvPt`
 - [ ] Verify all files present (check file list below)
 - [ ] Database migrations need to be created and run
 - [ ] Set up environment variables for LLM provider
 
 ### Database Setup
+
 ```bash
 # Create migrations for new models
 cd src/backend
@@ -384,14 +440,16 @@ flask db upgrade
 ### Environment Configuration
 
 **Option 1: Perplexity (Recommended)**
+
 ```bash
 # Add to .env
 LLM_PROVIDER=perplexity
-PERPLEXITY_API_KEY=pplx-your-key-here
+PERPLEXITY_API_KEY=REDACTED_PERPLEXITY  # do NOT commit real keys; store in local .env
 PERPLEXITY_MODEL=sonar
 ```
 
 **Option 2: Ollama (Local, Free)**
+
 ```bash
 # Install and start Ollama
 curl -fsSL https://ollama.com/install.sh | sh
@@ -405,6 +463,7 @@ OLLAMA_API_URL=http://localhost:11434
 ```
 
 **Option 3: Gemini**
+
 ```bash
 # Add to .env
 LLM_PROVIDER=gemini
@@ -415,6 +474,7 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 ### Backend Tests
 
 #### 1. Test User Interaction Recording
+
 ```bash
 curl -X POST http://localhost:5000/api/events/interact \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -428,6 +488,7 @@ curl -X POST http://localhost:5000/api/events/interact \
 ```
 
 #### 2. Test Taste Profile Calculation
+
 ```bash
 curl -X GET http://localhost:5000/api/profile/taste \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
@@ -436,6 +497,7 @@ curl -X GET http://localhost:5000/api/profile/taste \
 ```
 
 #### 3. Test AI Personalization
+
 ```bash
 curl -X POST http://localhost:5000/api/events/personalized \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -450,6 +512,7 @@ curl -X POST http://localhost:5000/api/events/personalized \
 ```
 
 #### 4. Test AI Surprise Me
+
 ```bash
 curl -X POST http://localhost:5000/api/events/surprise-me \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
@@ -466,6 +529,7 @@ curl -X POST http://localhost:5000/api/events/surprise-me \
 ```
 
 #### 5. Test Achievement System
+
 ```bash
 # Create some interactions first (steps 1-3)
 # Then check achievements
@@ -479,6 +543,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ### Frontend Tests
 
 #### 1. EventSwiper Component
+
 - [ ] Import and mount EventSwiper in a test page
 - [ ] Verify swipe gestures work (left, right, up)
 - [ ] Verify animations are smooth
@@ -486,6 +551,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Test on mobile/touch device
 
 #### 2. SocialDiscovery Component
+
 - [ ] Mount with test event data
 - [ ] Verify avatar stacks display correctly
 - [ ] Check "See who's going" functionality
@@ -493,6 +559,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Verify chat interface renders
 
 #### 3. EventPreview Component
+
 - [ ] Mount with event containing multiple images
 - [ ] Test all 4 tabs (Photos, Venue, Vibe, Reviews)
 - [ ] Verify image gallery carousel works
@@ -500,6 +567,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Check modal open/close functionality
 
 #### 4. ARWayfinding Component
+
 - [ ] Mount with event location data
 - [ ] Test map mode displays
 - [ ] Test AR mode toggle
@@ -508,6 +576,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Test on device with camera for AR mode
 
 #### 5. SurpriseMe Component
+
 - [ ] Mount component
 - [ ] Test mood selector (all 6 moods)
 - [ ] Test budget slider
@@ -516,6 +585,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Check surprise result display
 
 #### 6. AchievementsPanel Component
+
 - [ ] Mount with user achievements data
 - [ ] Verify achievement cards render
 - [ ] Check progress bars display correctly
@@ -523,6 +593,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Verify stats dashboard
 
 #### 7. GlassCard Component
+
 - [ ] Mount with different variants
 - [ ] Test hover effects
 - [ ] Verify glassmorphism styles (blur, transparency)
@@ -532,6 +603,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ### Integration Tests
 
 #### 1. Full Personalization Flow
+
 ```
 1. User logs in
 2. User views 5 events (record interactions)
@@ -542,6 +614,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ```
 
 #### 2. Full Surprise Flow
+
 ```
 1. User selects mood: "adventurous"
 2. User sets budget: $50
@@ -553,6 +626,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ```
 
 #### 3. Achievement Unlock Flow
+
 ```
 1. Record 10 event views
 2. Check achievements API
@@ -565,6 +639,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ### Performance Tests
 
 #### 1. AI Response Time
+
 - [ ] Measure Perplexity API response time
 - [ ] Measure Ollama response time (if using)
 - [ ] Verify timeout handling (60-120 seconds)
@@ -572,12 +647,14 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Verify fallback to basic algorithms
 
 #### 2. Database Queries
+
 - [ ] Check query count for personalization endpoint
 - [ ] Verify indexes on user_id, event_id, timestamp
 - [ ] Test with 100+ interactions
 - [ ] Monitor database load
 
 #### 3. Frontend Performance
+
 - [ ] Test EventSwiper with 100+ events
 - [ ] Verify smooth animations at 60fps
 - [ ] Check memory usage with image gallery
@@ -586,18 +663,21 @@ curl -X GET http://localhost:5000/api/achievements \
 ### Error Handling Tests
 
 #### 1. AI Failures
+
 - [ ] Test with invalid API key
 - [ ] Test with unavailable LLM service
 - [ ] Verify fallback to basic algorithms
 - [ ] Check error logs are helpful
 
 #### 2. Invalid Input
+
 - [ ] Test personalization with invalid location
 - [ ] Test surprise-me with invalid mood
 - [ ] Test interact with non-existent event
 - [ ] Verify proper error messages
 
 #### 3. Edge Cases
+
 - [ ] New user (no interaction history)
 - [ ] User with 1000+ interactions
 - [ ] Events with missing data (no image, no description)
@@ -606,11 +686,13 @@ curl -X GET http://localhost:5000/api/achievements \
 ### Security Tests
 
 #### 1. Authorization
+
 - [ ] Test endpoints without JWT token (should fail)
 - [ ] Test with expired JWT token (should fail)
 - [ ] Test with another user's token (should fail)
 
 #### 2. Input Validation
+
 - [ ] Test SQL injection in location field
 - [ ] Test XSS in interaction metadata
 - [ ] Test oversized requests (>1MB)
@@ -627,6 +709,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ## Files Changed/Added
 
 ### Backend (Python)
+
 ```
 src/backend/
 ├── app.py (MODIFIED - added models, endpoints)
@@ -637,6 +720,7 @@ src/backend/
 ```
 
 ### Frontend (React/JSX)
+
 ```
 src/front/src/components/
 ├── EventSwiper.jsx (NEW - 450 lines)
@@ -649,6 +733,7 @@ src/front/src/components/
 ```
 
 ### Documentation
+
 ```
 AI_FEATURES_SETUP.md (NEW - comprehensive setup guide)
 HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
@@ -661,23 +746,27 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 ## Known Issues / Limitations
 
 ### Database
+
 - ⚠️ **Database migrations NOT run** - New models need migration
 - ⚠️ **No to_dict() method** on new models - May cause serialization issues
 - ⚠️ UserProfile model created but not actively used yet
 
 ### AI Integration
+
 - ⚠️ **No caching** - Every request hits LLM (slow/expensive)
 - ⚠️ **No rate limiting** - Could hit API limits quickly
 - ⚠️ **Timeout is 60-120s** - May need adjustment
 - ⚠️ **JSON parsing fragile** - If LLM returns non-JSON, fallback occurs
 
 ### Frontend
+
 - ⚠️ **Components not integrated** into main app yet - Need routing
 - ⚠️ **AR mode requires HTTPS** - Camera access blocked on HTTP
 - ⚠️ **No real Google Maps integration** - Using placeholders
 - ⚠️ **No real Spotify integration** - Using placeholders
 
 ### Testing
+
 - ⚠️ **No unit tests** written for new code
 - ⚠️ **No integration tests** for AI features
 - ⚠️ **No E2E tests** for frontend components
@@ -687,6 +776,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 ## Recommendations for Testing
 
 ### High Priority
+
 1. ✅ Run database migrations first
 2. ✅ Set up one LLM provider (Perplexity recommended)
 3. ✅ Test basic interaction recording
@@ -694,6 +784,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 5. ✅ Add to_dict() methods to new models
 
 ### Medium Priority
+
 6. Test all API endpoints with curl
 7. Mount frontend components in test pages
 8. Verify error handling and fallbacks
@@ -701,6 +792,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 10. Review security (JWT validation)
 
 ### Low Priority
+
 11. Write unit tests for new code
 12. Add caching for AI responses
 13. Integrate components into main app
@@ -712,6 +804,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 ## Success Criteria
 
 **Backend is working if:**
+
 - [ ] All API endpoints return 200 status
 - [ ] AI personalization returns events with explanations
 - [ ] AI surprise-me returns creative suggestions
@@ -720,6 +813,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 - [ ] Logs show LLM provider being used
 
 **Frontend is working if:**
+
 - [ ] All components render without errors
 - [ ] Swipe gestures work smoothly
 - [ ] Modals open and close properly
@@ -728,6 +822,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 - [ ] Components make correct API calls
 
 **AI Integration is working if:**
+
 - [ ] Logs show "Using [Provider] HTTP API"
 - [ ] Responses include ai_match_score/ai_explanation
 - [ ] Explanations are relevant and coherent
@@ -744,6 +839,7 @@ HANDOFF_CUTTING_EDGE_FEATURES.md (THIS FILE)
 **Status:** Ready for Testing
 
 **For issues:**
+
 - Check logs for error messages
 - Review AI_FEATURES_SETUP.md for configuration
 - Verify environment variables are set

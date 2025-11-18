@@ -22,32 +22,32 @@
 
 ### ✅ Backend (Python)
 
-| File | Status | Lines | Description |
-|------|--------|-------|-------------|
-| `src/backend/app.py` | MODIFIED | ~200 lines added | Added 3 models, 5 endpoints, AI integration |
-| `src/backend/event_discovery/personalization.py` | NEW | 574 lines | AI-powered personalization engine |
-| `src/backend/event_discovery/surprise_engine.py` | NEW | 363 lines | AI surprise event generator |
-| `src/backend/event_discovery/gamification.py` | NEW | 356 lines | Achievements and XP system |
+| File                                             | Status   | Lines            | Description                                 |
+| ------------------------------------------------ | -------- | ---------------- | ------------------------------------------- |
+| `src/backend/app.py`                             | MODIFIED | ~200 lines added | Added 3 models, 5 endpoints, AI integration |
+| `src/backend/event_discovery/personalization.py` | NEW      | 574 lines        | AI-powered personalization engine           |
+| `src/backend/event_discovery/surprise_engine.py` | NEW      | 363 lines        | AI surprise event generator                 |
+| `src/backend/event_discovery/gamification.py`    | NEW      | 356 lines        | Achievements and XP system                  |
 
 ### ✅ Frontend (React/JSX)
 
-| File | Status | Lines | Description |
-|------|--------|-------|-------------|
-| `src/front/src/components/EventSwiper.jsx` | NEW | 450 lines | Tinder-style swipe interface |
-| `src/front/src/components/SurpriseMe.jsx` | NEW | 320 lines | Surprise Me UI component |
-| `src/front/src/components/AchievementsPanel.jsx` | NEW | 346 lines | Gamification UI |
-| `src/front/src/components/GlassCard.jsx` | NEW | 93 lines | Glassmorphism design component |
-| `src/front/src/components/SocialDiscovery.jsx` | NEW | 330 lines | Social features ("Who's Going") |
-| `src/front/src/components/EventPreview.jsx` | NEW | 590 lines | Immersive event preview modal |
-| `src/front/src/components/ARWayfinding.jsx` | NEW | 872 lines | AR navigation and live map |
+| File                                             | Status | Lines     | Description                     |
+| ------------------------------------------------ | ------ | --------- | ------------------------------- |
+| `src/front/src/components/EventSwiper.jsx`       | NEW    | 450 lines | Tinder-style swipe interface    |
+| `src/front/src/components/SurpriseMe.jsx`        | NEW    | 320 lines | Surprise Me UI component        |
+| `src/front/src/components/AchievementsPanel.jsx` | NEW    | 346 lines | Gamification UI                 |
+| `src/front/src/components/GlassCard.jsx`         | NEW    | 93 lines  | Glassmorphism design component  |
+| `src/front/src/components/SocialDiscovery.jsx`   | NEW    | 330 lines | Social features ("Who's Going") |
+| `src/front/src/components/EventPreview.jsx`      | NEW    | 590 lines | Immersive event preview modal   |
+| `src/front/src/components/ARWayfinding.jsx`      | NEW    | 872 lines | AR navigation and live map      |
 
 ### ✅ Documentation
 
-| File | Status | Lines | Description |
-|------|--------|-------|-------------|
-| `AI_FEATURES_SETUP.md` | NEW | 400 lines | Complete AI setup guide |
-| `HANDOFF_CUTTING_EDGE_FEATURES.md` | NEW | 800 lines | Testing handoff document |
-| `CHANGES_SUMMARY.md` | NEW | 300 lines | This file |
+| File                               | Status | Lines     | Description              |
+| ---------------------------------- | ------ | --------- | ------------------------ |
+| `AI_FEATURES_SETUP.md`             | NEW    | 400 lines | Complete AI setup guide  |
+| `HANDOFF_CUTTING_EDGE_FEATURES.md` | NEW    | 800 lines | Testing handoff document |
+| `CHANGES_SUMMARY.md`               | NEW    | 300 lines | This file                |
 
 ---
 
@@ -94,17 +94,21 @@ flask db upgrade
 ## API Endpoints Added
 
 ### 1. POST /api/events/interact
+
 **Purpose:** Record user interactions (swipe, like, attend)
 **Auth:** JWT Required
 **Body:**
+
 ```json
 {
   "event_id": "uuid-here",
-  "interaction_type": "like",  // view, like, dislike, attend, skip, super_like
-  "metadata": {}  // optional
+  "interaction_type": "like", // view, like, dislike, attend, skip, super_like
+  "metadata": {} // optional
 }
 ```
+
 **Response:**
+
 ```json
 {
   "success": true,
@@ -115,16 +119,20 @@ flask db upgrade
 ---
 
 ### 2. POST /api/events/personalized
+
 **Purpose:** Get AI-powered personalized event recommendations
 **Auth:** JWT Required
 **Body:**
+
 ```json
 {
   "location": "Dallas, TX",
   "limit": 20
 }
 ```
+
 **Response:**
+
 ```json
 {
   "events": [
@@ -144,9 +152,11 @@ flask db upgrade
 ---
 
 ### 3. GET /api/profile/taste
+
 **Purpose:** Get user's calculated taste profile
 **Auth:** JWT Required
 **Response:**
+
 ```json
 {
   "profile": {
@@ -166,19 +176,23 @@ flask db upgrade
 ---
 
 ### 4. POST /api/events/surprise-me
+
 **Purpose:** Get AI-generated surprise event based on mood
 **Auth:** JWT Required
 **Body:**
+
 ```json
 {
   "location": "Dallas, TX",
-  "mood": "adventurous",  // energetic, chill, creative, social, romantic, adventurous
+  "mood": "adventurous", // energetic, chill, creative, social, romantic, adventurous
   "budget": 50,
-  "time_available": 3,  // hours
-  "adventure_level": "high"  // low, medium, high
+  "time_available": 3, // hours
+  "adventure_level": "high" // low, medium, high
 }
 ```
+
 **Response:**
+
 ```json
 {
   "event": {
@@ -196,9 +210,11 @@ flask db upgrade
 ---
 
 ### 5. GET /api/achievements
+
 **Purpose:** Get user's achievements and progress
 **Auth:** JWT Required
 **Response:**
+
 ```json
 {
   "achievements": [
@@ -230,22 +246,24 @@ flask db upgrade
 
 The system uses the existing `HybridLLM` class with support for:
 
-| Provider | Speed | Cost | Quality | Use Case |
-|----------|-------|------|---------|----------|
-| **Perplexity** | Fast (1-3s) | $ per request | Excellent | Production ⭐ |
-| **Ollama** | Medium (2-10s) | Free (local) | Good | Development |
-| **Gemini** | Fast (1-2s) | Free tier + $ | Excellent | Google Cloud |
+| Provider       | Speed          | Cost          | Quality   | Use Case      |
+| -------------- | -------------- | ------------- | --------- | ------------- |
+| **Perplexity** | Fast (1-3s)    | $ per request | Excellent | Production ⭐ |
+| **Ollama**     | Medium (2-10s) | Free (local)  | Good      | Development   |
+| **Gemini**     | Fast (1-2s)    | Free tier + $ | Excellent | Google Cloud  |
 
 ### Environment Variables
 
 **Perplexity (Recommended):**
+
 ```bash
 LLM_PROVIDER=perplexity
-PERPLEXITY_API_KEY=pplx-your-key-here
+PERPLEXITY_API_KEY=REDACTED_PERPLEXITY  # do NOT commit real keys; store in local .env
 PERPLEXITY_MODEL=sonar
 ```
 
 **Ollama (Local):**
+
 ```bash
 LLM_PROVIDER=ollama
 OLLAMA_MODEL=mistral
@@ -253,6 +271,7 @@ OLLAMA_API_URL=http://localhost:11434
 ```
 
 **Gemini:**
+
 ```bash
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your-key-here
@@ -270,72 +289,73 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 ## Component Integration Guide
 
 ### EventSwiper
+
 ```jsx
-import EventSwiper from './components/EventSwiper';
+import EventSwiper from "./components/EventSwiper";
 
 <EventSwiper
   events={eventsArray}
   onSwipe={(event, direction) => console.log(event, direction)}
   token={jwtToken}
-/>
+/>;
 ```
 
 ### SocialDiscovery
-```jsx
-import SocialDiscovery from './components/SocialDiscovery';
 
-<SocialDiscovery
-  event={eventObject}
-  token={jwtToken}
-/>
+```jsx
+import SocialDiscovery from "./components/SocialDiscovery";
+
+<SocialDiscovery event={eventObject} token={jwtToken} />;
 ```
 
 ### EventPreview
-```jsx
-import EventPreview from './components/EventPreview';
 
-<EventPreview
-  event={eventObject}
-  onClose={() => setShowPreview(false)}
-/>
+```jsx
+import EventPreview from "./components/EventPreview";
+
+<EventPreview event={eventObject} onClose={() => setShowPreview(false)} />;
 ```
 
 ### ARWayfinding
+
 ```jsx
-import ARWayfinding from './components/ARWayfinding';
+import ARWayfinding from "./components/ARWayfinding";
 
 <ARWayfinding
   event={eventObject}
-  userLocation={{latitude: 32.7767, longitude: -96.7970}}
+  userLocation={{ latitude: 32.7767, longitude: -96.797 }}
   onClose={() => setShowAR(false)}
-/>
+/>;
 ```
 
 ### SurpriseMe
+
 ```jsx
-import SurpriseMe from './components/SurpriseMe';
+import SurpriseMe from "./components/SurpriseMe";
 
 <SurpriseMe
   location="Dallas, TX"
   token={jwtToken}
   onEventFound={(event) => console.log(event)}
-/>
+/>;
 ```
 
 ### AchievementsPanel
-```jsx
-import AchievementsPanel from './components/AchievementsPanel';
 
-<AchievementsPanel token={jwtToken} />
+```jsx
+import AchievementsPanel from "./components/AchievementsPanel";
+
+<AchievementsPanel token={jwtToken} />;
 ```
 
 ### GlassCard
+
 ```jsx
-import GlassCard from './components/GlassCard';
+import GlassCard from "./components/GlassCard";
 
 <GlassCard hover={true} className="glass-card-gradient">
   <h3>Your Content</h3>
-</GlassCard>
+</GlassCard>;
 ```
 
 ---
@@ -343,6 +363,7 @@ import GlassCard from './components/GlassCard';
 ## Testing Quick Reference
 
 ### Backend Testing
+
 ```bash
 # 1. Test interaction recording
 curl -X POST http://localhost:5000/api/events/interact \
@@ -365,6 +386,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ```
 
 ### Frontend Testing
+
 1. Mount each component in a test page
 2. Verify props are passed correctly
 3. Check network requests in DevTools
@@ -376,6 +398,7 @@ curl -X GET http://localhost:5000/api/achievements \
 ## Known Issues & TODOs
 
 ### Critical (Must Fix Before Production)
+
 - [ ] Run database migrations
 - [ ] Add to_dict() methods to new models
 - [ ] Set up LLM provider (Perplexity recommended)
@@ -383,6 +406,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Validate all user inputs on backend
 
 ### Important (Should Fix Soon)
+
 - [ ] Add caching for AI responses (expensive)
 - [ ] Implement rate limiting on AI endpoints
 - [ ] Write unit tests for new backend code
@@ -390,6 +414,7 @@ curl -X GET http://localhost:5000/api/achievements \
 - [ ] Optimize database queries (add indexes)
 
 ### Nice to Have (Future Enhancements)
+
 - [ ] Real Google Maps integration (currently placeholder)
 - [ ] Real Spotify integration (currently placeholder)
 - [ ] AR mode requires HTTPS (camera permissions)
@@ -422,15 +447,17 @@ git show 0b32cef
 ## Performance Benchmarks
 
 ### Expected Response Times
-| Endpoint | Without AI | With AI (Perplexity) | With AI (Ollama) |
-|----------|------------|---------------------|------------------|
-| /interact | <50ms | <50ms | <50ms |
-| /personalized | 100-300ms | 1-3s | 3-10s |
-| /surprise-me | 50-150ms | 1-3s | 3-10s |
-| /achievements | <100ms | <100ms | <100ms |
-| /profile/taste | 50-200ms | 50-200ms | 50-200ms |
+
+| Endpoint       | Without AI | With AI (Perplexity) | With AI (Ollama) |
+| -------------- | ---------- | -------------------- | ---------------- |
+| /interact      | <50ms      | <50ms                | <50ms            |
+| /personalized  | 100-300ms  | 1-3s                 | 3-10s            |
+| /surprise-me   | 50-150ms   | 1-3s                 | 3-10s            |
+| /achievements  | <100ms     | <100ms               | <100ms           |
+| /profile/taste | 50-200ms   | 50-200ms             | 50-200ms         |
 
 ### Database Impact
+
 - Each interaction: 1 INSERT
 - Personalization: ~20-50 SELECTs (user history + events)
 - Achievements: 1 SELECT per achievement type (10 total)
@@ -443,6 +470,7 @@ git show 0b32cef
 ## Success Metrics
 
 ### Backend
+
 ✅ All API endpoints return proper status codes
 ✅ AI responses include explanations
 ✅ Fallback works when AI unavailable
@@ -450,6 +478,7 @@ git show 0b32cef
 ✅ No memory leaks on repeated requests
 
 ### Frontend
+
 ✅ Components render without errors
 ✅ Animations run at 60fps
 ✅ API calls succeed with proper auth
@@ -457,6 +486,7 @@ git show 0b32cef
 ✅ No console errors or warnings
 
 ### AI Integration
+
 ✅ Logs show LLM provider connection
 ✅ AI explanations are coherent and relevant
 ✅ Response time <5 seconds
@@ -473,11 +503,13 @@ git show 0b32cef
 **Status:** Ready for IDE agent testing
 
 **Documentation:**
+
 - `AI_FEATURES_SETUP.md` - Complete setup guide
 - `HANDOFF_CUTTING_EDGE_FEATURES.md` - Detailed testing handoff
 - `CHANGES_SUMMARY.md` - This file
 
 **For Testing Issues:**
+
 1. Check logs for error messages
 2. Verify environment variables are set
 3. Ensure database migrations ran successfully
