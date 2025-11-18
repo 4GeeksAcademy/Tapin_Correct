@@ -6,6 +6,7 @@ Tracks user achievements, badges, and progression to encourage engagement.
 
 from datetime import datetime, timedelta, timezone
 from collections import Counter
+from typing import Dict
 import json
 
 

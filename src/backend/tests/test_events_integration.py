@@ -17,9 +17,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from app import app, db, Event, EventImage
-from event_discovery.cache_manager import EventCacheManager
-from event_discovery.state_nonprofits import STATE_NONPROFITS
+from backend.app import app, db, Event, EventImage
+from backend.event_discovery.cache_manager import EventCacheManager
+from backend.event_discovery.state_nonprofits import STATE_NONPROFITS
 
 
 @pytest.fixture
