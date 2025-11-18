@@ -191,27 +191,27 @@ export default function App() {
       </div>
 
       <main>
-        {/* Event Discovery Toggles */}
-        <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setShowEventSearch(!showEventSearch)}
-            style={{
-              padding: '10px 20px',
-              background: showEventSearch ? '#667eea' : '#fff',
-              color: showEventSearch ? '#fff' : '#667eea',
-              border: '2px solid #667eea',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '14px',
-              transition: 'all 0.3s ease',
-            }}
-          >
-            {showEventSearch ? 'Hide Event Discovery' : 'Discover Volunteer Events'}
-          </button>
+        {/* Event Discovery Toggles - Only show when logged in */}
+        {user && (
+          <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowEventSearch(!showEventSearch)}
+              style={{
+                padding: '10px 20px',
+                background: showEventSearch ? '#667eea' : '#fff',
+                color: showEventSearch ? '#fff' : '#667eea',
+                border: '2px solid #667eea',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                transition: 'all 0.3s ease',
+              }}
+            >
+              {showEventSearch ? 'Hide Event Discovery' : 'Discover Volunteer Events'}
+            </button>
 
-          {/* Cutting-Edge Event Discovery Button */}
-          {user && (
+            {/* Cutting-Edge Event Discovery Button */}
             <button
               onClick={() => setShowEventDiscovery(true)}
               style={{
@@ -238,8 +238,8 @@ export default function App() {
               <i className="fas fa-sparkles me-2"></i>
               AI Event Discovery
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Event Search Component */}
         {showEventSearch && <EventSearch onEventsLoaded={(evts) => console.log('Events loaded:', evts)} />}
