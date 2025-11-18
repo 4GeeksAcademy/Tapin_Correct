@@ -1112,3 +1112,596 @@ footer {
 footer small {
   display: block;
 }
+
+/* ========================================
+   ACHIEVEMENTS PANEL & GAMIFICATION
+   ======================================== */
+
+.achievements-panel {
+  padding: var(--space-lg);
+}
+
+.achievements-header {
+  margin-bottom: var(--space-lg);
+}
+
+.achievement-stats {
+  margin-bottom: var(--space-lg);
+}
+
+.stat-value {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin-top: var(--space-xs);
+}
+
+.achievements-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+
+.achievement-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  display: flex;
+  gap: var(--space-md);
+  align-items: flex-start;
+  transition: var(--transition);
+}
+
+.achievement-card.unlocked {
+  border-color: var(--success);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.achievement-card.locked {
+  opacity: 0.7;
+}
+
+.achievement-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.achievement-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+  background: var(--bg-secondary);
+}
+
+.achievement-content {
+  flex: 1;
+}
+
+.achievement-name {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+  margin-bottom: var(--space-xs);
+}
+
+.achievement-description {
+  font-size: var(--fs-sm);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+.achievement-progress {
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: var(--space-sm);
+}
+
+.achievement-progress .progress-bar {
+  height: 100%;
+  transition: width 0.3s ease-in-out;
+}
+
+.achievement-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bg-gradient-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+/* ========================================
+   EVENT SWIPER
+   ======================================== */
+
+.event-swiper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  padding: var(--space-xl) 0;
+}
+
+.swiper-card {
+  position: absolute;
+  width: 100%;
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  transition: all 0.3s ease-out;
+  cursor: grab;
+  border: 2px solid var(--border);
+}
+
+.swiper-card:active {
+  cursor: grabbing;
+}
+
+.swiper-card.swiping {
+  transition: none;
+}
+
+.swiper-card.swiped-left {
+  transform: translateX(-150%) rotate(-30deg);
+  opacity: 0;
+}
+
+.swiper-card.swiped-right {
+  transform: translateX(150%) rotate(30deg);
+  opacity: 0;
+}
+
+.swiper-card.swiped-up {
+  transform: translateY(-150%) scale(1.1);
+  opacity: 0;
+}
+
+.swiper-indicators {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.swipe-indicator {
+  padding: var(--space-sm) var(--space-lg);
+  border-radius: var(--radius-md);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-lg);
+  opacity: 0;
+  transition: opacity 0.2s ease-out;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.swipe-indicator.active {
+  opacity: 1;
+}
+
+.swipe-indicator.like {
+  background: rgba(16, 185, 129, 0.9);
+}
+
+.swipe-indicator.nope {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.swipe-indicator.super {
+  background: rgba(236, 72, 153, 0.9);
+}
+
+.swiper-actions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-lg);
+  margin-top: var(--space-xl);
+}
+
+.swiper-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: var(--shadow-md);
+}
+
+.swiper-btn:hover {
+  transform: scale(1.1);
+  box-shadow: var(--shadow-lg);
+}
+
+.swiper-btn:active {
+  transform: scale(0.95);
+}
+
+.swiper-btn.dislike {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.swiper-btn.dislike:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.swiper-btn.super-like {
+  color: var(--accent);
+  border-color: var(--accent);
+  width: 70px;
+  height: 70px;
+}
+
+.swiper-btn.super-like:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.swiper-btn.like {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.swiper-btn.like:hover {
+  background: var(--success);
+  color: white;
+}
+
+/* ========================================
+   SURPRISE ME
+   ======================================== */
+
+.surprise-me {
+  padding: var(--space-xl);
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+.mood-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-md);
+  margin: var(--space-lg) 0;
+}
+
+.mood-btn {
+  padding: var(--space-lg);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+
+.mood-btn:hover {
+  border-color: var(--primary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.mood-btn.selected {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.mood-icon {
+  font-size: 40px;
+  margin-bottom: var(--space-sm);
+  display: block;
+}
+
+.mood-label {
+  font-size: var(--fs-base);
+  font-weight: var(--fw-semibold);
+}
+
+.surprise-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+}
+
+.surprise-event-preview {
+  margin-top: var(--space-xl);
+  padding: var(--space-xl);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(236, 72, 153, 0.05) 100%);
+  border-radius: var(--radius-lg);
+  border: 2px dashed var(--primary);
+}
+
+/* ========================================
+   GLASS CARD (Glassmorphism)
+   ======================================== */
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  padding: var(--space-lg);
+}
+
+/* ========================================
+   EVENT PREVIEW MODAL
+   ======================================== */
+
+.event-preview-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  overflow-y: auto;
+}
+
+.event-preview-content {
+  background: var(--surface);
+  border-radius: var(--radius-xl);
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: slideInUp 0.3s ease-out;
+}
+
+.event-preview-header {
+  position: relative;
+  height: 300px;
+  overflow: hidden;
+}
+
+.event-preview-header img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.event-preview-close {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  color: white;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  transition: var(--transition);
+  z-index: 10;
+}
+
+.event-preview-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.event-preview-body {
+  padding: var(--space-xl);
+}
+
+.volunteer-contact-section {
+  margin-top: var(--space-xl);
+  padding: var(--space-lg);
+  background: rgba(16, 185, 129, 0.05);
+  border-left: 4px solid var(--success);
+  border-radius: var(--radius-md);
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-sm);
+  font-size: var(--fs-base);
+}
+
+.contact-item i {
+  color: var(--success);
+  width: 20px;
+}
+
+.contact-item a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: var(--fw-medium);
+}
+
+.contact-item a:hover {
+  text-decoration: underline;
+}
+
+/* ========================================
+   AR WAYFINDING
+   ======================================== */
+
+.ar-wayfinding {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.ar-map-container {
+  width: 100%;
+  height: 100%;
+}
+
+.ar-controls {
+  position: absolute;
+  top: var(--space-md);
+  right: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  z-index: 1000;
+}
+
+.ar-control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition);
+}
+
+.ar-control-btn:hover {
+  background: var(--primary);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* ========================================
+   EVENT DISCOVERY PAGE
+   ======================================== */
+
+.event-discovery {
+  min-height: 100vh;
+}
+
+.bg-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.discovery-mode-tabs {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.discovery-mode-tab {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* ========================================
+   ROLE SELECTOR (Auth Form)
+   ======================================== */
+
+.role-selector {
+  margin: var(--space-lg) 0;
+}
+
+.role-selector label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text);
+}
+
+.role-selector .btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.role-selector .btn-group button {
+  padding: var(--space-md);
+  border: 2px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  font-weight: var(--fw-medium);
+}
+
+.role-selector .btn-group button:hover {
+  border-color: var(--primary);
+  background: rgba(99, 102, 241, 0.05);
+}
+
+.role-selector .btn-group .btn-primary,
+.role-selector .btn-group button.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+
+@media (max-width: 768px) {
+  .achievements-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .event-swiper {
+    max-width: 100%;
+  }
+
+  .mood-selector {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .surprise-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .event-preview-content {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .event-preview-header {
+    height: 200px;
+  }
+
+  .ar-wayfinding {
+    height: 400px;
+  }
+}

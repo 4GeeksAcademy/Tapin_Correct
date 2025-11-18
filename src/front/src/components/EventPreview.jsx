@@ -261,15 +261,61 @@ export default function EventPreview({ event, onClose }) {
           )}
         </div>
 
+        {/* Volunteer Contact Section */}
+        {(event.contact_email || event.contact_phone || event.contact_person) && (
+          <div className="volunteer-contact-section">
+            <div className="alert alert-success mb-0">
+              <h6 className="mb-3">
+                <i className="fas fa-hands-helping me-2"></i>
+                Volunteer for This Event
+              </h6>
+              {event.contact_person && (
+                <div className="contact-item mb-2">
+                  <i className="fas fa-user me-2"></i>
+                  <strong>Contact Person:</strong> {event.contact_person}
+                </div>
+              )}
+              {event.contact_email && (
+                <div className="contact-item mb-2">
+                  <i className="fas fa-envelope me-2"></i>
+                  <strong>Email:</strong>{' '}
+                  <a href={`mailto:${event.contact_email}`} className="text-success">
+                    {event.contact_email}
+                  </a>
+                </div>
+              )}
+              {event.contact_phone && (
+                <div className="contact-item">
+                  <i className="fas fa-phone me-2"></i>
+                  <strong>Phone:</strong>{' '}
+                  <a href={`tel:${event.contact_phone}`} className="text-success">
+                    {event.contact_phone}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Footer actions */}
         <div className="modal-footer">
           <button className="btn btn-outline-secondary" onClick={onClose}>
             Close
           </button>
-          <button className="btn btn-primary">
-            <i className="fas fa-heart me-2"></i>
-            I'm Interested
-          </button>
+          {(event.contact_email || event.contact_phone) ? (
+            <a
+              href={`mailto:${event.contact_email || ''}${event.contact_phone ? `?body=Phone: ${event.contact_phone}` : ''}`}
+              className="btn btn-success"
+            >
+              <i className="fas fa-hands-helping me-2"></i>
+              Contact to Volunteer
+            </a>
+          ) : (
+            <button className="btn btn-primary">
+              <i className="fas fa-heart me-2"></i>
+              I'm Interested
+            </button>
+          )}
         </div>
       </div>
 
@@ -572,6 +618,32 @@ export default function EventPreview({ event, onClose }) {
           display: flex;
           gap: 10px;
           justify-content: flex-end;
+        }
+
+        .volunteer-contact-section {
+          padding: 20px;
+          background: #f0fff4;
+          border-top: 1px solid #c6f6d5;
+        }
+
+        .contact-item {
+          font-size: 0.95rem;
+          display: flex;
+          align-items: center;
+        }
+
+        .contact-item i {
+          color: #38a169;
+          min-width: 24px;
+        }
+
+        .contact-item a {
+          text-decoration: none;
+          font-weight: 500;
+        }
+
+        .contact-item a:hover {
+          text-decoration: underline;
         }
 
         @media (max-width: 768px) {
