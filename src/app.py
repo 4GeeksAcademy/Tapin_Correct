@@ -8,12 +8,12 @@ needed for the Vite front-end build in dist/.
 
 import os
 from flask import send_from_directory
-from backend.app import app as backend_app
+from backend.app import app as backend_app, db, User
 
 ENV = "development" if os.getenv("FLASK_DEBUG") == "1" else "production"
 static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../dist/")
 
-# Re-export the Tapin backend app so existing deployment scripts keep working.
+# Re-export the Tapin backend app and models so tests and deployment scripts work.
 app = backend_app
 
 
