@@ -1018,6 +1018,89 @@ def get_categories():
     )
 
 
+@app.route("/api/events/search", methods=["POST"])
+@jwt_required()
+def search_events_simple():
+    """Simple event search from database - returns current/future events only.
+
+    No Facebook scraping or external calls - just fast database queries.
+    """
+    from datetime import datetime, timezone
+
+    data = request.get_json() or {}
+    location = data.get("location")
+    category = data.get("category")
+    limit = data.get("limit", 50)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location
+    parts = [p.strip() for p in location.split(",")]
+    if len(parts) < 2:
+        return jsonify({"error": "location must be 'City, ST' format"}), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # Query database directly - only future events
+        query = Event.query.filter(
+            Event.location_city == city,
+            Event.date_start >= datetime.now(timezone.utc)
+        )
+
+        # Filter by category if provided
+        if category and category != "All":
+            query = query.filter(Event.category == category)
+
+        # Order by date and limit
+        events = query.order_by(Event.date_start.asc()).limit(limit).all()
+
+        # Convert to dict with images
+        result = []
+        for event in events:
+            event_dict = {
+                "id": event.id,
+                "title": event.title,
+                "description": event.description,
+                "organization": event.organization,
+                "category": event.category,
+                "date_start": event.date_start.isoformat() if event.date_start else None,
+                "venue": event.venue,
+                "price": event.price,
+                "location_city": event.location_city,
+                "location_state": event.location_state,
+                "latitude": event.latitude,
+                "longitude": event.longitude,
+                "contact_person": event.contact_person,
+                "contact_email": event.contact_email,
+                "contact_phone": event.contact_phone,
+                "source": event.source,
+                "url": event.url,
+            }
+
+            # Get images
+            images = EventImage.query.filter_by(event_id=event.id).order_by(EventImage.position).all()
+            if images:
+                event_dict["image_url"] = images[0].url
+                event_dict["image_urls"] = json.dumps([img.url for img in images])
+
+            result.append(event_dict)
+
+        return jsonify({
+            "events": result,
+            "location": f"{city}, {state}",
+            "count": len(result),
+            "source": "database"
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/local-events/tonight", methods=["POST"])
 @jwt_required()
 def discover_tonight():

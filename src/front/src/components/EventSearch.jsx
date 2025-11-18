@@ -32,19 +32,27 @@ export default function EventSearch({ onEventsLoaded }) {
     setSearched(true);
 
     try {
-      const params = new URLSearchParams();
-      if (selectedCity) {
-        // Extract just the city name (before the comma)
-        const cityName = selectedCity.split(',')[0].trim();
-        params.set('city', cityName);
-      }
-      params.set('state', selectedState);
+      // Get access token for authentication
+      const token = localStorage.getItem('access_token');
 
-      const url = `${API_URL}/events/search?${params.toString()}`;
-      const res = await fetch(url);
+      // Build location string
+      const cityName = selectedCity ? selectedCity.split(',')[0].trim() : '';
+      const location = `${cityName}, ${selectedState}`;
+
+      const res = await fetch(`${API_URL}/api/events/search`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          location: location,
+          limit: 50
+        })
+      });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || `HTTP ${res.status}`);
       }
 
