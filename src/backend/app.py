@@ -335,7 +335,7 @@ class UserEventInteraction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     event_id = db.Column(db.String(36), db.ForeignKey("event.id"), nullable=False, index=True)
     interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
+    interaction_data = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     def to_dict(self):
@@ -344,7 +344,7 @@ class UserEventInteraction(db.Model):
             "user_id": self.user_id,
             "event_id": self.event_id,
             "interaction_type": self.interaction_type,
-            "metadata": self.metadata,
+            "interaction_data": self.interaction_data,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
 
@@ -359,7 +359,7 @@ class UserAchievement(db.Model):
     progress = db.Column(db.Integer, default=0)  # Progress towards achievement
     unlocked = db.Column(db.Boolean, default=False, index=True)
     unlocked_at = db.Column(db.DateTime, nullable=True)
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
+    achievement_data = db.Column(db.Text, nullable=True)  # JSON with additional data
 
     def to_dict(self):
         return {
@@ -369,7 +369,7 @@ class UserAchievement(db.Model):
             "progress": self.progress,
             "unlocked": self.unlocked,
             "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
-            "metadata": self.metadata,
+            "achievement_data": self.achievement_data,
         }
 
 
