@@ -53,16 +53,16 @@ def test_scrape_and_persist_images(tmp_path):
     ]
 
     # Patch AsyncHtmlLoader and HybridLLM used inside cache_manager
-    from app import app as flask_app, db, Event, EventImage
+    from backend.app import app as flask_app, db, Event, EventImage
 
     with flask_app.app_context():
         db.create_all()
         with patch(
-            "event_discovery.cache_manager.AsyncHtmlLoader",
+            "backend.event_discovery.cache_manager.AsyncHtmlLoader",
             new=fake_loader_factory("<html></html>"),
         ):
             with patch(
-                "event_discovery.cache_manager.HybridLLM",
+                "backend.event_discovery.cache_manager.HybridLLM",
                 new=make_fake_llm_response(events_payload),
             ):
                 mgr = EventCacheManager()
@@ -71,6 +71,11 @@ def test_scrape_and_persist_images(tmp_path):
                 mgr.geocoder = SimpleNamespace(
                     geocode=lambda q: SimpleNamespace(latitude=1.0, longitude=2.0)
                 )
+
+                # Mock facebook_scraper to return empty list so LLM data is used
+                from unittest.mock import AsyncMock
+                mgr.facebook_scraper = AsyncMock()
+                mgr.facebook_scraper.search_events = AsyncMock(return_value=[])
 
                 # Run search_by_location which triggers scrape -> upsert
                 persisted = asyncio.run(mgr.search_by_location("SampleCity", "ST"))

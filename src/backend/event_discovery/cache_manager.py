@@ -168,11 +168,19 @@ class EventCacheManager:
                             db.session.delete(old_img)
                         # Flush deletes before adding new images
                         db.session.flush()
-                        for idx, img_url in enumerate(imgs):
+                        for idx, img_data in enumerate(imgs):
+                            # Handle both string URLs and dict with url/caption
+                            if isinstance(img_data, dict):
+                                img_url = img_data.get('url')
+                                img_caption = img_data.get('caption')
+                            else:
+                                img_url = img_data
+                                img_caption = None
+
                             ei = EventImage(
                                 event_id=existing.id,
                                 url=img_url,
-                                caption=None,
+                                caption=img_caption,
                                 position=idx,
                             )
                             db.session.add(ei)
@@ -212,16 +220,31 @@ class EventCacheManager:
                     if not imgs and event.get("image_url"):
                         imgs = [event.get("image_url")]
 
-                    ev.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    # Handle first image - could be string or dict
+                    first_img = None
+                    if imgs:
+                        if isinstance(imgs[0], dict):
+                            first_img = imgs[0].get('url')
+                        else:
+                            first_img = imgs[0]
+                    ev.image_url = event.get("image_url") or first_img
                     ev.image_urls = json.dumps(imgs) if imgs else None
 
                     db.session.add(ev)
                     # Add normalized EventImage rows
-                    for idx, url in enumerate(imgs):
+                    for idx, img_data in enumerate(imgs):
+                        # Handle both string URLs and dict with url/caption
+                        if isinstance(img_data, dict):
+                            img_url = img_data.get('url')
+                            img_caption = img_data.get('caption')
+                        else:
+                            img_url = img_data
+                            img_caption = None
+
                         ei = EventImage(
                             event_id=ev.id,
-                            url=url,
-                            caption=None,
+                            url=img_url,
+                            caption=img_caption,
                             position=idx,
                         )
                         db.session.add(ei)
@@ -687,7 +710,14 @@ JSON OUTPUT:"""
                         except:
                             imgs = []
 
-                    ev.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    # Handle first image - could be string or dict
+                    first_img = None
+                    if imgs:
+                        if isinstance(imgs[0], dict):
+                            first_img = imgs[0].get('url')
+                        else:
+                            first_img = imgs[0]
+                    ev.image_url = event.get("image_url") or first_img
                     ev.image_urls = json.dumps(imgs) if imgs else None
 
                     db.session.add(ev)

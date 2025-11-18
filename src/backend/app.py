@@ -69,6 +69,10 @@ app.config['SECURITY_PASSWORD_SALT'] = os.environ.get(
 
 CORS(app)
 
+# Register blueprints
+from backend.routes.events import events_bp
+app.register_blueprint(events_bp, url_prefix='/events')
+
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
@@ -261,6 +265,18 @@ class Event(db.Model):
     image_urls = db.Column(db.Text, nullable=True)
 
     def to_dict(self):
+        # Include normalized images if available
+        images_list = []
+        if hasattr(self, 'images') and self.images:
+            images_list = [
+                {
+                    'url': img.url,
+                    'caption': img.caption,
+                    'position': img.position
+                }
+                for img in sorted(self.images, key=lambda x: x.position)
+            ]
+
         return {
             "id": self.id,
             "title": self.title,
@@ -288,6 +304,7 @@ class Event(db.Model):
             ),
             "image_url": self.image_url,
             "image_urls": self.image_urls,
+            "images": images_list,
         }
 
 
