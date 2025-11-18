@@ -1,4 +1,6 @@
 import React from 'react';
+import logo from '../assets/brand/logo-new.svg';
+import icon from '../assets/brand/icon.svg';
 
 export default function Header({ user, onLogout }) {
   return (
@@ -12,10 +14,29 @@ export default function Header({ user, onLogout }) {
         }}
       >
         <div className="brand" style={{ gridColumn: 2, justifySelf: 'center', textAlign: 'center' }}>
-          <div>
-            <h1>Tapin</h1>
-            <p className="subtitle">Community Connections</p>
-          </div>
+          <img
+            src={logo}
+            alt="Tapin - Volunteer Connect"
+            style={{
+              height: '60px',
+              width: 'auto',
+              maxWidth: '240px',
+              display: 'block',
+              margin: '0 auto'
+            }}
+            className="logo-desktop"
+          />
+          <img
+            src={icon}
+            alt="Tapin"
+            style={{
+              height: '48px',
+              width: '48px',
+              display: 'none',
+              margin: '0 auto'
+            }}
+            className="logo-mobile"
+          />
         </div>
 
         {user && (

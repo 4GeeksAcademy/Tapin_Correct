@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import logoTransparent from '@/assets/brand/logo-transparent.svg';
+import logo from '../assets/brand/logo-new.svg';
 import AuthForm from '../components/AuthForm';
 
 export default function DashboardLanding({ onLogin, onEnter }) {
@@ -9,7 +9,7 @@ export default function DashboardLanding({ onLogin, onEnter }) {
     return (
       <div className="landing-root">
         <div className="landing-hero" style={{ maxWidth: '500px' }}>
-          <img src={logoTransparent} alt="Tapin logo" className="landing-logo" />
+          <img src={logo} alt="Tapin - Volunteer Connect" className="landing-logo" />
           <h2 style={{ marginBottom: '24px', color: '#333' }}>Welcome to TapIn</h2>
 
           <AuthForm
@@ -53,7 +53,7 @@ export default function DashboardLanding({ onLogin, onEnter }) {
   return (
     <div className="landing-root">
       <div className="landing-hero">
-        <img src={logoTransparent} alt="Tapin logo" className="landing-logo" />
+        <img src={logo} alt="Tapin - Volunteer Connect" className="landing-logo" />
         <h1 className="landing-title">TapIn — connect your community</h1>
         <p className="landing-sub">
           Find volunteer opportunities to give back, or discover local services from small
