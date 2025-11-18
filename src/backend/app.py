@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
-from backend.auth import token_for
+from auth import token_for
 from flask_cors import CORS
 from datetime import datetime, timezone
 import os
@@ -139,6 +139,7 @@ class User(db.Model):
             "id": self.id,
             "email": self.email,
             "role": self.role,
+            "user_type": self.role,  # Alias for clarity (volunteer/organization)
             "organization_name": self.organization_name,
         }
 
@@ -346,7 +347,7 @@ class UserEventInteraction(db.Model):
     interaction_type = db.Column(
         db.String(20), nullable=False
     )  # view, like, dislike, attend, skip, super_like
-    interaction_data = db.Column(
+    interaction_metadata = db.Column(
         db.Text, nullable=True
     )  # JSON with additional data (time_spent, swipe_direction, etc.)
     timestamp = db.Column(
@@ -362,7 +363,7 @@ class UserEventInteraction(db.Model):
             "user_id": self.user_id,
             "event_id": self.event_id,
             "interaction_type": self.interaction_type,
-            "interaction_data": self.interaction_data,
+            "metadata": self.interaction_metadata,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
 
@@ -381,7 +382,9 @@ class UserAchievement(db.Model):
     progress = db.Column(db.Integer, default=0)  # Progress towards achievement
     unlocked = db.Column(db.Boolean, default=False, index=True)
     unlocked_at = db.Column(db.DateTime, nullable=True)
-    achievement_data = db.Column(db.Text, nullable=True)  # JSON with additional data
+    achievement_metadata = db.Column(
+        db.Text, nullable=True
+    )  # JSON with additional data
 
     def to_dict(self):
         return {
@@ -391,7 +394,7 @@ class UserAchievement(db.Model):
             "progress": self.progress,
             "unlocked": self.unlocked,
             "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
-            "achievement_data": self.achievement_data,
+            "metadata": self.achievement_metadata,
         }
 
 
@@ -489,14 +492,21 @@ def register_user():
     data = request.get_json() or {}
     email = data.get("email")
     password = data.get("password")
-    role = data.get("role", "volunteer")  # Default to volunteer
+    user_type = data.get("user_type", "volunteer")  # 'volunteer' or 'organization'
     organization_name = data.get("organization_name")
 
     if not email or not password:
         return jsonify({"error": "email and password required"}), 400
 
-    # Validate organization name if role is organization
-    if role == "organization" and not organization_name:
+    # Validate user_type
+    if user_type not in ["volunteer", "organization"]:
+        return (
+            jsonify({"error": "user_type must be 'volunteer' or 'organization'"}),
+            400,
+        )
+
+    # Validate organization name if user_type is organization
+    if user_type == "organization" and not organization_name:
         return jsonify({"error": "organization name required for organizations"}), 400
 
     if User.query.filter_by(email=email).first():
@@ -506,17 +516,26 @@ def register_user():
     user = User(
         email=email,
         password_hash=pw_hash,
-        role=role,
-        organization_name=organization_name if role == "organization" else None,
+        role=user_type,
+        organization_name=organization_name if user_type == "organization" else None,
     )
     db.session.add(user)
     db.session.commit()
 
     # return both access and refresh tokens (identity stored as string)
-    from backend.auth import token_pair
+    from auth import token_pair
 
     tokens = token_pair(user)
-    return jsonify({"message": "user created", "user": user.to_dict(), **tokens}), 201
+    return (
+        jsonify(
+            {
+                "message": f"{user_type} account created successfully",
+                "user": user.to_dict(),
+                **tokens,
+            }
+        ),
+        201,
+    )
 
 
 @app.route("/login", methods=["POST"])
@@ -528,7 +547,7 @@ def login_user():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
     # return both access and refresh tokens to the client
-    from backend.auth import token_pair
+    from auth import token_pair
 
     tokens = token_pair(user)
     return jsonify({"message": "login successful", "user": user.to_dict(), **tokens})
@@ -1046,8 +1065,7 @@ def search_events_simple():
     try:
         # Query database directly - only future events
         query = Event.query.filter(
-            Event.location_city == city,
-            Event.date_start >= datetime.now(timezone.utc)
+            Event.location_city == city, Event.date_start >= datetime.now(timezone.utc)
         )
 
         # Filter by category if provided
@@ -1066,7 +1084,9 @@ def search_events_simple():
                 "description": event.description,
                 "organization": event.organization,
                 "category": event.category,
-                "date_start": event.date_start.isoformat() if event.date_start else None,
+                "date_start": (
+                    event.date_start.isoformat() if event.date_start else None
+                ),
                 "venue": event.venue,
                 "price": event.price,
                 "location_city": event.location_city,
@@ -1081,22 +1101,32 @@ def search_events_simple():
             }
 
             # Get images
-            images = EventImage.query.filter_by(event_id=event.id).order_by(EventImage.position).all()
+            images = (
+                EventImage.query.filter_by(event_id=event.id)
+                .order_by(EventImage.position)
+                .all()
+            )
             if images:
                 event_dict["image_url"] = images[0].url
                 event_dict["image_urls"] = json.dumps([img.url for img in images])
 
             result.append(event_dict)
 
-        return jsonify({
-            "events": result,
-            "location": f"{city}, {state}",
-            "count": len(result),
-            "source": "database"
-        }), 200
+        return (
+            jsonify(
+                {
+                    "events": result,
+                    "location": f"{city}, {state}",
+                    "count": len(result),
+                    "source": "database",
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
@@ -1207,7 +1237,7 @@ def record_event_interaction():
         user_id=uid_int,
         event_id=event_id,
         interaction_type=interaction_type,
-        interaction_data=json.dumps(metadata) if metadata else None,
+        interaction_metadata=json.dumps(metadata) if metadata else None,
     )
     db.session.add(interaction)
     db.session.commit()

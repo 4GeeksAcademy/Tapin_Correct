@@ -4,7 +4,7 @@ Tests for event discovery API endpoints
 
 import pytest
 import json
-from backend.app import app, db, User, Event, EventImage
+from app import app, db, User, Event, EventImage
 from werkzeug.security import generate_password_hash
 
 

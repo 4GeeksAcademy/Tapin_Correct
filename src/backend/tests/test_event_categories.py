@@ -3,7 +3,7 @@ Tests for event_categories.py - Unified event category system
 """
 
 import pytest
-from backend.event_discovery.event_categories import (
+from event_discovery.event_categories import (
     EVENT_CATEGORIES,
     categorize_event,
     get_category_info,

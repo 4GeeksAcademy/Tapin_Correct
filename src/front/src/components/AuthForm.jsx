@@ -7,7 +7,7 @@ export default function AuthForm({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState('volunteer'); // 'volunteer' or 'organization'
+  const [userType, setUserType] = useState('volunteer'); // 'volunteer' or 'organization'
   const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,7 +24,7 @@ export default function AuthForm({ onLogin }) {
       return;
     }
 
-    if (mode === 'register' && role === 'organization' && !organizationName.trim()) {
+    if (mode === 'register' && userType === 'organization' && !organizationName.trim()) {
       setError('Organization name is required');
       setLoading(false);
       return;
@@ -32,20 +32,20 @@ export default function AuthForm({ onLogin }) {
 
     try {
       const endpoint = mode === 'login' ? '/login' : '/register';
-      const payload = { email, password };
+      const body = { email, password };
 
-      // Add role and organization name for registration
+      // Add user_type and organization name for registration
       if (mode === 'register') {
-        payload.role = role;
-        if (role === 'organization') {
-          payload.organization_name = organizationName;
+        body.user_type = userType;
+        if (userType === 'organization') {
+          body.organization_name = organizationName;
         }
       }
 
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -84,32 +84,38 @@ export default function AuthForm({ onLogin }) {
 
         <form onSubmit={handleSubmit}>
           {mode === 'register' && (
-            <div className="role-selector" style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+            <div className="user-type-selector" style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: '500' }}>
                 I am a:
               </label>
-              <div className="btn-group w-100" role="group">
-                <button
-                  type="button"
-                  className={`btn ${role === 'volunteer' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => setRole('volunteer')}
-                >
-                  <i className="fas fa-hands-helping me-2"></i>
-                  Volunteer
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${role === 'organization' ? 'btn-primary' : 'btn-outline-primary'}`}
-                  onClick={() => setRole('organization')}
-                >
-                  <i className="fas fa-building me-2"></i>
-                  Organization
-                </button>
+              <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="volunteer"
+                    checked={userType === 'volunteer'}
+                    onChange={(e) => setUserType(e.target.value)}
+                    style={{ marginRight: 'var(--space-2)' }}
+                  />
+                  <span>Volunteer</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="organization"
+                    checked={userType === 'organization'}
+                    onChange={(e) => setUserType(e.target.value)}
+                    style={{ marginRight: 'var(--space-2)' }}
+                  />
+                  <span>Organization</span>
+                </label>
               </div>
             </div>
           )}
 
-          {mode === 'register' && role === 'organization' && (
+          {mode === 'register' && userType === 'organization' && (
             <input
               id="organization-name"
               type="text"

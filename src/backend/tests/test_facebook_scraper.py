@@ -5,7 +5,7 @@ Tests for facebook_scraper.py - Facebook nonprofit event scraper
 import pytest
 import asyncio
 import time
-from backend.event_discovery.facebook_scraper import FacebookEventScraper
+from event_discovery.facebook_scraper import FacebookEventScraper
 
 
 class TestFacebookEventScraper:
