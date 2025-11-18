@@ -1010,6 +1010,7 @@ def discover_events():
 
 
 @app.route('/api/categories', methods=['GET'])
+@jwt_required()
 def get_categories():
     """Get all event categories with metadata (icons, colors, descriptions)."""
     from backend.event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
@@ -1330,6 +1331,7 @@ def surprise_me():
 
 
 @app.route('/api/events/ticketmaster', methods=['POST'])
+@jwt_required()
 def get_ticketmaster_events():
     """Fetch real future events from Ticketmaster Discovery API."""
     data = request.get_json() or {}
