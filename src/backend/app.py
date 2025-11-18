@@ -1083,15 +1083,17 @@ def record_event_interaction():
         user_id=uid_int,
         event_id=event_id,
         interaction_type=interaction_type,
-        metadata=json.dumps(metadata) if metadata else None
+        interaction_data=json.dumps(metadata) if metadata else None
     )
     db.session.add(interaction)
     db.session.commit()
 
-    # Update user achievements based on interaction
-    from backend.event_discovery.gamification import GamificationEngine
-    gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
-    gamification.check_achievements(uid_int)
+    # Update user achievements based on interaction (volunteers only)
+    user = User.query.get(uid_int)
+    if user and user.role == 'volunteer':
+        from backend.event_discovery.gamification import GamificationEngine
+        gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+        gamification.check_achievements(uid_int)
 
     return jsonify({
         "message": "interaction recorded",
@@ -1295,23 +1297,123 @@ def surprise_me():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/events/ticketmaster', methods=['POST'])
+def get_ticketmaster_events():
+    """Fetch real future events from Ticketmaster Discovery API."""
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 50)
+    classification = data.get('classification')  # Optional: Music, Sports, Arts & Theatre, etc.
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({"error": "location must be 'City, ST' format"}), 400
+
+    city = parts[0]
+    state_code = parts[1]
+
+    try:
+        from backend.ticketmaster_api import TicketmasterAPI
+        tm_api = TicketmasterAPI()
+
+        events = tm_api.get_events_for_city(
+            city=city,
+            state_code=state_code,
+            limit=limit,
+            classification=classification
+        )
+
+        return jsonify({
+            "events": events,
+            "count": len(events),
+            "source": "Ticketmaster",
+            "city": city,
+            "state": state_code
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/achievements', methods=['GET'])
 @jwt_required()
 def get_achievements():
-    """Get user's achievements and progress."""
+    """Get user's achievements and progress (role-aware)."""
     uid = get_jwt_identity()
     try:
         uid_int = int(uid)
     except Exception:
         uid_int = uid
 
-    achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+    # Get user to check role
+    user = User.query.get(uid_int)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
 
-    return jsonify({
-        "achievements": [a.to_dict() for a in achievements],
-        "unlocked_count": sum(1 for a in achievements if a.unlocked),
-        "total_count": len(achievements)
-    }), 200
+    # Role-aware response
+    if user.role == 'organization':
+        # Organizations get different metrics
+        # Count events posted by this organization
+        events_posted = Event.query.filter_by(organization=user.organization_name).count()
+
+        # Count total interactions with organization's events
+        org_events = Event.query.filter_by(organization=user.organization_name).all()
+        org_event_ids = [e.id for e in org_events]
+
+        total_views = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type == 'view'
+        ).count()
+
+        total_likes = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type.in_(['like', 'super_like'])
+        ).count()
+
+        total_attendees = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type == 'attend'
+        ).count()
+
+        # Unique volunteers (distinct users who interacted)
+        unique_volunteers = db.session.query(UserEventInteraction.user_id).filter(
+            UserEventInteraction.event_id.in_(org_event_ids)
+        ).distinct().count()
+
+        return jsonify({
+            "role": "organization",
+            "organization_name": user.organization_name,
+            "metrics": {
+                "events_posted": events_posted,
+                "total_views": total_views,
+                "total_likes": total_likes,
+                "total_attendees": total_attendees,
+                "unique_volunteers": unique_volunteers,
+                "engagement_rate": round((total_likes / max(total_views, 1)) * 100, 1) if total_views > 0 else 0
+            }
+        }), 200
+
+    else:
+        # Volunteers get achievement system
+        achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+
+        # Calculate level and XP
+        from backend.event_discovery.gamification import GamificationEngine
+        gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+        level_info = gamification.get_user_level(uid_int)
+
+        return jsonify({
+            "role": "volunteer",
+            "achievements": [a.to_dict() for a in achievements],
+            "unlocked_count": sum(1 for a in achievements if a.unlocked),
+            "total_count": len(achievements),
+            "level_info": level_info
+        }), 200
 
 
 if __name__ == '__main__':
