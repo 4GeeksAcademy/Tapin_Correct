@@ -4,8 +4,12 @@ import asyncio
 import os
 
 # Set environment variables
+# Prefer reading the API key from the environment. Do not hard-code secrets in tests.
 os.environ["LLM_PROVIDER"] = "gemini"
-os.environ["GEMINI_API_KEY"] = "REDACTED_GOOGLE"
+# Use an environment variable set locally or in CI secrets. If not set, tests
+# will skip direct Gemini calls.
+if "GEMINI_API_KEY" not in os.environ:
+    print("Warning: GEMINI_API_KEY not set; Gemini calls may be disabled in this test.")
 
 from event_discovery.cache_manager import EventCacheManager
 from app import app, db
