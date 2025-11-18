@@ -81,7 +81,10 @@ app.config["SECURITY_PASSWORD_SALT"] = os.environ.get(
 CORS(app)
 
 # Register blueprints
-from backend.routes.events import events_bp
+try:
+    from backend.routes.events import events_bp
+except ModuleNotFoundError:
+    from routes.events import events_bp
 
 app.register_blueprint(events_bp, url_prefix="/events")
 

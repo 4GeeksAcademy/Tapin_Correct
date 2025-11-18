@@ -1,10 +1,18 @@
 from logging.config import fileConfig
 import os
+import sys
 
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 
 from alembic import context
+
+# Add parent directory to path to allow backend imports
+alembic_dir = os.path.dirname(__file__)
+backend_dir = os.path.abspath(os.path.join(alembic_dir, ".."))
+src_dir = os.path.abspath(os.path.join(backend_dir, ".."))
+sys.path.insert(0, src_dir)
+sys.path.insert(0, backend_dir)
 
 # Import the app and db to get the metadata for autogenerate
 import backend.app as app_module
