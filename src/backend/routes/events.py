@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required
 import asyncio
 
 from backend.event_discovery.cache_manager import EventCacheManager
@@ -7,6 +8,7 @@ events_bp = Blueprint("events", __name__)
 
 
 @events_bp.route("/search", methods=["GET"])
+@jwt_required()
 def search_events():
     """Search events by city/state and return cached or freshly scraped results.
 

@@ -988,9 +988,9 @@ picture {
 }
 
 .landing-logo {
-  width: 120px;
-  height: 120px;
-  object-fit: contain;
+  max-width: 200px;
+  width: 100%;
+  height: auto;
   margin: 0 auto var(--space-lg);
   display: block;
   filter: drop-shadow(0 4px 8px rgba(99, 102, 241, 0.2));
@@ -1074,8 +1074,7 @@ picture {
   }
 
   .landing-logo {
-    width: 90px;
-    height: 90px;
+    max-width: 160px;
   }
 
   .landing-cta-row {
