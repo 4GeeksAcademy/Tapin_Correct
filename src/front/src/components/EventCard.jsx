@@ -142,6 +142,23 @@ export default function EventCard({ event, onClick }) {
             <span className="badge bg-secondary small">{event.source}</span>
           </div>
         )}
+
+        {/* Volunteer Button - Shows if event has contact info */}
+        {(event.contact_email || event.contact_phone || event.contact_person) && (
+          <div className="mt-3">
+            <button
+              className="btn btn-success btn-sm w-100"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Show contact modal or expand contact info
+                alert(`Volunteer Contact Info:\n\n${event.contact_person ? `Contact: ${event.contact_person}\n` : ''}${event.contact_email ? `Email: ${event.contact_email}\n` : ''}${event.contact_phone ? `Phone: ${event.contact_phone}` : ''}`);
+              }}
+            >
+              <i className="fas fa-hands-helping me-2"></i>
+              Volunteer for this Event
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
