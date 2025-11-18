@@ -61,6 +61,27 @@
 
   /* Transitions */
   --transition: all 0.2s ease-in-out;
+  --transition-base: all 0.2s ease-in-out;
+  --transition-fast: all 0.15s ease-in-out;
+
+  /* Extended spacing */
+  --space-1: 2px;
+  --space-2: 6px;
+  --space-3: 12px;
+  --space-4: 20px;
+  --space-5: 28px;
+  --space-6: 36px;
+  --space-8: 52px;
+
+  /* Extended neutrals */
+  --neutral-0: #ffffff;
+  --neutral-100: #f3f4f6;
+  --border-strong: #94a3b8;
+  --primary-100: rgba(99, 102, 241, 0.1);
+
+  /* Extended shadows */
+  --shadow-xs: 0 1px 1px 0 rgba(0, 0, 0, 0.03);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
 }
 
 /* Reset / base */
@@ -935,7 +956,6 @@ picture {
 }
 
 .auth-form button[type="submit"] {
-  padding: 200px;
   width: 100%;
   padding: var(--space-3) var(--space-5);
   margin-top: var(--space-2);
