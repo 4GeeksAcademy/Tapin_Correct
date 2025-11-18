@@ -22,7 +22,12 @@ class TicketmasterAPI:
         Args:
             api_key: Ticketmaster Consumer Key (API key)
         """
-        self.api_key = api_key or os.environ.get("TICKETMASTER_API_KEY", "qgvFszyOMAW7tADHTsBTNA4Hs3vcNYev")
+        self.api_key = api_key or os.environ.get("TICKETMASTER_API_KEY")
+        if not self.api_key:
+            raise ValueError(
+                "Ticketmaster API key required. Set TICKETMASTER_API_KEY environment variable "
+                "or pass api_key parameter. Get your key at: https://developer.ticketmaster.com/"
+            )
 
     def search_events(
         self,
