@@ -10,6 +10,9 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 export default function AchievementsPanel({ token }) {
   const [achievements, setAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const [organizationMetrics, setOrganizationMetrics] = useState(null);
+  const [levelInfo, setLevelInfo] = useState(null);
 
   const achievementDefinitions = {
     weekend_warrior: {
@@ -90,7 +93,16 @@ export default function AchievementsPanel({ token }) {
 
       if (res.ok) {
         const data = await res.json();
-        setAchievements(data.achievements || []);
+        setUserRole(data.role);
+
+        if (data.role === 'organization') {
+          // Organization metrics
+          setOrganizationMetrics(data.metrics);
+        } else {
+          // Volunteer achievements
+          setAchievements(data.achievements || []);
+          setLevelInfo(data.level_info);
+        }
       }
     } catch (error) {
       console.error('Error loading achievements:', error);
@@ -134,6 +146,63 @@ export default function AchievementsPanel({ token }) {
     );
   }
 
+  // Organization Metrics View
+  if (userRole === 'organization' && organizationMetrics) {
+    return (
+      <div className="achievements-panel">
+        <div className="achievements-header mb-4">
+          <h4 className="fw-bold mb-3">
+            <span className="me-2">📊</span>
+            Organization Metrics
+          </h4>
+
+          <div className="card">
+            <div className="card-body">
+              <div className="row text-center g-3">
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-primary">{organizationMetrics.events_posted}</div>
+                  <div className="stat-label">Events Posted</div>
+                </div>
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-success">{organizationMetrics.unique_volunteers}</div>
+                  <div className="stat-label">Volunteers Reached</div>
+                </div>
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-info">{organizationMetrics.total_views}</div>
+                  <div className="stat-label">Total Views</div>
+                </div>
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-warning">{organizationMetrics.total_likes}</div>
+                  <div className="stat-label">Total Likes</div>
+                </div>
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-danger">{organizationMetrics.total_attendees}</div>
+                  <div className="stat-label">Attendees</div>
+                </div>
+                <div className="col-6 col-md-4">
+                  <div className="stat-value text-success">{organizationMetrics.engagement_rate}%</div>
+                  <div className="stat-label">Engagement Rate</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tips for organizations */}
+        <div className="alert alert-info mt-4">
+          <h6><i className="fas fa-lightbulb me-2"></i>Tips to Improve Engagement</h6>
+          <ul className="mb-0 small">
+            <li>Post events with compelling descriptions and images</li>
+            <li>Include clear contact information for volunteers</li>
+            <li>Update event details regularly</li>
+            <li>Respond quickly to volunteer inquiries</li>
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  // Volunteer Achievements View
   const unlockedCount = achievements.filter(a => a.unlocked).length;
   const totalCount = achievements.length;
 
@@ -145,6 +214,24 @@ export default function AchievementsPanel({ token }) {
           <span className="me-2">🏆</span>
           Achievements
         </h4>
+
+        {/* Level Info */}
+        {levelInfo && (
+          <div className="card mb-3 bg-gradient-primary text-white">
+            <div className="card-body">
+              <div className="row text-center align-items-center">
+                <div className="col">
+                  <div className="stat-value">Level {levelInfo.level}</div>
+                  <div className="stat-label">{levelInfo.title}</div>
+                </div>
+                <div className="col">
+                  <div className="stat-value">{levelInfo.xp} XP</div>
+                  <div className="stat-label">Next: {levelInfo.next_level_xp} XP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="achievement-stats card">
           <div className="card-body">

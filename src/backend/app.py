@@ -112,12 +112,19 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    # simple role column for basic RBAC (default: "user")
-    role = db.Column(db.String(50), default='user')
+    # Role: 'volunteer', 'organization', or 'user' (default)
+    role = db.Column(db.String(50), default='volunteer')
+    # Organization name (only for role='organization')
+    organization_name = db.Column(db.String(200), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {"id": self.id, "email": self.email}
+        return {
+            "id": self.id,
+            "email": self.email,
+            "role": self.role,
+            "organization_name": self.organization_name
+        }
 
 
 class Listing(db.Model):
@@ -240,6 +247,10 @@ class Event(db.Model):
     source = db.Column(db.String(200))
     venue = db.Column(db.String(200), nullable=True)  # Event venue name
     price = db.Column(db.String(100), nullable=True)  # Event price/cost
+    # Contact information for volunteer events
+    contact_email = db.Column(db.String(200), nullable=True)
+    contact_phone = db.Column(db.String(50), nullable=True)
+    contact_person = db.Column(db.String(200), nullable=True)
     scraped_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -268,6 +279,9 @@ class Event(db.Model):
             "source": self.source,
             "venue": self.venue,
             "price": self.price,
+            "contact_email": self.contact_email,
+            "contact_phone": self.contact_phone,
+            "contact_person": self.contact_person,
             "scraped_at": (
                 self.scraped_at.isoformat() if self.scraped_at else None
             ),
@@ -321,7 +335,7 @@ class UserEventInteraction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     event_id = db.Column(db.String(36), db.ForeignKey("event.id"), nullable=False, index=True)
     interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
+    interaction_data = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     def to_dict(self):
@@ -330,7 +344,7 @@ class UserEventInteraction(db.Model):
             "user_id": self.user_id,
             "event_id": self.event_id,
             "interaction_type": self.interaction_type,
-            "metadata": self.metadata,
+            "interaction_data": self.interaction_data,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
 
@@ -345,7 +359,7 @@ class UserAchievement(db.Model):
     progress = db.Column(db.Integer, default=0)  # Progress towards achievement
     unlocked = db.Column(db.Boolean, default=False, index=True)
     unlocked_at = db.Column(db.DateTime, nullable=True)
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
+    achievement_data = db.Column(db.Text, nullable=True)  # JSON with additional data
 
     def to_dict(self):
         return {
@@ -355,7 +369,7 @@ class UserAchievement(db.Model):
             "progress": self.progress,
             "unlocked": self.unlocked,
             "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
-            "metadata": self.metadata,
+            "achievement_data": self.achievement_data,
         }
 
 
@@ -451,14 +465,29 @@ def register_user():
     data = request.get_json() or {}
     email = data.get('email')
     password = data.get('password')
+    role = data.get('role', 'volunteer')  # Default to volunteer
+    organization_name = data.get('organization_name')
+
     if not email or not password:
         return jsonify({"error": "email and password required"}), 400
+
+    # Validate organization name if role is organization
+    if role == 'organization' and not organization_name:
+        return jsonify({"error": "organization name required for organizations"}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "user already exists"}), 400
+
     pw_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=pw_hash)
+    user = User(
+        email=email,
+        password_hash=pw_hash,
+        role=role,
+        organization_name=organization_name if role == 'organization' else None
+    )
     db.session.add(user)
     db.session.commit()
+
     # return both access and refresh tokens (identity stored as string)
     from backend.auth import token_pair
 
@@ -1054,15 +1083,17 @@ def record_event_interaction():
         user_id=uid_int,
         event_id=event_id,
         interaction_type=interaction_type,
-        metadata=json.dumps(metadata) if metadata else None
+        interaction_data=json.dumps(metadata) if metadata else None
     )
     db.session.add(interaction)
     db.session.commit()
 
-    # Update user achievements based on interaction
-    from backend.event_discovery.gamification import GamificationEngine
-    gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
-    gamification.check_achievements(uid_int)
+    # Update user achievements based on interaction (volunteers only)
+    user = User.query.get(uid_int)
+    if user and user.role == 'volunteer':
+        from backend.event_discovery.gamification import GamificationEngine
+        gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+        gamification.check_achievements(uid_int)
 
     return jsonify({
         "message": "interaction recorded",
@@ -1266,23 +1297,123 @@ def surprise_me():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/api/events/ticketmaster', methods=['POST'])
+def get_ticketmaster_events():
+    """Fetch real future events from Ticketmaster Discovery API."""
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 50)
+    classification = data.get('classification')  # Optional: Music, Sports, Arts & Theatre, etc.
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({"error": "location must be 'City, ST' format"}), 400
+
+    city = parts[0]
+    state_code = parts[1]
+
+    try:
+        from backend.ticketmaster_api import TicketmasterAPI
+        tm_api = TicketmasterAPI()
+
+        events = tm_api.get_events_for_city(
+            city=city,
+            state_code=state_code,
+            limit=limit,
+            classification=classification
+        )
+
+        return jsonify({
+            "events": events,
+            "count": len(events),
+            "source": "Ticketmaster",
+            "city": city,
+            "state": state_code
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/achievements', methods=['GET'])
 @jwt_required()
 def get_achievements():
-    """Get user's achievements and progress."""
+    """Get user's achievements and progress (role-aware)."""
     uid = get_jwt_identity()
     try:
         uid_int = int(uid)
     except Exception:
         uid_int = uid
 
-    achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+    # Get user to check role
+    user = User.query.get(uid_int)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
 
-    return jsonify({
-        "achievements": [a.to_dict() for a in achievements],
-        "unlocked_count": sum(1 for a in achievements if a.unlocked),
-        "total_count": len(achievements)
-    }), 200
+    # Role-aware response
+    if user.role == 'organization':
+        # Organizations get different metrics
+        # Count events posted by this organization
+        events_posted = Event.query.filter_by(organization=user.organization_name).count()
+
+        # Count total interactions with organization's events
+        org_events = Event.query.filter_by(organization=user.organization_name).all()
+        org_event_ids = [e.id for e in org_events]
+
+        total_views = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type == 'view'
+        ).count()
+
+        total_likes = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type.in_(['like', 'super_like'])
+        ).count()
+
+        total_attendees = UserEventInteraction.query.filter(
+            UserEventInteraction.event_id.in_(org_event_ids),
+            UserEventInteraction.interaction_type == 'attend'
+        ).count()
+
+        # Unique volunteers (distinct users who interacted)
+        unique_volunteers = db.session.query(UserEventInteraction.user_id).filter(
+            UserEventInteraction.event_id.in_(org_event_ids)
+        ).distinct().count()
+
+        return jsonify({
+            "role": "organization",
+            "organization_name": user.organization_name,
+            "metrics": {
+                "events_posted": events_posted,
+                "total_views": total_views,
+                "total_likes": total_likes,
+                "total_attendees": total_attendees,
+                "unique_volunteers": unique_volunteers,
+                "engagement_rate": round((total_likes / max(total_views, 1)) * 100, 1) if total_views > 0 else 0
+            }
+        }), 200
+
+    else:
+        # Volunteers get achievement system
+        achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+
+        # Calculate level and XP
+        from backend.event_discovery.gamification import GamificationEngine
+        gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+        level_info = gamification.get_user_level(uid_int)
+
+        return jsonify({
+            "role": "volunteer",
+            "achievements": [a.to_dict() for a in achievements],
+            "unlocked_count": sum(1 for a in achievements if a.unlocked),
+            "total_count": len(achievements),
+            "level_info": level_info
+        }), 200
 
 
 if __name__ == '__main__':

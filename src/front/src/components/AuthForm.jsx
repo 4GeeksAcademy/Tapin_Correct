@@ -7,6 +7,8 @@ export default function AuthForm({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('volunteer'); // 'volunteer' or 'organization'
+  const [organizationName, setOrganizationName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -22,12 +24,28 @@ export default function AuthForm({ onLogin }) {
       return;
     }
 
+    if (mode === 'register' && role === 'organization' && !organizationName.trim()) {
+      setError('Organization name is required');
+      setLoading(false);
+      return;
+    }
+
     try {
       const endpoint = mode === 'login' ? '/login' : '/register';
+      const payload = { email, password };
+
+      // Add role and organization name for registration
+      if (mode === 'register') {
+        payload.role = role;
+        if (role === 'organization') {
+          payload.organization_name = organizationName;
+        }
+      }
+
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -65,6 +83,43 @@ export default function AuthForm({ onLogin }) {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {mode === 'register' && (
+            <div className="role-selector" style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>
+                I am a:
+              </label>
+              <div className="btn-group w-100" role="group">
+                <button
+                  type="button"
+                  className={`btn ${role === 'volunteer' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => setRole('volunteer')}
+                >
+                  <i className="fas fa-hands-helping me-2"></i>
+                  Volunteer
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${role === 'organization' ? 'btn-primary' : 'btn-outline-primary'}`}
+                  onClick={() => setRole('organization')}
+                >
+                  <i className="fas fa-building me-2"></i>
+                  Organization
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'register' && role === 'organization' && (
+            <input
+              type="text"
+              placeholder="Organization Name"
+              value={organizationName}
+              onChange={(e) => setOrganizationName(e.target.value)}
+              required
+              className="form-input"
+            />
+          )}
+
           <input
             type="email"
             placeholder="Email"
