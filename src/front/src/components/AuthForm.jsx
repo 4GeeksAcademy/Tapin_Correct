@@ -7,6 +7,7 @@ export default function AuthForm({ onLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [userType, setUserType] = useState('volunteer'); // 'volunteer' or 'organization'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -24,10 +25,17 @@ export default function AuthForm({ onLogin }) {
 
     try {
       const endpoint = mode === 'login' ? '/login' : '/register';
+      const body = { email, password };
+
+      // Include user_type only during registration
+      if (mode === 'register') {
+        body.user_type = userType;
+      }
+
       const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
 
       if (!res.ok) {
@@ -65,6 +73,38 @@ export default function AuthForm({ onLogin }) {
         </div>
 
         <form onSubmit={handleSubmit}>
+          {mode === 'register' && (
+            <div className="user-type-selector" style={{ marginBottom: 'var(--space-4)' }}>
+              <label style={{ display: 'block', marginBottom: 'var(--space-2)', fontWeight: '500' }}>
+                I am a:
+              </label>
+              <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="volunteer"
+                    checked={userType === 'volunteer'}
+                    onChange={(e) => setUserType(e.target.value)}
+                    style={{ marginRight: 'var(--space-2)' }}
+                  />
+                  <span>Volunteer</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="userType"
+                    value="organization"
+                    checked={userType === 'organization'}
+                    onChange={(e) => setUserType(e.target.value)}
+                    style={{ marginRight: 'var(--space-2)' }}
+                  />
+                  <span>Organization</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <input
             type="email"
             placeholder="Email"

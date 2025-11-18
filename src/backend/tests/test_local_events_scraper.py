@@ -4,7 +4,7 @@ Tests for local_events_scraper.py - Local event discovery
 import pytest
 import asyncio
 from datetime import datetime, timezone
-from backend.event_discovery.local_events_scraper import LocalEventsScraper
+from event_discovery.local_events_scraper import LocalEventsScraper
 
 
 class TestLocalEventsScraper:

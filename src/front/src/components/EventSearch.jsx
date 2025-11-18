@@ -22,7 +22,7 @@ export default function EventSearch({ onEventsLoaded }) {
   };
 
   const handleSearch = async () => {
-    if (!selectedState) {
+    if (!selectedCity) {
       setError('Please select a city to search for events');
       return;
     }
@@ -32,15 +32,23 @@ export default function EventSearch({ onEventsLoaded }) {
     setSearched(true);
 
     try {
-      const params = new URLSearchParams();
-      if (selectedCity) {
-        // Extract just the city name (before the comma)
-        const cityName = selectedCity.split(',')[0].trim();
-        params.set('city', cityName);
+      // Extract city and state from selectedCity format "City, ST"
+      const parts = selectedCity.split(',').map(p => p.trim());
+      const cityName = parts[0];
+      const stateCode = parts.length > 1 ? parts[parts.length - 1] : selectedState;
+
+      // Validate state code (should be 2 letters)
+      if (!stateCode || stateCode.length > 3 || stateCode === 'USA') {
+        setError('Please select a city with a valid state (e.g., Boston, MA)');
+        return;
       }
-      params.set('state', selectedState);
+
+      const params = new URLSearchParams();
+      params.set('city', cityName);
+      params.set('state', stateCode);
 
       const url = `${API_URL}/events/search?${params.toString()}`;
+      console.log('Searching:', url);
       const res = await fetch(url);
 
       if (!res.ok) {

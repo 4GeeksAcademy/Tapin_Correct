@@ -9,11 +9,10 @@ import sys
 
 # Ensure the repo src is on PYTHONPATH when invoked from project root
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-src_root = os.path.join(repo_root, "..")
-if src_root not in sys.path:
-    sys.path.insert(0, src_root)
+if repo_root not in sys.path:
+    sys.path.insert(0, repo_root)
 
-from backend.app import db, Event  # noqa: E402
+from app import db, Event  # noqa: E402
 
 
 def cleanup_expired():

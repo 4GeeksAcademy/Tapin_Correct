@@ -26,6 +26,7 @@ langchain-community = "*"
 geopy = "*"
 geohash2 = "*"
 unstructured = "*"
+pygeohash = "*"
 
 [dev-packages]
 pytest = ">=7.0"

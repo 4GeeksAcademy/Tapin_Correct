@@ -22,12 +22,12 @@ except ImportError:
 # Import DB models from the application package
 # Use late binding to avoid circular import issues with Flask app context
 def _get_db():
-    from backend.app import db
+    from app import db
     return db
 
 
 def _get_models():
-    from backend.app import Event, EventImage
+    from app import Event, EventImage
     return Event, EventImage
 
 
@@ -152,7 +152,10 @@ class EventCacheManager:
                     # Update legacy fields
                     # Update legacy thumbnail/url fields
                     if imgs:
-                        existing.image_url = event.get("image_url") or imgs[0]
+                        # Extract URL from first image (handle both string and dict)
+                        first_img = imgs[0]
+                        first_img_url = first_img.get('url') if isinstance(first_img, dict) else first_img
+                        existing.image_url = event.get("image_url") or first_img_url
                         existing.image_urls = json.dumps(imgs)
                     else:
                         existing.image_url = (
@@ -168,14 +171,23 @@ class EventCacheManager:
                             db.session.delete(old_img)
                         # Flush deletes before adding new images
                         db.session.flush()
-                        for idx, img_url in enumerate(imgs):
-                            ei = EventImage(
-                                event_id=existing.id,
-                                url=img_url,
-                                caption=None,
-                                position=idx,
-                            )
-                            db.session.add(ei)
+                        for idx, img_data in enumerate(imgs):
+                            # Handle both string URLs and dict objects
+                            if isinstance(img_data, dict):
+                                img_url = img_data.get('url', '')
+                                img_caption = img_data.get('caption')
+                            else:
+                                img_url = img_data
+                                img_caption = None
+
+                            if img_url:  # Only add if we have a valid URL
+                                ei = EventImage(
+                                    event_id=existing.id,
+                                    url=img_url,
+                                    caption=img_caption,
+                                    position=idx,
+                                )
+                                db.session.add(ei)
 
                     db.session.add(existing)
                     persisted.append(existing.to_dict())
@@ -212,19 +224,34 @@ class EventCacheManager:
                     if not imgs and event.get("image_url"):
                         imgs = [event.get("image_url")]
 
-                    ev.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    # Extract URL from first image (handle both string and dict)
+                    first_img_url = None
+                    if imgs:
+                        first_img = imgs[0]
+                        first_img_url = first_img.get('url') if isinstance(first_img, dict) else first_img
+
+                    ev.image_url = event.get("image_url") or first_img_url
                     ev.image_urls = json.dumps(imgs) if imgs else None
 
                     db.session.add(ev)
                     # Add normalized EventImage rows
-                    for idx, url in enumerate(imgs):
-                        ei = EventImage(
-                            event_id=ev.id,
-                            url=url,
-                            caption=None,
-                            position=idx,
-                        )
-                        db.session.add(ei)
+                    for idx, img_data in enumerate(imgs):
+                        # Handle both string URLs and dict objects
+                        if isinstance(img_data, dict):
+                            img_url = img_data.get('url', '')
+                            img_caption = img_data.get('caption')
+                        else:
+                            img_url = img_data
+                            img_caption = None
+
+                        if img_url:  # Only add if we have a valid URL
+                            ei = EventImage(
+                                event_id=ev.id,
+                                url=img_url,
+                                caption=img_caption,
+                                position=idx,
+                            )
+                            db.session.add(ei)
                     persisted.append(ev.to_dict())
             except Exception as e:
                 print(f"DB upsert error for event {event.get('title')}: {e}")

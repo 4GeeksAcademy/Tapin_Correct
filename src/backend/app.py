@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
-from backend.auth import token_for
+from auth import token_for
 from flask_cors import CORS
 from datetime import datetime, timezone
 import os
@@ -117,7 +117,12 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        return {"id": self.id, "email": self.email}
+        return {
+            "id": self.id,
+            "email": self.email,
+            "role": self.role,
+            "user_type": self.role  # Alias for clarity (volunteer/organization)
+        }
 
 
 class Listing(db.Model):
@@ -321,7 +326,7 @@ class UserEventInteraction(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
     event_id = db.Column(db.String(36), db.ForeignKey("event.id"), nullable=False, index=True)
     interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
+    interaction_metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
     timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
     def to_dict(self):
@@ -330,7 +335,7 @@ class UserEventInteraction(db.Model):
             "user_id": self.user_id,
             "event_id": self.event_id,
             "interaction_type": self.interaction_type,
-            "metadata": self.metadata,
+            "metadata": self.interaction_metadata,
             "timestamp": self.timestamp.isoformat() if self.timestamp else None,
         }
 
@@ -345,7 +350,7 @@ class UserAchievement(db.Model):
     progress = db.Column(db.Integer, default=0)  # Progress towards achievement
     unlocked = db.Column(db.Boolean, default=False, index=True)
     unlocked_at = db.Column(db.DateTime, nullable=True)
-    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
+    achievement_metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
 
     def to_dict(self):
         return {
@@ -355,7 +360,7 @@ class UserAchievement(db.Model):
             "progress": self.progress,
             "unlocked": self.unlocked,
             "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
-            "metadata": self.metadata,
+            "metadata": self.achievement_metadata,
         }
 
 
@@ -451,20 +456,28 @@ def register_user():
     data = request.get_json() or {}
     email = data.get('email')
     password = data.get('password')
+    user_type = data.get('user_type', 'volunteer')  # 'volunteer' or 'organization'
+
     if not email or not password:
         return jsonify({"error": "email and password required"}), 400
+
+    # Validate user_type
+    if user_type not in ['volunteer', 'organization']:
+        return jsonify({"error": "user_type must be 'volunteer' or 'organization'"}), 400
+
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "user already exists"}), 400
+
     pw_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=pw_hash)
+    user = User(email=email, password_hash=pw_hash, role=user_type)
     db.session.add(user)
     db.session.commit()
     # return both access and refresh tokens (identity stored as string)
-    from backend.auth import token_pair
+    from auth import token_pair
 
     tokens = token_pair(user)
     return jsonify({
-        "message": "user created",
+        "message": f"{user_type} account created successfully",
         "user": user.to_dict(),
         **tokens
     }), 201
@@ -479,7 +492,7 @@ def login_user():
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
     # return both access and refresh tokens to the client
-    from backend.auth import token_pair
+    from auth import token_pair
 
     tokens = token_pair(user)
     return jsonify({
@@ -948,11 +961,81 @@ def discover_events():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/events/search', methods=['GET'])
+def search_events():
+    """Public event search endpoint (no auth required).
+
+    Query params:
+    - city: City name
+    - state: State code (e.g., TX, NY)
+    """
+    import asyncio
+    from event_discovery import EventCacheManager
+
+    city = request.args.get('city', '').strip()
+    state = request.args.get('state', '').strip()
+
+    if not city or not state:
+        return jsonify({"error": "city and state parameters required"}), 400
+
+    try:
+        # EventCacheManager uses async/await
+        manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
+
+        # Create a new event loop and run async code
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Push Flask app context for database operations
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                # Run async code with app context active
+                events = loop.run_until_complete(
+                    manager.search_by_location(city, state)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        return jsonify({
+            "events": events,
+            "location": f"{city}, {state}",
+            "count": len(events),
+            "cached": True
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
-    """Get all event categories with metadata (icons, colors, descriptions)."""
+    """Get event categories with optional filtering."""
     from event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
 
+    # Optional filter for volunteer-only categories
+    filter_type = request.args.get('type', 'all')  # 'all', 'volunteer', 'entertainment'
+
+    if filter_type == 'volunteer':
+        # Return only volunteer-focused categories
+        volunteer_categories = {
+            k: v for k, v in EVENT_CATEGORIES.items()
+            if k in ['Volunteer', 'Hunger Relief', 'Animal Welfare', 'Environment',
+                    'Education', 'Seniors', 'Health', 'Community']
+        }
+        return jsonify({
+            "categories": volunteer_categories,
+            "type": "volunteer",
+            "count": len(volunteer_categories)
+        }), 200
+
+    # Return all categories by default
     return jsonify({
         "categories": EVENT_CATEGORIES,
         "grouped": get_categories_by_type(),
@@ -1060,7 +1143,7 @@ def record_event_interaction():
     db.session.commit()
 
     # Update user achievements based on interaction
-    from backend.event_discovery.gamification import GamificationEngine
+    from event_discovery.gamification import GamificationEngine
     gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
     gamification.check_achievements(uid_int)
 
@@ -1120,7 +1203,7 @@ def get_personalized_events():
             loop.close()
 
         # Personalize the feed with AI
-        from backend.event_discovery.personalization import PersonalizationEngine
+        from event_discovery.personalization import PersonalizationEngine
         engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
 
         # Use AI-powered personalization
@@ -1223,7 +1306,7 @@ def surprise_me():
             loop.close()
 
         # Generate AI-powered surprise event
-        from backend.event_discovery.surprise_engine import SurpriseEngine
+        from event_discovery.surprise_engine import SurpriseEngine
         surprise_engine = SurpriseEngine(db, User, Event, UserEventInteraction)
 
         # Use AI to generate surprise

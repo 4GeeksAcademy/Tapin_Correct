@@ -3,8 +3,8 @@ Tests for Sign-up and Review features (Sprint 1)
 Tests Stories 1.1 and 1.4
 """
 import pytest  # noqa: F401
-from backend.app import app, db, Listing
-from backend.auth import token_for
+from app import app, db, Listing
+from auth import token_for
 
 
 @pytest.fixture

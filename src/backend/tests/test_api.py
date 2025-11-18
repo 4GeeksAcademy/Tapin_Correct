@@ -1,5 +1,5 @@
-from backend.app import app, db, Item
-from backend.auth import token_for
+from app import app, db, Item
+from auth import token_for
 
 
 def test_health(client):

@@ -1,4 +1,4 @@
-from backend.auth import token_for
+from auth import token_for
 
 
 def test_create_and_crud_listing(client, create_user):
