@@ -7,6 +7,7 @@ import Filters from './components/Filters';
 import AuthForm from './components/AuthForm';
 import CreateListingForm from './components/CreateListingForm';
 import DashboardLanding from './pages/DashboardLanding';
+import EventDiscovery from './pages/EventDiscovery';
 import MapView from './components/MapView';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
@@ -32,6 +33,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
   const [userLocation, setUserLocation] = useState(null); // Store user's selected location
   const [showEventSearch, setShowEventSearch] = useState(false); // Toggle event discovery
+  const [showEventDiscovery, setShowEventDiscovery] = useState(false); // Toggle cutting-edge event discovery
 
   // Helper: fetch listings optionally filtered by q
   async function fetchListings(filter) {
@@ -129,6 +131,39 @@ export default function App() {
     );
   }
 
+  // Show EventDiscovery page when enabled
+  if (showEventDiscovery) {
+    return (
+      <div className="app-root">
+        <Header
+          user={user}
+          onLogout={() => {
+            localStorage.removeItem('access_token');
+            setToken(null);
+            setUser(null);
+          }}
+        />
+
+        {/* Back to Main App Button */}
+        <div style={{ padding: '10px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+          <button
+            onClick={() => setShowEventDiscovery(false)}
+            className="btn btn-outline-secondary btn-sm"
+          >
+            <i className="fas fa-arrow-left me-2"></i>
+            Back to Listings
+          </button>
+        </div>
+
+        <EventDiscovery
+          token={token}
+          userLocation={userLocation}
+          onLocationChange={setUserLocation}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="app-root">
       <Header
@@ -156,8 +191,8 @@ export default function App() {
       </div>
 
       <main>
-        {/* Event Discovery Toggle */}
-        <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        {/* Event Discovery Toggles */}
+        <div style={{ marginBottom: '20px', textAlign: 'center', display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => setShowEventSearch(!showEventSearch)}
             style={{
@@ -174,6 +209,36 @@ export default function App() {
           >
             {showEventSearch ? 'Hide Event Discovery' : 'Discover Volunteer Events'}
           </button>
+
+          {/* Cutting-Edge Event Discovery Button */}
+          {user && (
+            <button
+              onClick={() => setShowEventDiscovery(true)}
+              style={{
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 12px rgba(102, 126, 234, 0.4)',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'translateY(-2px)';
+                e.target.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.5)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'translateY(0)';
+                e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+              }}
+            >
+              <i className="fas fa-sparkles me-2"></i>
+              AI Event Discovery
+            </button>
+          )}
         </div>
 
         {/* Event Search Component */}
