@@ -1,7 +1,7 @@
 import asyncio
 import json
 import uuid
-from geohash2 import encode
+import pygeohash as geohash
 from geopy.geocoders import Nominatim
 import sqlalchemy as sa
 from langchain_community.document_loaders import AsyncHtmlLoader
@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 from .llm_impl import HybridLLM
 from datetime import datetime, timedelta, timezone
 from .state_nonprofits import STATE_NONPROFITS
+from .facebook_scraper import FacebookEventScraper
+from .local_events_scraper import LocalEventsScraper
 
 # Try to import playwright for JavaScript rendering
 try:
@@ -20,26 +22,37 @@ except ImportError:
 # Import DB models from the application package
 # Use late binding to avoid circular import issues with Flask app context
 def _get_db():
-    from flask import current_app
-    from app import db
+    from backend.app import db
     return db
 
 
 def _get_models():
-    from app import Event, EventImage
+    from backend.app import Event, EventImage
     return Event, EventImage
 
 
 class EventCacheManager:
 
-    def __init__(self):
+    def __init__(self, db=None, event_model=None, event_image_model=None):
         # HybridLLM prefers Gemini; falls back to Ollama or a mock.
         self.llm = HybridLLM()
         self.geocoder = Nominatim(user_agent="tapin_app", timeout=10)
+        self.facebook_scraper = FacebookEventScraper()
+        self.local_scraper = LocalEventsScraper()
+        # Store db and models if provided, otherwise get them later
+        self.db = db
+        self.Event = event_model
+        self.EventImage = event_image_model
 
     async def search_by_location(self, city: str, state: str):
-        db = _get_db()
-        Event, EventImage = _get_models()
+        # Use provided models or get them from app context
+        if self.db is None or self.Event is None:
+            db = _get_db()
+            Event, EventImage = _get_models()
+        else:
+            db = self.db
+            Event = self.Event
+            EventImage = self.EventImage
 
         location = self.geocoder.geocode(f"{city}, {state}, USA")
         if not location:
@@ -48,7 +61,7 @@ class EventCacheManager:
         lat, lon = location.latitude, location.longitude
 
         # Cache lookup by geohash_6 (city-level) and ensure not expired
-        gh = encode(lat, lon, precision=6)
+        gh = geohash.encode(lat, lon, precision=6)
         now = datetime.now(timezone.utc)
         cached_q = Event.query.filter(Event.geohash_6 == gh).filter(
             sa.or_(
@@ -78,8 +91,8 @@ class EventCacheManager:
             # Normalize lat/lon: prefer event-provided, else use search center
             ev_lat = event.get("lat") or lat
             ev_lon = event.get("lon") or lon
-            gh6 = encode(float(ev_lat), float(ev_lon), precision=6)
-            gh4 = encode(float(ev_lat), float(ev_lon), precision=4)
+            gh6 = geohash.encode(float(ev_lat), float(ev_lon), precision=6)
+            gh4 = geohash.encode(float(ev_lat), float(ev_lon), precision=4)
             expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
             # Upsert into DB: prefer matching by URL when available
@@ -228,42 +241,105 @@ class EventCacheManager:
     async def scrape_city_events(self, city: str, state: str):
         """Scrape events ONLY for the user's specific city location.
 
-        Uses VolunteerMatch's city-specific search. Playwright renders JavaScript content.
-        Falls back to sample data if scraping fails (SPA sites with anti-bot detection).
-        """
-        # Build a city-specific search URL (single location only)
-        city_slug = city.replace(" ", "%20") if city else ""
-        state_upper = state.upper() if state else ""
+        Combines multiple sources:
+        1. Facebook nonprofit pages (with images)
+        2. VolunteerMatch search
+        3. Sample events fallback
 
-        # Primary source: VolunteerMatch with city+state specific search
+        Falls back gracefully if scraping fails.
+        """
+        state_upper = state.upper() if state else ""
+        all_events = []
+
+        # Try Facebook nonprofit pages first (includes images)
+        try:
+            fb_events = await self.facebook_scraper.search_events(
+                city, state_upper, limit=3
+            )
+            # Process Facebook events to extract images
+            for event in fb_events:
+                # Convert Facebook image format to our format
+                if 'images' in event and event['images']:
+                    event['image_urls'] = [
+                        img['url'] for img in event['images']
+                    ]
+                    event['image_url'] = event['images'][0]['url']
+                all_events.extend(fb_events)
+        except Exception as e:
+            print(f"Facebook scraping failed: {e}")
+
+        # Try VolunteerMatch
+        city_slug = city.replace(" ", "%20") if city else ""
         volunteer_match_url = (
-            f"https://www.volunteermatch.org/search?l={city_slug}%2C+{state_upper}"
+            f"https://www.volunteermatch.org/search?"
+            f"l={city_slug}%2C+{state_upper}"
         )
         org_name = f"VolunteerMatch {city}, {state_upper}"
 
-        # Scrape ONLY this single city-specific source
-        events = await self.scrape_nonprofit(volunteer_match_url, org_name)
+        vm_events = await self.scrape_nonprofit(volunteer_match_url, org_name)
+        all_events.extend(vm_events)
 
-        # If scraping fails (SPA anti-bot detection), generate localized sample events
-        # This demonstrates the system while providing useful volunteer opportunity suggestions
-        if not events:
-            print(f"Scraping returned no results for {city}, {state_upper}. Generating sample events.")
-            events = self._generate_sample_events(city, state_upper)
+        # If no events found, generate samples with images
+        if not all_events:
+            print(
+                f"No events found for {city}, {state_upper}. "
+                "Generating sample events."
+            )
+            all_events = self._generate_sample_events_with_images(
+                city, state_upper
+            )
 
-        # Filter to ensure all events are tagged with the user's city
-        for event in events:
+        # Ensure all events have city/state
+        for event in all_events:
             if not event.get("city"):
                 event["city"] = city
             if not event.get("state"):
                 event["state"] = state_upper
 
-        return events
+        return all_events
 
-    def _generate_sample_events(self, city: str, state: str):
-        """Generate localized sample volunteer events when scraping fails.
+    def _generate_sample_events_with_images(self, city: str, state: str):
+        """Generate localized sample volunteer events WITH IMAGES.
 
-        These represent common volunteer opportunities available in most cities.
+        These represent common volunteer opportunities with realistic images.
+        Each event has a unique URL to avoid deduplication.
         """
+        base_url = f"https://volunteermatch.org/search?l={city}%2C+{state}"
+
+        # Placeholder images for different categories
+        images = {
+            "food": [
+                "https://via.placeholder.com/800x600/4CAF50/ffffff"
+                "?text=Food+Bank+Volunteers",
+                "https://via.placeholder.com/800x600/4CAF50/ffffff"
+                "?text=Food+Distribution"
+            ],
+            "animals": [
+                "https://via.placeholder.com/800x600/FF9800/ffffff"
+                "?text=Shelter+Dogs",
+                "https://via.placeholder.com/800x600/FF9800/ffffff"
+                "?text=Dog+Walking"
+            ],
+            "environment": [
+                "https://via.placeholder.com/800x600/2196F3/ffffff"
+                "?text=Park+Cleanup",
+                "https://via.placeholder.com/800x600/2196F3/ffffff"
+                "?text=Tree+Planting"
+            ],
+            "education": [
+                "https://via.placeholder.com/800x600/9C27B0/ffffff"
+                "?text=Tutoring+Session",
+                "https://via.placeholder.com/800x600/9C27B0/ffffff"
+                "?text=Library+Program"
+            ],
+            "seniors": [
+                "https://via.placeholder.com/800x600/F44336/ffffff"
+                "?text=Senior+Center",
+                "https://via.placeholder.com/800x600/F44336/ffffff"
+                "?text=Companion+Program"
+            ],
+        }
+
         return [
             {
                 "title": f"Community Food Bank Sorting",
@@ -273,9 +349,11 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#foodbank",
                 "date": "2025-01-25",
                 "category": "Hunger Relief",
+                "image_url": images["food"][0],
+                "image_urls": images["food"],
             },
             {
                 "title": f"Animal Shelter Dog Walking",
@@ -285,9 +363,11 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#animals",
                 "date": "2025-01-26",
                 "category": "Animals",
+                "image_url": images["animals"][0],
+                "image_urls": images["animals"],
             },
             {
                 "title": f"Park Cleanup & Beautification",
@@ -297,9 +377,11 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#environment",
                 "date": "2025-02-01",
                 "category": "Environment",
+                "image_url": images["environment"][0],
+                "image_urls": images["environment"],
             },
             {
                 "title": f"Youth Tutoring Program",
@@ -309,9 +391,11 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#education",
                 "date": "2025-02-08",
                 "category": "Education",
+                "image_url": images["education"][0],
+                "image_urls": images["education"],
             },
             {
                 "title": f"Senior Center Companion",
@@ -321,11 +405,18 @@ class EventCacheManager:
                 "state": state,
                 "lat": 0.0,
                 "lon": 0.0,
-                "url": f"https://volunteermatch.org/search?l={city}%2C+{state}",
+                "url": f"{base_url}#seniors",
                 "date": "2025-02-15",
                 "category": "Seniors",
+                "image_url": images["seniors"][0],
+                "image_urls": images["seniors"],
             },
         ]
+
+    # Keep old method name for compatibility
+    def _generate_sample_events(self, city: str, state: str):
+        """Backwards compatibility - calls new method with images."""
+        return self._generate_sample_events_with_images(city, state)
 
     async def scrape_state_nonprofits(self, state: str):
         # Use the curated STATE_NONPROFITS mapping; fall back to a minimal list
@@ -455,3 +546,170 @@ JSON OUTPUT:"""
             import traceback
             traceback.print_exc()
             return []
+
+    async def discover_tonight(self, city: str, state: str, limit: int = 20):
+        """
+        Discover ALL types of local events happening tonight (not just volunteer).
+
+        Uses LocalEventsScraper to find events across multiple platforms:
+        - Eventbrite
+        - Meetup
+        - Facebook local events
+        - City event calendars
+
+        Args:
+            city: City name
+            state: State code
+            limit: Maximum events to return
+
+        Returns:
+            List of event dictionaries with images
+        """
+        # Use provided models or get them from app context
+        if self.db is None or self.Event is None:
+            db = _get_db()
+            Event, EventImage = _get_models()
+        else:
+            db = self.db
+            Event = self.Event
+            EventImage = self.EventImage
+
+        # Geocode location
+        location = self.geocoder.geocode(f"{city}, {state}, USA")
+        if not location:
+            return []
+
+        lat, lon = location.latitude, location.longitude
+
+        # Check cache first
+        gh = geohash.encode(lat, lon, precision=6)
+        now = datetime.now(timezone.utc)
+
+        # For tonight's events, cache for shorter period (4 hours)
+        cache_key = f"tonight_{gh}"
+        cached_q = Event.query.filter(
+            Event.geohash_6 == gh,
+            Event.category.notin_(['Hunger Relief', 'Animals', 'Environment',
+                                    'Education', 'Seniors'])  # Exclude volunteer categories
+        ).filter(
+            sa.or_(
+                Event.cache_expires_at.is_(None),
+                Event.cache_expires_at > now,
+            )
+        )
+        cached = cached_q.limit(limit).all()
+
+        if cached and len(cached) >= limit / 2:  # If we have at least half the requested events
+            return [e.to_dict() for e in cached][:limit]
+
+        # Cache miss -> discover tonight's events
+        events = await self.local_scraper.discover_tonight(city, state, limit)
+
+        # Persist to database
+        persisted = []
+        for event in events:
+            try:
+                ev_lat = event.get("latitude") or lat
+                ev_lon = event.get("longitude") or lon
+                gh6 = geohash.encode(float(ev_lat), float(ev_lon), precision=6)
+                gh4 = geohash.encode(float(ev_lat), float(ev_lon), precision=4)
+
+                # Shorter cache for tonight's events (4 hours)
+                expires_at = datetime.now(timezone.utc) + timedelta(hours=4)
+
+                # Check if event already exists
+                existing = None
+                url = event.get("url")
+                if url:
+                    existing = Event.query.filter_by(url=url).first()
+
+                if existing:
+                    # Update existing event
+                    existing.title = event.get("title")
+                    existing.description = event.get("description")
+                    existing.latitude = float(ev_lat)
+                    existing.longitude = float(ev_lon)
+                    existing.geohash_6 = gh6
+                    existing.geohash_4 = gh4
+                    existing.cache_expires_at = expires_at
+                    existing.scraped_at = datetime.now(timezone.utc)
+                    existing.category = event.get("category")
+                    existing.venue = event.get("venue")
+                    existing.price = event.get("price")
+
+                    # Update images
+                    imgs = event.get("image_urls") or []
+                    if isinstance(imgs, str):
+                        try:
+                            imgs = json.loads(imgs)
+                        except:
+                            imgs = []
+                    existing.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    existing.image_urls = json.dumps(imgs) if imgs else None
+
+                    persisted.append(existing.to_dict())
+                else:
+                    # Create new event
+                    # Parse start_time if available
+                    start_time = event.get("start_time")
+                    if start_time and isinstance(start_time, str):
+                        try:
+                            start_time = datetime.fromisoformat(start_time)
+                        except:
+                            start_time = None
+
+                    ev = Event(
+                        id=str(uuid.uuid4()),
+                        title=event.get("title", "Untitled Event"),
+                        organization=event.get("source", "Local Event"),
+                        description=event.get("description", ""),
+                        location_city=city,
+                        location_state=state.upper(),
+                        location_address=event.get("address"),
+                        latitude=float(ev_lat),
+                        longitude=float(ev_lon),
+                        geohash_6=gh6,
+                        geohash_4=gh4,
+                        category=event.get("category", "Community"),
+                        date_start=start_time,
+                        url=url or f"https://tapin.org/events/{city.lower()}-{uuid.uuid4()}",
+                        venue=event.get("venue"),
+                        price=event.get("price"),
+                        scraped_at=datetime.now(timezone.utc),
+                        cache_expires_at=expires_at,
+                    )
+
+                    # Add images
+                    imgs = event.get("image_urls") or []
+                    if isinstance(imgs, str):
+                        try:
+                            imgs = json.loads(imgs)
+                        except:
+                            imgs = []
+
+                    ev.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    ev.image_urls = json.dumps(imgs) if imgs else None
+
+                    db.session.add(ev)
+
+                    # Add normalized EventImage rows
+                    for idx, img_url in enumerate(imgs):
+                        ei = EventImage(
+                            event_id=ev.id,
+                            url=img_url,
+                            caption=None,
+                            position=idx,
+                        )
+                        db.session.add(ei)
+
+                    persisted.append(ev.to_dict())
+            except Exception as e:
+                print(f"Error persisting tonight event {event.get('title')}: {e}")
+
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"DB commit error for tonight's events: {e}")
+
+        return persisted[:limit]
