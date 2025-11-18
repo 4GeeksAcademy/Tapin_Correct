@@ -6,7 +6,7 @@ Provides a small Click-based wrapper around Alembic for local development.
 Commands:
   upgrade [rev]        Run alembic upgrade (default: head)
   downgrade <rev>      Run alembic downgrade to specified revision
-  revision             Create a new autogenerate revision (passes -m and --autogenerate)
+  revision             Create new autogenerate revision (-m/--autogenerate)
   current              Show current revision
   history              Show revision history
 """
@@ -33,31 +33,27 @@ def cli():
 
 
 @cli.command()
-@click.argument("rev", required=False, default="head")
+@click.argument('rev', required=False, default='head')
 def upgrade(rev):
     """Upgrade the DB to REV (default: head)."""
     _run_alembic(f"-c {ALEMBIC_INI} upgrade {rev}")
 
 
 @cli.command()
-@click.argument("rev", required=True)
+@click.argument('rev', required=True)
 def downgrade(rev):
     """Downgrade the DB to REV."""
     _run_alembic(f"-c {ALEMBIC_INI} downgrade {rev}")
 
 
 @cli.command()
-@click.option("--message", "-m", required=True, help="Revision message")
-@click.option(
-    "--autogenerate",
-    is_flag=True,
-    default=False,
-    help="Run alembic --autogenerate",
-)
+@click.option('--message', '-m', required=True, help='Revision message')
+@click.option('--autogenerate', is_flag=True, default=False,
+              help='Run alembic --autogenerate')
 def revision(message, autogenerate):
     """Create a new migration revision."""
-    auto = "--autogenerate" if autogenerate else ""
-    _run_alembic(f'-c {ALEMBIC_INI} revision {auto} -m "{message}"')
+    auto = '--autogenerate' if autogenerate else ''
+    _run_alembic(f"-c {ALEMBIC_INI} revision {auto} -m \"{message}\"")
 
 
 @cli.command()
@@ -72,5 +68,5 @@ def history():
     _run_alembic(f"-c {ALEMBIC_INI} history")
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     cli()

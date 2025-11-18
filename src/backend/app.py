@@ -1,17 +1,14 @@
-"""Tapin Backend API - Flask application with authentication and listings."""
-import os
-import smtplib
-from datetime import datetime, timezone
-from email.message import EmailMessage
-
-from flask import Flask, request, jsonify, url_for, abort
-from flask_cors import CORS
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from flask import Flask, request, jsonify, url_for
 from flask_sqlalchemy import SQLAlchemy
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from werkzeug.security import generate_password_hash, check_password_hash
-
-from auth import token_for, token_pair
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
+from backend.auth import token_for
+from flask_cors import CORS
+from datetime import datetime, timezone
+import os
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+import smtplib
+from email.message import EmailMessage
 
 
 app = Flask(__name__)
@@ -20,56 +17,54 @@ base_dir = os.path.abspath(os.path.dirname(__file__))
 try:
     from dotenv import load_dotenv
 
-    repo_root = os.path.abspath(os.path.join(base_dir, ".."))
+    repo_root = os.path.abspath(os.path.join(base_dir, '..'))
     env_candidates = [
-        os.path.join(repo_root, ".env"),
-        os.path.join(repo_root, "..", ".env"),
+        os.path.join(repo_root, '.env'),
+        os.path.join(repo_root, '..', '.env'),
     ]
     for env_path in env_candidates:
         if os.path.exists(env_path):
             load_dotenv(env_path)
             break
 except Exception:
-    # python-dotenv not installed or .env missing.
-    # Proceed with environment variables only.
+    # python-dotenv not installed or .env missing; proceed with environment
+    # variables
     pass
 
-default_db = "sqlite:///" + os.path.join(base_dir, "data.db")
-# Allow DB URL override via env (for CI/production)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "SQLALCHEMY_DATABASE_URI",
-    default_db,
-)
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# Allow overriding the database URL via environment (useful for CI or
+# production)
+default_db = 'sqlite:///' + os.path.join(base_dir, 'data.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    'SQLALCHEMY_DATABASE_URI', default_db)
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Supabase connection pooling configuration for transaction mode (port 6543)
 # Configure SQLAlchemy engine options; adapt connect_args by driver
-db_url = app.config["SQLALCHEMY_DATABASE_URI"]
+db_url = app.config['SQLALCHEMY_DATABASE_URI']
 engine_options = {
-    "pool_pre_ping": True,
-    "pool_recycle": 300,
-    "pool_size": 5,
-    "max_overflow": 10,
+    'pool_pre_ping': True,
+    'pool_recycle': 300,
+    'pool_size': 5,
+    'max_overflow': 10,
 }
 
 # Use PostgreSQL-specific connect args only when using psycopg2
-if isinstance(db_url, str) and db_url.lower().startswith("postgresql"):
-    engine_options["connect_args"] = {
-        "connect_timeout": 10,
-        "options": "-c statement_timeout=30000",
+if isinstance(db_url, str) and db_url.lower().startswith('postgresql'):
+    engine_options['connect_args'] = {
+        'connect_timeout': 10,
+        'options': '-c statement_timeout=30000',
     }
-elif isinstance(db_url, str) and db_url.lower().startswith("sqlite"):
-    # SQLite doesn't accept the above options; keep connect_args empty.
-    engine_options["connect_args"] = {}
+elif isinstance(db_url, str) and db_url.lower().startswith('sqlite'):
+    # SQLite does not accept the above options; leave empty or set
+    # sqlite-specific options
+    engine_options['connect_args'] = {}
 
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
 # Secret key used for serializer tokens and other Flask features
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
-app.config["JWT_SECRET_KEY"] = os.environ.get(
-    "JWT_SECRET_KEY", app.config["SECRET_KEY"]
-)
-app.config["SECURITY_PASSWORD_SALT"] = os.environ.get(
-    "SECURITY_PASSWORD_SALT", "dev-salt"
-)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
+app.config['JWT_SECRET_KEY'] = os.environ.get(
+    'JWT_SECRET_KEY', app.config['SECRET_KEY'])
+app.config['SECURITY_PASSWORD_SALT'] = os.environ.get(
+    'SECURITY_PASSWORD_SALT', 'dev-salt')
 
 CORS(app)
 
@@ -78,39 +73,36 @@ jwt = JWTManager(app)
 
 
 def _warn_on_default_secrets():
-    """Log a short warning if secret env vars are still at dev defaults.
+    """Log warning if secret env vars are left at their dev defaults.
 
-    This is advisory only; it helps call out missing secret configuration in
-    local development and CI.
+    This is only advisory and will not stop the app from running. It's helpful
+    for local dev and in CI to call out missing secret configuration.
     """
     defaults = {
-        "SECRET_KEY": "dev-secret-key",
-        "SECURITY_PASSWORD_SALT": "dev-salt",
+        'SECRET_KEY': 'dev-secret-key',
+        'SECURITY_PASSWORD_SALT': 'dev-salt',
     }
     missing = []
     for key, default_val in defaults.items():
         val = os.environ.get(key, app.config.get(key))
         if not val or (isinstance(val, str) and val == default_val):
             missing.append(key)
-    # JWT_SECRET_KEY may default to SECRET_KEY; warn if it's still the dev key
+    # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the same as
+    # the dev key
     jwt_key = os.environ.get(
-        "JWT_SECRET_KEY", app.config.get("JWT_SECRET_KEY")
-    )
-    if (
-        not jwt_key or (
-            jwt_key == app.config.get("SECRET_KEY") == defaults["SECRET_KEY"]
-        )
-    ):
-        missing.append("JWT_SECRET_KEY")
+        'JWT_SECRET_KEY',
+        app.config.get('JWT_SECRET_KEY'))
+    if not jwt_key or (jwt_key == app.config.get('SECRET_KEY')
+                       == defaults['SECRET_KEY']):
+        missing.append('JWT_SECRET_KEY')
 
     if missing:
-        msg = (
+        app.logger.warning(
             "Missing or default secrets detected: %s.\n"
-            "For local dev copy `.env.sample` -> `.env`. "
-            "Set strong values. "
-            "See backend/CONFIG.md for details."
+            "For local dev copy `.env.sample` -> `.env` and set strong values."
+            " See backend/CONFIG.md for details.",
+            ', '.join(sorted(set(missing)))
         )
-        app.logger.warning(msg, ", ".join(sorted(set(missing))))
 
 
 _warn_on_default_secrets()
@@ -121,10 +113,8 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     # simple role column for basic RBAC (default: "user")
-    role = db.Column(db.String(50), default="user")
-    created_at = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc)
-    )
+    role = db.Column(db.String(50), default='user')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {"id": self.id, "email": self.email}
@@ -137,20 +127,13 @@ class Listing(db.Model):
     location = db.Column(db.String(200))
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
-    category = db.Column(
-        db.String(100), nullable=True
-    )  # Community, Environment, Education, Health, Animals
+    # Community, Environment, Education, Health, Animals
+    category = db.Column(db.String(100), nullable=True)
     image_url = db.Column(db.String(500), nullable=True)
-    # URL to listing image
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc)
-    )
+    owner_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
-        created_at_iso = (
-            self.created_at.isoformat() if self.created_at else None
-        )
         return {
             "id": self.id,
             "title": self.title,
@@ -161,13 +144,13 @@ class Listing(db.Model):
             "category": self.category,
             "image_url": self.image_url,
             "owner_id": self.owner_id,
-            "created_at": created_at_iso,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
 class Item(db.Model):
     """Simple persistent items for the MVP /api/items endpoints."""
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -176,83 +159,63 @@ class Item(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "description": self.description,
+            "description": self.description
         }
 
 
 class SignUp(db.Model):
     """Track volunteer sign-ups for listings."""
-
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False
-    )
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     listing_id = db.Column(
-        db.Integer, db.ForeignKey("listing.id"), nullable=False
-    )
-    status = db.Column(
-        db.String(50), default="pending"
-    )  # pending, accepted, declined, cancelled
+        db.Integer, db.ForeignKey('listing.id'), nullable=False)
+    # pending, accepted, declined, cancelled
+    status = db.Column(db.String(50), default='pending')
     message = db.Column(db.Text)  # Optional message from volunteer
-    created_at = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc)
-    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Add unique constraint to prevent duplicate sign-ups
     __table_args__ = (
-        db.UniqueConstraint(
-            "user_id", "listing_id", name="_user_listing_uc"
-        ),
+        db.UniqueConstraint('user_id', 'listing_id', name='_user_listing_uc'),
     )
 
     def to_dict(self):
-        created_at_iso = (
-            self.created_at.isoformat() if self.created_at else None
-        )
         return {
             "id": self.id,
             "user_id": self.user_id,
             "listing_id": self.listing_id,
             "status": self.status,
             "message": self.message,
-            "created_at": created_at_iso,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
 class Review(db.Model):
     """User reviews for listings."""
-
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False
-    )
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     listing_id = db.Column(
-        db.Integer, db.ForeignKey("listing.id"), nullable=False
-    )
+        db.Integer, db.ForeignKey('listing.id'), nullable=False)
     rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
     comment = db.Column(db.Text)
-    created_at = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc)
-    )
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Add unique constraint to prevent multiple reviews from same user
     __table_args__ = (
         db.UniqueConstraint(
-            "user_id", "listing_id", name="_user_listing_review_uc"
-        ),
+            'user_id', 'listing_id', name='_user_listing_review_uc'),
     )
 
     def to_dict(self):
-        created_at_iso = (
-            self.created_at.isoformat() if self.created_at else None
-        )
         return {
             "id": self.id,
             "user_id": self.user_id,
             "listing_id": self.listing_id,
             "rating": self.rating,
             "comment": self.comment,
-            "created_at": created_at_iso,
+            "created_at": (self.created_at.isoformat()
+                           if self.created_at else None),
         }
 
 
@@ -275,11 +238,13 @@ class Event(db.Model):
     category = db.Column(db.String(100))
     url = db.Column(db.String(1000), unique=False)
     source = db.Column(db.String(200))
+    venue = db.Column(db.String(200), nullable=True)  # Event venue name
+    price = db.Column(db.String(100), nullable=True)  # Event price/cost
     scraped_at = db.Column(
         db.DateTime, default=lambda: datetime.now(timezone.utc)
     )
     cache_expires_at = db.Column(db.DateTime, nullable=True, index=True)
-    # Optional image link (single) and multiple image links stored as JSON text
+    # Optional image link (single) and multiple image links (JSON text)
     image_url = db.Column(db.String(1000), nullable=True)
     image_urls = db.Column(db.Text, nullable=True)
 
@@ -293,32 +258,26 @@ class Event(db.Model):
                 self.date_start.isoformat() if self.date_start else None
             ),
             "location_address": self.location_address,
-            "location_city": self.location_city,
-            "location_state": self.location_state,
-            "location_zip": self.location_zip,
+            "city": self.location_city,
+            "state": self.location_state,
+            "zip": self.location_zip,
             "latitude": self.latitude,
             "longitude": self.longitude,
-            "geohash_4": self.geohash_4,
-            "geohash_6": self.geohash_6,
             "category": self.category,
             "url": self.url,
             "source": self.source,
+            "venue": self.venue,
+            "price": self.price,
             "scraped_at": (
                 self.scraped_at.isoformat() if self.scraped_at else None
             ),
-            "cache_expires_at": (
-                self.cache_expires_at.isoformat()
-                if self.cache_expires_at else None
-            ),
             "image_url": self.image_url,
             "image_urls": self.image_urls,
-            # normalized images relationship (list of dicts)
-            "images": [img.to_dict() for img in getattr(self, "images", [])],
         }
 
 
 class EventImage(db.Model):
-    """Normalized event images table. One row per image linked to an event."""
+    """Normalized event images table. One row per image per event."""
 
     __tablename__ = "event_image"
     id = db.Column(db.Integer, primary_key=True)
@@ -345,18 +304,89 @@ class EventImage(db.Model):
         }
 
 
-# Add a relationship on Event to access images.
-# Keep image_url for thumbnail/backcompat.
+# Add relationship on Event to access images
 Event.images = db.relationship(
     "EventImage",
     backref="event",
     cascade="all, delete-orphan",
-    lazy="joined",
+    lazy="dynamic"
 )
 
 
+class UserEventInteraction(db.Model):
+    """Track user interactions with events for personalization."""
+
+    __tablename__ = "user_event_interaction"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    event_id = db.Column(db.String(36), db.ForeignKey("event.id"), nullable=False, index=True)
+    interaction_type = db.Column(db.String(20), nullable=False)  # view, like, dislike, attend, skip, super_like
+    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data (time_spent, swipe_direction, etc.)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "event_id": self.event_id,
+            "interaction_type": self.interaction_type,
+            "metadata": self.metadata,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+        }
+
+
+class UserAchievement(db.Model):
+    """Track user achievements and badges for gamification."""
+
+    __tablename__ = "user_achievement"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, index=True)
+    achievement_type = db.Column(db.String(50), nullable=False)  # weekend_warrior, category_completionist, etc.
+    progress = db.Column(db.Integer, default=0)  # Progress towards achievement
+    unlocked = db.Column(db.Boolean, default=False, index=True)
+    unlocked_at = db.Column(db.DateTime, nullable=True)
+    metadata = db.Column(db.Text, nullable=True)  # JSON with additional data
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "achievement_type": self.achievement_type,
+            "progress": self.progress,
+            "unlocked": self.unlocked,
+            "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
+            "metadata": self.metadata,
+        }
+
+
+class UserProfile(db.Model):
+    """Extended user profile for personalization."""
+
+    __tablename__ = "user_profile"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True, index=True)
+    taste_profile = db.Column(db.Text, nullable=True)  # JSON with category preferences, etc.
+    adventure_level = db.Column(db.Float, default=0.5)  # 0-1 scale
+    price_sensitivity = db.Column(db.String(20), default='medium')  # low, medium, high
+    favorite_venues = db.Column(db.Text, nullable=True)  # JSON array
+    notification_preferences = db.Column(db.Text, nullable=True)  # JSON
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "taste_profile": self.taste_profile,
+            "adventure_level": self.adventure_level,
+            "price_sensitivity": self.price_sensitivity,
+            "favorite_venues": self.favorite_venues,
+            "notification_preferences": self.notification_preferences,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
 def get_serializer():
-    return URLSafeTimedSerializer(app.config["SECRET_KEY"])
+    return URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 
 # Ensure database tables exist when the app starts. Using app.app_context()
@@ -366,69 +396,61 @@ with app.app_context():
     db.create_all()
 
 
-@app.route("/")
+@app.route('/')
 def index():
     return jsonify({"message": "Tapin Backend API Root"})
 
 
-@app.route("/api/health", methods=["GET"])
+@app.route('/api/health', methods=['GET'])
 def api_health():
     """Enhanced health check including database connectivity."""
-    # During tests the suite expects a minimal health response
-    if app.config.get("TESTING"):
-        return jsonify({"status": "ok"}), 200
-
     health_status = {"status": "ok", "components": {}}
 
     # Check database connection
     try:
-        db.session.execute(db.text("SELECT 1"))
-        uri_prefix = app.config["SQLALCHEMY_DATABASE_URI"][:20] + "..."
-        pool_size = (
-            db.engine.pool.size() if hasattr(db.engine.pool, "size") else "N/A"
-        )
-        db_comp = {
+        db.session.execute(db.text('SELECT 1'))
+        health_status["components"]["database"] = {
             "status": "connected",
-            "uri_prefix": uri_prefix,
-            "pool_size": pool_size,
+            "uri_prefix": app.config['SQLALCHEMY_DATABASE_URI'][:20] + "...",
+            "pool_size": (db.engine.pool.size()
+                          if hasattr(db.engine.pool, 'size') else 'N/A')
         }
-        health_status["components"]["database"] = db_comp
     except Exception as e:
         health_status["status"] = "degraded"
         health_status["components"]["database"] = {
             "status": "error",
-            "error": str(e),
+            "error": str(e)
         }
         return jsonify(health_status), 503
 
     return jsonify(health_status), 200
 
 
-@app.route("/api/items", methods=["GET"])
+@app.route('/api/items', methods=['GET'])
 def api_list_items():
     # Return all items from the database
     items = Item.query.order_by(Item.id.asc()).all()
     return jsonify({"items": [i.to_dict() for i in items]}), 200
 
 
-@app.route("/api/items", methods=["POST"])
+@app.route('/api/items', methods=['POST'])
 @jwt_required()
 def api_create_item():
     data = request.get_json() or {}
-    name = data.get("name")
+    name = data.get('name')
     if not name:
         return jsonify({"error": "name required"}), 400
-    item = Item(name=name, description=data.get("description"))
+    item = Item(name=name, description=data.get('description'))
     db.session.add(item)
     db.session.commit()
     return jsonify(item.to_dict()), 201
 
 
-@app.route("/register", methods=["POST"])
+@app.route('/register', methods=['POST'])
 def register_user():
     data = request.get_json() or {}
-    email = data.get("email")
-    password = data.get("password")
+    email = data.get('email')
+    password = data.get('password')
     if not email or not password:
         return jsonify({"error": "email and password required"}), 400
     if User.query.filter_by(email=email).first():
@@ -438,28 +460,36 @@ def register_user():
     db.session.add(user)
     db.session.commit()
     # return both access and refresh tokens (identity stored as string)
+    from backend.auth import token_pair
+
     tokens = token_pair(user)
-    resp = {"message": "user created", "user": user.to_dict()}
-    resp.update(tokens)
-    return jsonify(resp), 201
+    return jsonify({
+        "message": "user created",
+        "user": user.to_dict(),
+        **tokens
+    }), 201
 
 
-@app.route("/login", methods=["POST"])
+@app.route('/login', methods=['POST'])
 def login_user():
     data = request.get_json() or {}
-    email = data.get("email")
-    password = data.get("password")
+    email = data.get('email')
+    password = data.get('password')
     user = User.query.filter_by(email=email).first()
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
     # return both access and refresh tokens to the client
+    from backend.auth import token_pair
+
     tokens = token_pair(user)
-    resp = {"message": "login successful", "user": user.to_dict()}
-    resp.update(tokens)
-    return jsonify(resp)
+    return jsonify({
+        "message": "login successful",
+        "user": user.to_dict(),
+        **tokens
+    })
 
 
-@app.route("/refresh", methods=["POST"])
+@app.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh_token():
     """Exchange a valid refresh token for a new access token."""
@@ -475,7 +505,7 @@ def refresh_token():
     return jsonify({"access_token": access_token})
 
 
-@app.route("/me", methods=["GET"])
+@app.route('/me', methods=['GET'])
 @jwt_required()
 def me():
     uid = get_jwt_identity()
@@ -484,8 +514,8 @@ def me():
         uid_int = int(uid)
     except Exception:
         uid_int = uid
-    # Use Session.get() which is the modern SQLAlchemy API.
-    # This avoids LegacyAPIWarning from older Query.get() usage.
+    # Use Session.get() which is the modern SQLAlchemy API (avoids
+    # LegacyAPIWarning)
     user = db.session.get(User, uid_int)
     if not user:
         return jsonify({"error": "user not found"}), 404
@@ -493,20 +523,20 @@ def me():
 
 
 def send_reset_email(to_email, reset_url):
-    smtp_host = os.environ.get("SMTP_HOST")
+    smtp_host = os.environ.get('SMTP_HOST')
     if not smtp_host:
-        return False, "SMTP not configured"
-    smtp_port = int(os.environ.get("SMTP_PORT", 587))
-    smtp_user = os.environ.get("SMTP_USER")
-    smtp_pass = os.environ.get("SMTP_PASS")
-    _smtp_tls = os.environ.get("SMTP_USE_TLS", "true").lower()
-    use_tls = _smtp_tls in ("1", "true", "yes")
+        return False, 'SMTP not configured'
+    smtp_port = int(os.environ.get('SMTP_PORT', 587))
+    smtp_user = os.environ.get('SMTP_USER')
+    smtp_pass = os.environ.get('SMTP_PASS')
+    use_tls = os.environ.get('SMTP_USE_TLS', 'true').lower() in (
+        '1', 'true', 'yes')
 
     msg = EmailMessage()
-    msg["Subject"] = "Tapin Password Reset"
-    msg["From"] = smtp_user or f"no-reply@{smtp_host}"
-    msg["To"] = to_email
-    msg.set_content(f"Use the link to reset your password: {reset_url}")
+    msg['Subject'] = 'Tapin Password Reset'
+    msg['From'] = smtp_user or f'no-reply@{smtp_host}'
+    msg['To'] = to_email
+    msg.set_content(f'Use the link to reset your password: {reset_url}')
 
     try:
         server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
@@ -518,55 +548,52 @@ def send_reset_email(to_email, reset_url):
             server.login(smtp_user, smtp_pass)
         server.send_message(msg)
         server.quit()
-        return True, "sent"
+        return True, 'sent'
     except Exception as e:
         return False, str(e)
 
 
-@app.route("/reset-password", methods=["POST"])
+@app.route('/reset-password', methods=['POST'])
 def reset_password():
     data = request.get_json() or {}
-    email = data.get("email")
+    email = data.get('email')
     if not email:
         return jsonify({"error": "email required"}), 400
     user = User.query.filter_by(email=email).first()
     if not user:
         # Do not reveal whether the email exists
-        msg = (
-            "If an account exists for that email, a reset link "
-            "has been sent."
-        )
+        msg = "If an account exists for that email, a reset link was sent."
         return jsonify({"message": msg})
 
     serializer = get_serializer()
-    token = serializer.dumps(email, salt=app.config["SECURITY_PASSWORD_SALT"])
-    reset_url = url_for("confirm_reset", token=token, _external=True)
+    token = serializer.dumps(
+        email, salt=app.config['SECURITY_PASSWORD_SALT'])
+    reset_url = url_for('confirm_reset', token=token, _external=True)
 
     sent, info = send_reset_email(email, reset_url)
     if sent:
         return jsonify({"message": "reset email sent"})
     else:
         # Fallback in dev: return the reset_url so developers can use it
-        return jsonify(
-            {
-                "message": "smtp not configured, returning reset link (dev)",
-                "reset_url": reset_url,
-                "error": info,
-            }
-        )
+        return jsonify({
+            "message": "smtp not configured, returning reset link (dev)",
+            "reset_url": reset_url,
+            "error": info
+        })
 
 
-@app.route("/reset-password/confirm/<token>", methods=["POST"])
+@app.route('/reset-password/confirm/<token>', methods=['POST'])
 def confirm_reset(token):
     data = request.get_json() or {}
-    new_password = data.get("password")
+    new_password = data.get('password')
     if not new_password:
         return jsonify({"error": "password required"}), 400
     serializer = get_serializer()
     try:
         email = serializer.loads(
-            token, salt=app.config["SECURITY_PASSWORD_SALT"], max_age=3600
-        )
+            token,
+            salt=app.config['SECURITY_PASSWORD_SALT'],
+            max_age=3600)
     except SignatureExpired:
         return jsonify({"error": "token expired"}), 400
     except BadSignature:
@@ -580,23 +607,18 @@ def confirm_reset(token):
     return jsonify({"message": "password updated"})
 
 
-@app.route("/listings", methods=["GET"])
+@app.route('/listings', methods=['GET'])
 def get_listings():
-    # Support simple filtering via query params.
-    # `q` is a text search (title/description or category).
-    q = request.args.get("q", type=str)
-    location = request.args.get("location", type=str)
+    # Support simple filtering via query params: q (text search on
+    # title/description or category), location
+    q = request.args.get('q', type=str)
+    location = request.args.get('location', type=str)
 
     query = Listing.query
     if q:
         # Check if q matches a category exactly (case-insensitive)
         categories = [
-            "Community",
-            "Environment",
-            "Education",
-            "Health",
-            "Animals",
-        ]
+            'Community', 'Environment', 'Education', 'Health', 'Animals']
         if q.lower() in [c.lower() for c in categories]:
             # Filter by category
             query = query.filter(Listing.category.ilike(q))
@@ -604,39 +626,33 @@ def get_listings():
             # Text search on title/description
             like = f"%{q}%"
             query = query.filter(
-                (Listing.title.ilike(like)) | (Listing.description.ilike(like))
-            )
+                (Listing.title.ilike(like)) |
+                (Listing.description.ilike(like)))
     if location:
         query = query.filter(Listing.location.ilike(f"%{location}%"))
 
     listings = query.order_by(Listing.created_at.desc()).all()
-    return jsonify([listing.to_dict() for listing in listings])
+    return jsonify([lst.to_dict() for lst in listings])
 
 
-@app.route("/listings", methods=["POST"])
+@app.route('/listings', methods=['POST'])
 @jwt_required()
 def create_listing():
     data = request.get_json() or {}
-    title = data.get("title")
+    title = data.get('title')
     if not title:
         return jsonify({"error": "title required"}), 400
     # JWT identity is stored as string; convert back to int for DB foreign key
     owner_id = int(get_jwt_identity())
     # Validate optional category
-    category = data.get("category")
-    allowed = [
-        "Community",
-        "Environment",
-        "Education",
-        "Health",
-        "Animals",
-    ]
+    category = data.get('category')
+    allowed = ['Community', 'Environment', 'Education', 'Health', 'Animals']
     if category and category not in allowed:
         return jsonify({"error": "invalid category"}), 400
 
     # Parse optional coordinates
-    latitude = data.get("latitude")
-    longitude = data.get("longitude")
+    latitude = data.get('latitude')
+    longitude = data.get('longitude')
     try:
         latitude = float(latitude) if latitude is not None else None
         longitude = float(longitude) if longitude is not None else None
@@ -645,12 +661,12 @@ def create_listing():
 
     listing = Listing(
         title=title,
-        description=data.get("description"),
-        location=data.get("location"),
+        description=data.get('description'),
+        location=data.get('location'),
         latitude=latitude,
         longitude=longitude,
         category=category,
-        image_url=data.get("image_url"),
+        image_url=data.get('image_url'),
         owner_id=owner_id,
     )
     db.session.add(listing)
@@ -658,105 +674,81 @@ def create_listing():
     return jsonify(listing.to_dict()), 201
 
 
-@app.route("/listings/<int:listing_id>", methods=["GET"])
-def get_listing_detail(listing_id):
-    """Get details of a specific listing."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+@app.route('/listings/<int:id>', methods=['GET'])
+def get_listing_detail(id):
+    listing = Listing.query.get_or_404(id)
     return jsonify(listing.to_dict())
 
 
-@app.route("/listings/<int:listing_id>", methods=["PUT"])
+@app.route('/listings/<int:id>', methods=['PUT'])
 @jwt_required()
-def update_listing(listing_id):
-    """Update a listing (owner only)."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+def update_listing(id):
+    listing = Listing.query.get_or_404(id)
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({
-            "error": "not the owner"
-        }), 403
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
     data = request.get_json() or {}
-    listing.title = data.get("title", listing.title)
-    listing.description = data.get("description", listing.description)
-    listing.location = data.get("location", listing.location)
+    listing.title = data.get('title', listing.title)
+    listing.description = data.get('description', listing.description)
+    listing.location = data.get('location', listing.location)
     # Optional fields
-    if "category" in data:
-        category = data.get("category")
+    if 'category' in data:
+        category = data.get('category')
         allowed = [
-            "Community",
-            "Environment",
-            "Education",
-            "Health",
-            "Animals",
-        ]
+            'Community', 'Environment', 'Education', 'Health', 'Animals']
         if category and category not in allowed:
             return jsonify({"error": "invalid category"}), 400
         listing.category = category
-    if "image_url" in data:
-        listing.image_url = data.get("image_url")
-    if "latitude" in data or "longitude" in data:
+    if 'image_url' in data:
+        listing.image_url = data.get('image_url')
+    if 'latitude' in data or 'longitude' in data:
         try:
-            if "latitude" in data:
-                listing.latitude = (
-                    float(data.get("latitude"))
-                    if data.get("latitude") is not None
-                    else None
-                )
-            if "longitude" in data:
-                listing.longitude = (
-                    float(data.get("longitude"))
-                    if data.get("longitude") is not None
-                    else None
-                )
+            if 'latitude' in data:
+                listing.latitude = float(data.get('latitude')) if data.get(
+                    'latitude') is not None else None
+            if 'longitude' in data:
+                listing.longitude = float(data.get('longitude')) if data.get(
+                    'longitude') is not None else None
         except (TypeError, ValueError):
             return jsonify({"error": "invalid coordinates"}), 400
     db.session.commit()
     return jsonify(listing.to_dict())
 
 
-@app.route("/listings/<int:listing_id>", methods=["DELETE"])
+@app.route('/listings/<int:id>', methods=['DELETE'])
 @jwt_required()
-def delete_listing(listing_id):
-    """Delete a listing (owner only)."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+def delete_listing(id):
+    listing = Listing.query.get_or_404(id)
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({"error": "not the owner"}), 403
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
     db.session.delete(listing)
     db.session.commit()
     return jsonify({"message": "deleted"})
 
 
-@app.route("/listings/<int:listing_id>/signup", methods=["POST"])
+@app.route('/listings/<int:id>/signup', methods=['POST'])
 @jwt_required()
-def signup_for_listing(listing_id):
+def signup_for_listing(id):
     """Volunteer signs up for a listing."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
     user_id = int(get_jwt_identity())
 
     # Check if already signed up
-    existing = SignUp.query.filter_by(
-        user_id=user_id, listing_id=listing_id
-    ).first()
+    existing = SignUp.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
         return jsonify({"error": "already signed up for this listing"}), 400
 
     data = request.get_json() or {}
     signup = SignUp(
         user_id=user_id,
-        listing_id=listing_id,
-        message=data.get("message"),
-        status="pending",
+        listing_id=id,
+        message=data.get('message'),
+        status='pending'
     )
     db.session.add(signup)
     db.session.commit()
@@ -764,27 +756,20 @@ def signup_for_listing(listing_id):
     return jsonify(signup.to_dict()), 201
 
 
-@app.route("/listings/<int:listing_id>/signups", methods=["GET"])
+@app.route('/listings/<int:id>/signups', methods=['GET'])
 @jwt_required()
-def get_listing_signups(listing_id):
+def get_listing_signups(id):
     """Get all sign-ups for a listing (owner only)."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+    listing = Listing.query.get_or_404(id)
     owner_id = int(get_jwt_identity())
 
     # Verify ownership
     if listing.owner_id != owner_id:
-        return jsonify({
-            "error": "unauthorized - you don't own this listing"
-        }), 403
+        return jsonify(
+            {"error": "unauthorized - you don't own this listing"}), 403
 
-    signups = (
-        SignUp.query
-        .filter_by(listing_id=listing_id)
-        .order_by(SignUp.created_at.desc())
-        .all()
-    )
+    signups = SignUp.query.filter_by(listing_id=id).order_by(
+        SignUp.created_at.desc()).all()
 
     # Include user email with each sign-up
     results = []
@@ -792,25 +777,20 @@ def get_listing_signups(listing_id):
         signup_dict = signup.to_dict()
         user = db.session.get(User, signup.user_id)
         if user:
-            signup_dict["user_email"] = user.email
+            signup_dict['user_email'] = user.email
         results.append(signup_dict)
 
-    return jsonify({"signups": results})
+    return jsonify(results)
 
 
-@app.route("/signups/<int:signup_id>", methods=["PUT"])
+@app.route('/signups/<int:id>', methods=['PUT'])
 @jwt_required()
-def update_signup_status(signup_id):
-    """
-    Update sign-up status.
-    Owner can accept/decline, volunteer can cancel.
-    """
-    signup = db.session.get(SignUp, signup_id)
-    if not signup:
-        abort(404)
+def update_signup_status(id):
+    """Update sign-up status (owner accept/decline, volunteer cancel)."""
+    signup = SignUp.query.get_or_404(id)
     user_id = int(get_jwt_identity())
     data = request.get_json() or {}
-    new_status = data.get("status")
+    new_status = data.get('status')
 
     if not new_status:
         return jsonify({"error": "status required"}), 400
@@ -822,17 +802,11 @@ def update_signup_status(signup_id):
 
     # Owner can accept/decline, volunteer can cancel
     if listing.owner_id == user_id:
-        if new_status not in ["accepted", "declined"]:
-            return (
-                jsonify({
-                    "error": (
-                        "owner can only set status to accepted or declined"
-                    )
-                }),
-                400,
-            )
+        if new_status not in ['accepted', 'declined']:
+            err = "owner can only set status to accepted or declined"
+            return jsonify({"error": err}), 400
     elif signup.user_id == user_id:
-        if new_status != "cancelled":
+        if new_status != 'cancelled':
             return jsonify({"error": "volunteer can only cancel sign-up"}), 400
     else:
         return jsonify({"error": "unauthorized"}), 403
@@ -842,37 +816,31 @@ def update_signup_status(signup_id):
     return jsonify(signup.to_dict())
 
 
-@app.route("/listings/<int:listing_id>/reviews", methods=["POST"])
+@app.route('/listings/<int:id>/reviews', methods=['POST'])
 @jwt_required()
-def create_review(listing_id):
+def create_review(id):
     """Create a review for a listing."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
     user_id = int(get_jwt_identity())
 
     # Check if already reviewed
-    existing = Review.query.filter_by(
-        user_id=user_id, listing_id=listing_id
-    ).first()
+    existing = Review.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
-        return jsonify({
-            "error": "you have already reviewed this listing"
-        }), 400
+        return jsonify(
+            {"error": "you have already reviewed this listing"}), 400
 
     data = request.get_json() or {}
-    rating = data.get("rating")
+    rating = data.get('rating')
 
     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-        return jsonify({
-            "error": "rating must be an integer between 1 and 5"
-        }), 400
+        err = "rating must be an integer between 1 and 5"
+        return jsonify({"error": err}), 400
 
     review = Review(
         user_id=user_id,
-        listing_id=listing_id,
+        listing_id=id,
         rating=rating,
-        comment=data.get("comment"),
+        comment=data.get('comment')
     )
     db.session.add(review)
     db.session.commit()
@@ -880,18 +848,12 @@ def create_review(listing_id):
     return jsonify(review.to_dict()), 201
 
 
-@app.route("/listings/<int:listing_id>/reviews", methods=["GET"])
-def get_listing_reviews(listing_id):
+@app.route('/listings/<int:id>/reviews', methods=['GET'])
+def get_listing_reviews(id):
     """Get all reviews for a listing."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
-    reviews = (
-        Review.query
-        .filter_by(listing_id=listing_id)
-        .order_by(Review.created_at.desc())
-        .all()
-    )
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    reviews = Review.query.filter_by(listing_id=id).order_by(
+        Review.created_at.desc()).all()
 
     # Include user email with each review
     results = []
@@ -899,40 +861,429 @@ def get_listing_reviews(listing_id):
         review_dict = review.to_dict()
         user = db.session.get(User, review.user_id)
         if user:
-            review_dict["user_email"] = user.email
+            review_dict['user_email'] = user.email
         results.append(review_dict)
 
-    return jsonify({"reviews": results})
+    return jsonify(results)
 
 
-@app.route("/listings/<int:listing_id>/average-rating", methods=["GET"])
-def get_listing_average_rating(listing_id):
+@app.route('/listings/<int:id>/average-rating', methods=['GET'])
+def get_listing_average_rating(id):
     """Get average rating for a listing."""
-    listing = db.session.get(Listing, listing_id)
-    if not listing:
-        abort(404)
-    reviews = Review.query.filter_by(listing_id=listing_id).all()
+    _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    reviews = Review.query.filter_by(listing_id=id).all()
 
     if not reviews:
-        # Tests expect `average_rating` to be null when there are no reviews
-        return jsonify({"average_rating": None, "review_count": 0})
+        return jsonify({"average_rating": 0, "review_count": 0})
 
     avg_rating = sum(r.rating for r in reviews) / len(reviews)
-    return jsonify(
-        {"average_rating": round(avg_rating, 1), "review_count": len(reviews)}
+    return jsonify({
+        "average_rating": round(avg_rating, 1),
+        "review_count": len(reviews)
+    })
+
+
+@app.route('/api/discover-events', methods=['POST'])
+@jwt_required()
+def discover_events():
+    """Discover volunteer opportunities using hybrid LLM and web scraping.
+
+    Searches for volunteer events by city/state, using EventCacheManager
+    which automatically caches results in the Event table with geohash.
+    """
+    import asyncio
+    from event_discovery import EventCacheManager
+
+    data = request.get_json() or {}
+    location = data.get('location')
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location into city and state
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # EventCacheManager uses async/await
+        # Pass db and models explicitly to avoid app context issues
+        manager = EventCacheManager(db=db, event_model=Event,
+                                     event_image_model=EventImage)
+
+        # Create a new event loop and run async code
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Push Flask app context for database operations
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                # Run async code with app context active
+                events = loop.run_until_complete(
+                    manager.search_by_location(city, state)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        return jsonify({
+            "events": events,
+            "location": f"{city}, {state}",
+            "count": len(events),
+            "cached": True  # EventCacheManager auto-caches to DB
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    """Get all event categories with metadata (icons, colors, descriptions)."""
+    from event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
+
+    return jsonify({
+        "categories": EVENT_CATEGORIES,
+        "grouped": get_categories_by_type(),
+        "count": len(EVENT_CATEGORIES)
+    }), 200
+
+
+@app.route('/api/local-events/tonight', methods=['POST'])
+@jwt_required()
+def discover_tonight():
+    """Discover ALL types of local events happening tonight (not just volunteer).
+
+    Uses LocalEventsScraper to find events across multiple platforms:
+    - Eventbrite
+    - Meetup
+    - Facebook local events
+    - City event calendars
+
+    Returns events with images, sorted by start time.
+    """
+    import asyncio
+    from event_discovery import EventCacheManager
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 20)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location into city and state
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # EventCacheManager uses async/await
+        manager = EventCacheManager(db=db, event_model=Event,
+                                     event_image_model=EventImage)
+
+        # Create a new event loop and run async code
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            # Push Flask app context for database operations
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                # Run async code with app context active
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        return jsonify({
+            "events": events,
+            "location": f"{city}, {state}",
+            "count": len(events),
+            "timeframe": "tonight",
+            "cached": True  # EventCacheManager auto-caches to DB
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/events/interact', methods=['POST'])
+@jwt_required()
+def record_event_interaction():
+    """Record user interaction with an event (like, dislike, view, attend, etc.)."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    data = request.get_json() or {}
+    event_id = data.get('event_id')
+    interaction_type = data.get('interaction_type')  # view, like, dislike, attend, skip, super_like
+    metadata = data.get('metadata', {})
+
+    if not event_id or not interaction_type:
+        return jsonify({"error": "event_id and interaction_type required"}), 400
+
+    # Record interaction
+    interaction = UserEventInteraction(
+        user_id=uid_int,
+        event_id=event_id,
+        interaction_type=interaction_type,
+        metadata=json.dumps(metadata) if metadata else None
     )
+    db.session.add(interaction)
+    db.session.commit()
+
+    # Update user achievements based on interaction
+    from backend.event_discovery.gamification import GamificationEngine
+    gamification = GamificationEngine(db, User, UserAchievement, UserEventInteraction)
+    gamification.check_achievements(uid_int)
+
+    return jsonify({
+        "message": "interaction recorded",
+        "interaction": interaction.to_dict()
+    }), 201
 
 
-# Attempt to register optional blueprints (events) if available.
-# This is tolerant.
-# Missing dependencies (playwright, llms) won't stop the app.
-try:
-    from routes.events import events_bp
+@app.route('/api/events/personalized', methods=['POST'])
+@jwt_required()
+def get_personalized_events():
+    """Get personalized event feed with match scores."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
 
-    app.register_blueprint(events_bp, url_prefix="/events")
-except Exception:
-    app.logger.debug("events blueprint not available or failed to register")
+    data = request.get_json() or {}
+    location = data.get('location')
+    limit = data.get('limit', 20)
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    # Parse location
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({
+            "error": "location must be 'City, ST' format (e.g., 'Dallas, TX')"
+        }), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # Get events
+        import asyncio
+        from event_discovery import EventCacheManager
+        manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit=100)  # Get more events for personalization
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        # Personalize the feed with AI
+        from backend.event_discovery.personalization import PersonalizationEngine
+        engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
+
+        # Use AI-powered personalization
+        loop2 = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop2)
+
+        try:
+            ctx2 = app.app_context()
+            ctx2.push()
+
+            try:
+                personalized = loop2.run_until_complete(
+                    engine.get_ai_personalized_recommendations(uid_int, events, limit=limit)
+                )
+            finally:
+                ctx2.pop()
+        finally:
+            loop2.close()
+
+        return jsonify({
+            "events": personalized,
+            "location": f"{city}, {state}",
+            "count": len(personalized),
+            "personalized": True
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
-if __name__ == "__main__":
+@app.route('/api/profile/taste', methods=['GET'])
+@jwt_required()
+def get_taste_profile():
+    """Get user's taste profile (category preferences, etc.)."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    from backend.event_discovery.personalization import PersonalizationEngine
+    engine = PersonalizationEngine(db, User, Event, UserEventInteraction)
+    profile = engine.calculate_user_taste_profile(uid_int)
+
+    return jsonify({
+        "profile": profile,
+        "user_id": uid_int
+    }), 200
+
+
+@app.route('/api/events/surprise-me', methods=['POST'])
+@jwt_required()
+def surprise_me():
+    """Get surprise event recommendation based on mood and constraints."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    data = request.get_json() or {}
+    location = data.get('location')
+    mood = data.get('mood', 'adventurous')  # energetic, chill, creative, social, romantic, adventurous
+    budget = data.get('budget', 50)  # max price
+    time_available = data.get('time_available', 3)  # hours
+    adventure_level = data.get('adventure_level', 'high')  # low, medium, high
+
+    if not location:
+        return jsonify({"error": "location required"}), 400
+
+    parts = [p.strip() for p in location.split(',')]
+    if len(parts) < 2:
+        return jsonify({"error": "location must be 'City, ST' format"}), 400
+
+    city = parts[0]
+    state = parts[1]
+
+    try:
+        # Get events
+        import asyncio
+        from event_discovery import EventCacheManager
+        manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        try:
+            ctx = app.app_context()
+            ctx.push()
+
+            try:
+                events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit=100)
+                )
+            finally:
+                ctx.pop()
+        finally:
+            loop.close()
+
+        # Generate AI-powered surprise event
+        from backend.event_discovery.surprise_engine import SurpriseEngine
+        surprise_engine = SurpriseEngine(db, User, Event, UserEventInteraction)
+
+        # Use AI to generate surprise
+        loop2 = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop2)
+
+        try:
+            ctx2 = app.app_context()
+            ctx2.push()
+
+            try:
+                surprise_event = loop2.run_until_complete(
+                    surprise_engine.generate_ai_surprise(
+                        user_id=uid_int,
+                        location=city,
+                        mood=mood,
+                        budget=budget,
+                        time_available=time_available * 60,  # Convert hours to minutes
+                        adventure_level=adventure_level
+                    )
+                )
+            finally:
+                ctx2.pop()
+        finally:
+            loop2.close()
+
+        if not surprise_event:
+            return jsonify({"error": "No surprising events found"}), 404
+
+        return jsonify({
+            "event": surprise_event,
+            "surprise": True,
+            "mood": mood,
+            "explanation": surprise_event.get('surprise_explanation', '')
+        }), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/achievements', methods=['GET'])
+@jwt_required()
+def get_achievements():
+    """Get user's achievements and progress."""
+    uid = get_jwt_identity()
+    try:
+        uid_int = int(uid)
+    except Exception:
+        uid_int = uid
+
+    achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
+
+    return jsonify({
+        "achievements": [a.to_dict() for a in achievements],
+        "unlocked_count": sum(1 for a in achievements if a.unlocked),
+        "total_count": len(achievements)
+    }), 200
+
+
+if __name__ == '__main__':
     app.run(debug=True, port=5000)

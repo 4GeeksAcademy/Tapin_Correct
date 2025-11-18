@@ -1,19 +1,8 @@
-import sys
-import os
-sys.path.insert(
-    0,
-    os.path.abspath(
-        os.path.join(os.path.dirname(__file__), '..')
-    ),
-)
-import pytest  # noqa: E402
-from uuid import uuid4  # noqa: E402
-from app import app, db, User  # noqa: E402
-from werkzeug.security import generate_password_hash  # noqa: E402
+import pytest
+from uuid import uuid4
 
-# Ensure tests do not call premium LLM providers by default
-# Allow overriding by explicitly setting LLM_PROVIDER in the environment
-os.environ.setdefault("LLM_PROVIDER", "mock")
+from backend.app import app, db, User
+from werkzeug.security import generate_password_hash
 
 
 @pytest.fixture
@@ -35,10 +24,8 @@ def create_user():
         with app.app_context():
             if email is None:
                 email = f"user+{uuid4().hex}@example.com"
-            user = User(
-                email=email,
-                password_hash=generate_password_hash(password),
-            )
+            pw_hash = generate_password_hash(password)
+            user = User(email=email, password_hash=pw_hash)
             db.session.add(user)
             db.session.commit()
             return user.id

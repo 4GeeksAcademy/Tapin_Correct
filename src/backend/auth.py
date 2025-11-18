@@ -2,9 +2,9 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 
 
 def token_for(user):
-    """Create an access JWT for the given user, storing the identity as a string.
+    """Create an access JWT for the given user.
 
-    Accept either a User object or a plain integer id.
+    Identity is stored as a string. Accept either a User object or int id.
     """
     uid = getattr(user, "id", user)
     return create_access_token(identity=str(uid))
@@ -18,4 +18,7 @@ def refresh_for(user):
 
 def token_pair(user):
     """Return both access and refresh tokens for convenience."""
-    return {"access_token": token_for(user), "refresh_token": refresh_for(user)}
+    return {
+        "access_token": token_for(user),
+        "refresh_token": refresh_for(user)
+    }
