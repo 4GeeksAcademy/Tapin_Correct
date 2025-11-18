@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 import asyncio
 
-from event_discovery.cache_manager import EventCacheManager
+from backend.event_discovery.cache_manager import EventCacheManager
 
 events_bp = Blueprint("events", __name__)
 
