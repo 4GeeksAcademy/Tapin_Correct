@@ -68,22 +68,50 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
         endpoint = '/api/events/personalized';
       }
 
-      const res = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          location: userLocation,
-          limit: 50,
+      // Fetch both local volunteer events and Ticketmaster events in parallel
+      const [localRes, ticketmasterRes] = await Promise.all([
+        fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            location: userLocation,
+            limit: 25,  // Reduced to make room for Ticketmaster events
+          }),
         }),
-      });
+        fetch(`${API_URL}/api/events/ticketmaster`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            location: userLocation,
+            limit: 25,  // Add 25 Ticketmaster events
+          }),
+        }).catch(() => null)  // Don't fail if Ticketmaster is unavailable
+      ]);
 
-      if (!res.ok) throw new Error(`Failed to fetch events: ${res.status}`);
+      let allEvents = [];
 
-      const data = await res.json();
-      setEvents(data.events || []);
+      // Parse local events
+      if (localRes.ok) {
+        const localData = await localRes.json();
+        allEvents = localData.events || [];
+      }
+
+      // Parse and merge Ticketmaster events
+      if (ticketmasterRes && ticketmasterRes.ok) {
+        const tmData = await ticketmasterRes.json();
+        const tmEvents = tmData.events || [];
+        allEvents = [...allEvents, ...tmEvents];
+      }
+
+      // Shuffle events to mix volunteer and commercial events
+      allEvents.sort(() => Math.random() - 0.5);
+
+      setEvents(allEvents);
     } catch (error) {
       console.error('Discovery error:', error);
       setError(error.message);
