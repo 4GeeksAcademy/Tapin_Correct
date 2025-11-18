@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from event_discovery.cache_manager import EventCacheManager
+from backend.event_discovery.cache_manager import EventCacheManager
 
 
 def fake_loader_factory(html_content):
