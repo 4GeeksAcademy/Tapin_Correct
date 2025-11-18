@@ -267,7 +267,7 @@ class SurpriseEngine:
 
         # Fallback to basic surprise generation
         return self.generate_surprise(
-            user_id, location, mood, budget, time_available, adventure_level
+            user_id, events_list, mood, budget, time_available, adventure_level
         )
 
     def _build_surprise_prompt(

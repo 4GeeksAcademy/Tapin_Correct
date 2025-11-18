@@ -925,7 +925,7 @@ def discover_events():
     which automatically caches results in the Event table with geohash.
     """
     import asyncio
-    from event_discovery import EventCacheManager
+    from backend.event_discovery import EventCacheManager
 
     data = request.get_json() or {}
     location = data.get('location')
@@ -984,7 +984,7 @@ def discover_events():
 @app.route('/api/categories', methods=['GET'])
 def get_categories():
     """Get all event categories with metadata (icons, colors, descriptions)."""
-    from event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
+    from backend.event_discovery.event_categories import EVENT_CATEGORIES, get_categories_by_type
 
     return jsonify({
         "categories": EVENT_CATEGORIES,
@@ -1007,7 +1007,7 @@ def discover_tonight():
     Returns events with images, sorted by start time.
     """
     import asyncio
-    from event_discovery import EventCacheManager
+    from backend.event_discovery import EventCacheManager
 
     data = request.get_json() or {}
     location = data.get('location')
@@ -1135,7 +1135,7 @@ def get_personalized_events():
     try:
         # Get events
         import asyncio
-        from event_discovery import EventCacheManager
+        from backend.event_discovery import EventCacheManager
         manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
 
         loop = asyncio.new_event_loop()
@@ -1238,7 +1238,7 @@ def surprise_me():
     try:
         # Get events
         import asyncio
-        from event_discovery import EventCacheManager
+        from backend.event_discovery import EventCacheManager
         manager = EventCacheManager(db=db, event_model=Event, event_image_model=EventImage)
 
         loop = asyncio.new_event_loop()
