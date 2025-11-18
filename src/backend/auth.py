@@ -18,7 +18,4 @@ def refresh_for(user):
 
 def token_pair(user):
     """Return both access and refresh tokens for convenience."""
-    return {
-        "access_token": token_for(user),
-        "refresh_token": refresh_for(user)
-    }
+    return {"access_token": token_for(user), "refresh_token": refresh_for(user)}

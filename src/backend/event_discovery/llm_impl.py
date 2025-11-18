@@ -61,7 +61,9 @@ class HybridLLM:
                 # Prefer HTTP fallback for Ollama to avoid asyncio event loop issues
                 if self._check_ollama_http():
                     self._ollama_http_available = True
-                    logger.info(f"Using Ollama HTTP API with model: {os.environ.get('OLLAMA_MODEL', 'mistral')}")
+                    logger.info(
+                        f"Using Ollama HTTP API with model: {os.environ.get('OLLAMA_MODEL', 'mistral')}"
+                    )
                     return
                 # Fallback to LangChain wrapper if HTTP not available
                 if Ollama is not None:
@@ -73,21 +75,18 @@ class HybridLLM:
                 api_key = os.environ.get("PERPLEXITY_API_KEY")
                 if api_key:
                     # Use direct HTTP API for Perplexity
-                    logger.info(f"Using Perplexity HTTP API with model: {os.environ.get('PERPLEXITY_MODEL', 'sonar')}")
+                    logger.info(
+                        f"Using Perplexity HTTP API with model: {os.environ.get('PERPLEXITY_MODEL', 'sonar')}"
+                    )
                     return
 
-            if (
-                self.provider == "gemini"
-                and ChatGoogleGenerativeAI is not None
-            ):
+            if self.provider == "gemini" and ChatGoogleGenerativeAI is not None:
                 if (
                     os.environ.get("GEMINI_API_KEY")
                     or os.environ.get("GOOGLE_API_KEY")
                     or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
                 ):
-                    model = os.environ.get(
-                        "GEMINI_MODEL", "gemini-2.5-flash-lite"
-                    )
+                    model = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite")
                     self._llm = ChatGoogleGenerativeAI(model=model)
                     return
         except Exception:
@@ -98,9 +97,7 @@ class HybridLLM:
             url = os.environ.get("OLLAMA_API_URL", "http://localhost:11434")
             endpoint = f"{url}/api/generate"
             model = os.environ.get("OLLAMA_MODEL", "mistral")
-            payload = json.dumps({"model": model, "prompt": prompt}).encode(
-                "utf-8"
-            )
+            payload = json.dumps({"model": model, "prompt": prompt}).encode("utf-8")
             req = urllib.request.Request(
                 endpoint,
                 data=payload,
@@ -154,6 +151,7 @@ class HybridLLM:
 
     async def _perplexity_http_generate(self, prompt: str) -> Optional[str]:
         """Direct HTTP API call to Perplexity (OpenAI-compatible)."""
+
         def _sync_call():
             api_key = os.environ.get("PERPLEXITY_API_KEY")
             if not api_key:
@@ -161,10 +159,12 @@ class HybridLLM:
 
             # Default to sonar model (latest Perplexity model)
             model = os.environ.get("PERPLEXITY_MODEL", "sonar")
-            payload = json.dumps({
-                "model": model,
-                "messages": [{"role": "user", "content": prompt}],
-            }).encode("utf-8")
+            payload = json.dumps(
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+            ).encode("utf-8")
 
             req = urllib.request.Request(
                 "https://api.perplexity.ai/chat/completions",

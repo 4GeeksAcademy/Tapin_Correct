@@ -18,19 +18,23 @@ logger = logging.getLogger(__name__)
 # Try to import playwright for JavaScript rendering
 try:
     from playwright.async_api import async_playwright
+
     PLAYWRIGHT_AVAILABLE = True
 except ImportError:
     PLAYWRIGHT_AVAILABLE = False
+
 
 # Import DB models from the application package
 # Use late binding to avoid circular import issues with Flask app context
 def _get_db():
     from backend.app import db
+
     return db
 
 
 def _get_models():
     from backend.app import Event, EventImage
+
     return Event, EventImage
 
 
@@ -174,8 +178,8 @@ class EventCacheManager:
                         for idx, img_data in enumerate(imgs):
                             # Handle both string URLs and dict with url/caption
                             if isinstance(img_data, dict):
-                                img_url = img_data.get('url')
-                                img_caption = img_data.get('caption')
+                                img_url = img_data.get("url")
+                                img_caption = img_data.get("caption")
                             else:
                                 img_url = img_data
                                 img_caption = None
@@ -227,7 +231,7 @@ class EventCacheManager:
                     first_img = None
                     if imgs:
                         if isinstance(imgs[0], dict):
-                            first_img = imgs[0].get('url')
+                            first_img = imgs[0].get("url")
                         else:
                             first_img = imgs[0]
                     ev.image_url = event.get("image_url") or first_img
@@ -238,8 +242,8 @@ class EventCacheManager:
                     for idx, img_data in enumerate(imgs):
                         # Handle both string URLs and dict with url/caption
                         if isinstance(img_data, dict):
-                            img_url = img_data.get('url')
-                            img_caption = img_data.get('caption')
+                            img_url = img_data.get("url")
+                            img_caption = img_data.get("caption")
                         else:
                             img_url = img_data
                             img_caption = None
@@ -285,11 +289,9 @@ class EventCacheManager:
             # Process Facebook events to extract images
             for event in fb_events:
                 # Convert Facebook image format to our format
-                if 'images' in event and event['images']:
-                    event['image_urls'] = [
-                        img['url'] for img in event['images']
-                    ]
-                    event['image_url'] = event['images'][0]['url']
+                if "images" in event and event["images"]:
+                    event["image_urls"] = [img["url"] for img in event["images"]]
+                    event["image_url"] = event["images"][0]["url"]
                 all_events.extend(fb_events)
         except Exception as e:
             logger.warning(f"Facebook scraping failed: {e}")
@@ -297,8 +299,7 @@ class EventCacheManager:
         # Try VolunteerMatch
         city_slug = city.replace(" ", "%20") if city else ""
         volunteer_match_url = (
-            f"https://www.volunteermatch.org/search?"
-            f"l={city_slug}%2C+{state_upper}"
+            f"https://www.volunteermatch.org/search?" f"l={city_slug}%2C+{state_upper}"
         )
         org_name = f"VolunteerMatch {city}, {state_upper}"
 
@@ -311,9 +312,7 @@ class EventCacheManager:
                 f"No events found for {city}, {state_upper}. "
                 "Generating sample events."
             )
-            all_events = self._generate_sample_events_with_images(
-                city, state_upper
-            )
+            all_events = self._generate_sample_events_with_images(city, state_upper)
 
         # Ensure all events have city/state
         for event in all_events:
@@ -338,31 +337,30 @@ class EventCacheManager:
                 "https://via.placeholder.com/800x600/4CAF50/ffffff"
                 "?text=Food+Bank+Volunteers",
                 "https://via.placeholder.com/800x600/4CAF50/ffffff"
-                "?text=Food+Distribution"
+                "?text=Food+Distribution",
             ],
             "animals": [
                 "https://via.placeholder.com/800x600/FF9800/ffffff"
                 "?text=Shelter+Dogs",
-                "https://via.placeholder.com/800x600/FF9800/ffffff"
-                "?text=Dog+Walking"
+                "https://via.placeholder.com/800x600/FF9800/ffffff" "?text=Dog+Walking",
             ],
             "environment": [
                 "https://via.placeholder.com/800x600/2196F3/ffffff"
                 "?text=Park+Cleanup",
                 "https://via.placeholder.com/800x600/2196F3/ffffff"
-                "?text=Tree+Planting"
+                "?text=Tree+Planting",
             ],
             "education": [
                 "https://via.placeholder.com/800x600/9C27B0/ffffff"
                 "?text=Tutoring+Session",
                 "https://via.placeholder.com/800x600/9C27B0/ffffff"
-                "?text=Library+Program"
+                "?text=Library+Program",
             ],
             "seniors": [
                 "https://via.placeholder.com/800x600/F44336/ffffff"
                 "?text=Senior+Center",
                 "https://via.placeholder.com/800x600/F44336/ffffff"
-                "?text=Companion+Program"
+                "?text=Companion+Program",
             ],
         }
 
@@ -469,7 +467,9 @@ class EventCacheManager:
         import os
 
         # Skip Playwright in test environment to allow mocking
-        use_playwright = PLAYWRIGHT_AVAILABLE and "PYTEST_CURRENT_TEST" not in os.environ
+        use_playwright = (
+            PLAYWRIGHT_AVAILABLE and "PYTEST_CURRENT_TEST" not in os.environ
+        )
 
         if use_playwright:
             try:
@@ -570,6 +570,7 @@ JSON OUTPUT:"""
         except Exception as e:
             logger.info(f"Error scraping {org_name}: {e}")
             import traceback
+
             traceback.print_exc()
             return []
 
@@ -615,8 +616,9 @@ JSON OUTPUT:"""
         cache_key = f"tonight_{gh}"
         cached_q = Event.query.filter(
             Event.geohash_6 == gh,
-            Event.category.notin_(['Hunger Relief', 'Animals', 'Environment',
-                                    'Education', 'Seniors'])  # Exclude volunteer categories
+            Event.category.notin_(
+                ["Hunger Relief", "Animals", "Environment", "Education", "Seniors"]
+            ),  # Exclude volunteer categories
         ).filter(
             sa.or_(
                 Event.cache_expires_at.is_(None),
@@ -625,7 +627,9 @@ JSON OUTPUT:"""
         )
         cached = cached_q.limit(limit).all()
 
-        if cached and len(cached) >= limit / 2:  # If we have at least half the requested events
+        if (
+            cached and len(cached) >= limit / 2
+        ):  # If we have at least half the requested events
             return [e.to_dict() for e in cached][:limit]
 
         # Cache miss -> discover tonight's events
@@ -670,7 +674,9 @@ JSON OUTPUT:"""
                             imgs = json.loads(imgs)
                         except:
                             imgs = []
-                    existing.image_url = event.get("image_url") or (imgs[0] if imgs else None)
+                    existing.image_url = event.get("image_url") or (
+                        imgs[0] if imgs else None
+                    )
                     existing.image_urls = json.dumps(imgs) if imgs else None
 
                     persisted.append(existing.to_dict())
@@ -698,7 +704,8 @@ JSON OUTPUT:"""
                         geohash_4=gh4,
                         category=event.get("category", "Community"),
                         date_start=start_time,
-                        url=url or f"https://tapin.org/events/{city.lower()}-{uuid.uuid4()}",
+                        url=url
+                        or f"https://tapin.org/events/{city.lower()}-{uuid.uuid4()}",
                         venue=event.get("venue"),
                         price=event.get("price"),
                         scraped_at=datetime.now(timezone.utc),
@@ -717,7 +724,7 @@ JSON OUTPUT:"""
                     first_img = None
                     if imgs:
                         if isinstance(imgs[0], dict):
-                            first_img = imgs[0].get('url')
+                            first_img = imgs[0].get("url")
                         else:
                             first_img = imgs[0]
                     ev.image_url = event.get("image_url") or first_img

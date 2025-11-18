@@ -1,6 +1,7 @@
 """
 Tests for local_events_scraper.py - Local event discovery
 """
+
 import pytest
 import asyncio
 from datetime import datetime, timezone
@@ -18,12 +19,12 @@ class TestLocalEventsScraper:
     def test_scraper_initialization(self, scraper):
         """Test that scraper initializes correctly"""
         assert scraper is not None
-        assert hasattr(scraper, 'user_agent')
-        assert 'TapinLocalEvents' in scraper.user_agent
+        assert hasattr(scraper, "user_agent")
+        assert "TapinLocalEvents" in scraper.user_agent
 
     def test_event_categories_defined(self, scraper):
         """Test that event categories are defined"""
-        assert hasattr(scraper, 'EVENT_CATEGORIES')
+        assert hasattr(scraper, "EVENT_CATEGORIES")
         assert len(scraper.EVENT_CATEGORIES) > 0
 
         # Check specific categories
@@ -34,7 +35,7 @@ class TestLocalEventsScraper:
 
     def test_time_filters_defined(self, scraper):
         """Test that time filters are defined"""
-        assert hasattr(scraper, 'TIME_FILTERS')
+        assert hasattr(scraper, "TIME_FILTERS")
         assert "tonight" in scraper.TIME_FILTERS
         assert "this_weekend" in scraper.TIME_FILTERS
         assert "this_week" in scraper.TIME_FILTERS
@@ -57,16 +58,16 @@ class TestLocalEventsScraper:
 
         for event in events:
             # Required fields
-            assert 'title' in event
-            assert 'category' in event
-            assert 'venue' in event
-            assert 'city' in event
-            assert 'state' in event
+            assert "title" in event
+            assert "category" in event
+            assert "venue" in event
+            assert "city" in event
+            assert "state" in event
 
             # Check data types
-            assert isinstance(event['title'], str)
-            assert isinstance(event['category'], str)
-            assert len(event['title']) > 0
+            assert isinstance(event["title"], str)
+            assert isinstance(event["category"], str)
+            assert len(event["title"]) > 0
 
     @pytest.mark.asyncio
     async def test_discover_tonight_images(self, scraper):
@@ -77,14 +78,14 @@ class TestLocalEventsScraper:
 
         for event in events:
             # Should have either image_url or image_urls
-            has_images = 'image_url' in event or 'image_urls' in event
+            has_images = "image_url" in event or "image_urls" in event
 
-            if 'image_url' in event:
-                assert isinstance(event['image_url'], str)
-                assert len(event['image_url']) > 0
+            if "image_url" in event:
+                assert isinstance(event["image_url"], str)
+                assert len(event["image_url"]) > 0
 
-            if 'image_urls' in event:
-                assert isinstance(event['image_urls'], list)
+            if "image_urls" in event:
+                assert isinstance(event["image_urls"], list)
 
     @pytest.mark.asyncio
     async def test_discover_tonight_sorted_by_time(self, scraper):
@@ -94,12 +95,12 @@ class TestLocalEventsScraper:
         assert len(events) > 0
 
         # Check that events with start_time are sorted
-        events_with_time = [e for e in events if 'start_time' in e and e['start_time']]
+        events_with_time = [e for e in events if "start_time" in e and e["start_time"]]
 
         if len(events_with_time) > 1:
             for i in range(len(events_with_time) - 1):
-                time1 = events_with_time[i]['start_time']
-                time2 = events_with_time[i + 1]['start_time']
+                time1 = events_with_time[i]["start_time"]
+                time2 = events_with_time[i + 1]["start_time"]
                 # Earlier events should come first
                 assert time1 <= time2
 
@@ -111,7 +112,7 @@ class TestLocalEventsScraper:
         # Check for duplicates by title + venue
         seen = set()
         for event in events:
-            key = (event.get('title', ''), event.get('venue', ''))
+            key = (event.get("title", ""), event.get("venue", ""))
             assert key not in seen, f"Duplicate event found: {key}"
             seen.add(key)
 
@@ -127,8 +128,8 @@ class TestLocalEventsScraper:
         for city, state in cities:
             events = await scraper.discover_tonight(city, state, limit=3)
             assert len(events) > 0
-            assert all(e['city'] == city for e in events)
-            assert all(e['state'] == state for e in events)
+            assert all(e["city"] == city for e in events)
+            assert all(e["state"] == state for e in events)
 
     @pytest.mark.asyncio
     async def test_eventbrite_scraper(self, scraper):
@@ -140,9 +141,9 @@ class TestLocalEventsScraper:
         assert len(events) > 0
 
         for event in events:
-            assert event['source'] == "Eventbrite"
-            assert 'title' in event
-            assert 'category' in event
+            assert event["source"] == "Eventbrite"
+            assert "title" in event
+            assert "category" in event
 
     @pytest.mark.asyncio
     async def test_meetup_scraper(self, scraper):
@@ -153,8 +154,8 @@ class TestLocalEventsScraper:
         assert len(events) > 0
 
         for event in events:
-            assert event['source'] == "Meetup"
-            assert 'title' in event
+            assert event["source"] == "Meetup"
+            assert "title" in event
 
     @pytest.mark.asyncio
     async def test_facebook_local_scraper(self, scraper):
@@ -165,7 +166,7 @@ class TestLocalEventsScraper:
         assert len(events) > 0
 
         for event in events:
-            assert event['source'] == "Facebook"
+            assert event["source"] == "Facebook"
 
     @pytest.mark.asyncio
     async def test_city_calendar_scraper(self, scraper):
@@ -202,8 +203,7 @@ class TestLocalEventsScraper:
     def test_categorize_event_static(self):
         """Test static categorize_event method"""
         result = LocalEventsScraper.categorize_event(
-            "Live Band Performance",
-            "Rock music concert with local bands"
+            "Live Band Performance", "Rock music concert with local bands"
         )
 
         assert result in LocalEventsScraper.EVENT_CATEGORIES
@@ -212,8 +212,7 @@ class TestLocalEventsScraper:
     def test_categorize_event_fallback(self):
         """Test categorization fallback to Community"""
         result = LocalEventsScraper.categorize_event(
-            "Generic Event",
-            "A very generic description"
+            "Generic Event", "A very generic description"
         )
 
         assert result == "Community"
@@ -232,10 +231,10 @@ class TestLocalEventsScraper:
         events = await scraper.discover_tonight("Dallas", "TX", limit=5)
 
         for event in events:
-            if 'price' in event:
-                assert isinstance(event['price'], str)
+            if "price" in event:
+                assert isinstance(event["price"], str)
                 # Price should be meaningful
-                assert len(event['price']) > 0
+                assert len(event["price"]) > 0
 
     @pytest.mark.asyncio
     async def test_discover_tonight_venue_info(self, scraper):
@@ -244,10 +243,10 @@ class TestLocalEventsScraper:
 
         venues_found = 0
         for event in events:
-            if 'venue' in event and event['venue']:
+            if "venue" in event and event["venue"]:
                 venues_found += 1
-                assert isinstance(event['venue'], str)
-                assert len(event['venue']) > 0
+                assert isinstance(event["venue"], str)
+                assert len(event["venue"]) > 0
 
         # Most events should have venue info
         assert venues_found > 0
@@ -257,7 +256,7 @@ class TestLocalEventsScraper:
         """Test that discovered events span multiple categories"""
         events = await scraper.discover_tonight("Seattle", "WA", limit=20)
 
-        categories = set(event['category'] for event in events)
+        categories = set(event["category"] for event in events)
 
         # Should have multiple different categories
         assert len(categories) >= 3
@@ -268,7 +267,7 @@ class TestLocalEventsScraper:
         events = await scraper.discover_tonight("Portland", "OR", limit=5)
 
         for event in events:
-            if 'description' in event:
-                desc = event['description']
+            if "description" in event:
+                desc = event["description"]
                 # Description should be meaningful
                 assert len(desc) > 20

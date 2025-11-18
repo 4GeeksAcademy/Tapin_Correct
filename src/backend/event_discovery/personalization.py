@@ -23,7 +23,9 @@ class PersonalizationEngine:
     and provides personalized event recommendations.
     """
 
-    def __init__(self, db, user_model, event_model, interaction_model, llm_provider=None):
+    def __init__(
+        self, db, user_model, event_model, interaction_model, llm_provider=None
+    ):
         """
         Initialize the personalization engine.
 
@@ -55,15 +57,17 @@ class PersonalizationEngine:
         # Category preferences (based on positive interactions)
         category_scores = Counter()
         for interaction in interactions:
-            if interaction.interaction_type in ['view', 'like', 'attend']:
+            if interaction.interaction_type in ["view", "like", "attend"]:
                 weight = self._interaction_weight(interaction.interaction_type)
                 category_scores[interaction.event.category] += weight
 
         # Normalize scores
         total = sum(category_scores.values())
-        category_preferences = {
-            cat: score / total for cat, score in category_scores.items()
-        } if total > 0 else {}
+        category_preferences = (
+            {cat: score / total for cat, score in category_scores.items()}
+            if total > 0
+            else {}
+        )
 
         # Time preferences (when user typically looks for events)
         hour_preferences = self._calculate_time_preferences(interactions)
@@ -75,19 +79,16 @@ class PersonalizationEngine:
         adventure_level = self._calculate_adventure_level(interactions)
 
         return {
-            'category_preferences': category_preferences,
-            'hour_preferences': hour_preferences,
-            'price_sensitivity': price_sensitivity,
-            'adventure_level': adventure_level,
-            'favorite_venues': self._get_favorite_venues(interactions),
-            'average_lead_time': self._calculate_lead_time(interactions),
+            "category_preferences": category_preferences,
+            "hour_preferences": hour_preferences,
+            "price_sensitivity": price_sensitivity,
+            "adventure_level": adventure_level,
+            "favorite_venues": self._get_favorite_venues(interactions),
+            "average_lead_time": self._calculate_lead_time(interactions),
         }
 
     def get_personalized_feed(
-        self,
-        user_id: int,
-        events: List,
-        limit: int = 20
+        self, user_id: int, events: List, limit: int = 20
     ) -> List[Dict]:
         """
         Generate personalized feed for user with confidence scores.
@@ -106,15 +107,17 @@ class PersonalizationEngine:
         scored_events = []
         for event in events:
             score, explanation = self._score_event(event, profile)
-            scored_events.append({
-                **event,
-                'match_score': score,
-                'match_explanation': explanation,
-                'confidence': self._calculate_confidence(score, profile)
-            })
+            scored_events.append(
+                {
+                    **event,
+                    "match_score": score,
+                    "match_explanation": explanation,
+                    "confidence": self._calculate_confidence(score, profile),
+                }
+            )
 
         # Sort by score
-        scored_events.sort(key=lambda x: x['match_score'], reverse=True)
+        scored_events.sort(key=lambda x: x["match_score"], reverse=True)
 
         return scored_events[:limit]
 
@@ -123,7 +126,7 @@ class PersonalizationEngine:
         user_id: int,
         event_id: str,
         interaction_type: str,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ):
         """
         Record user interaction with an event.
@@ -139,7 +142,7 @@ class PersonalizationEngine:
             event_id=event_id,
             interaction_type=interaction_type,
             metadata=json.dumps(metadata) if metadata else None,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(timezone.utc),
         )
         self.db.session.add(interaction)
         self.db.session.commit()
@@ -157,9 +160,9 @@ class PersonalizationEngine:
         """
         # Get user's liked events
         user_likes = set(
-            i.event_id for i in self.Interaction.query.filter_by(
-                user_id=user_id,
-                interaction_type='like'
+            i.event_id
+            for i in self.Interaction.query.filter_by(
+                user_id=user_id, interaction_type="like"
             ).all()
         )
 
@@ -175,9 +178,9 @@ class PersonalizationEngine:
                 continue
 
             other_likes = set(
-                i.event_id for i in self.Interaction.query.filter_by(
-                    user_id=other_user.id,
-                    interaction_type='like'
+                i.event_id
+                for i in self.Interaction.query.filter_by(
+                    user_id=other_user.id, interaction_type="like"
                 ).all()
             )
 
@@ -198,9 +201,7 @@ class PersonalizationEngine:
         return [user_id for user_id, _ in similarity_scores[:limit]]
 
     def get_collaborative_recommendations(
-        self,
-        user_id: int,
-        limit: int = 10
+        self, user_id: int, limit: int = 10
     ) -> List[str]:
         """
         Get recommendations based on what similar users liked.
@@ -219,9 +220,7 @@ class PersonalizationEngine:
 
         # Get user's already interacted events
         user_events = set(
-            i.event_id for i in self.Interaction.query.filter_by(
-                user_id=user_id
-            ).all()
+            i.event_id for i in self.Interaction.query.filter_by(user_id=user_id).all()
         )
 
         # Get events liked by similar users
@@ -229,8 +228,7 @@ class PersonalizationEngine:
 
         for similar_user_id in similar_users:
             likes = self.Interaction.query.filter_by(
-                user_id=similar_user_id,
-                interaction_type='like'
+                user_id=similar_user_id, interaction_type="like"
             ).all()
 
             for like in likes:
@@ -239,8 +237,7 @@ class PersonalizationEngine:
 
         # Return top recommendations
         top_recommendations = [
-            event_id for event_id, _ in
-            recommendation_scores.most_common(limit)
+            event_id for event_id, _ in recommendation_scores.most_common(limit)
         ]
 
         return top_recommendations
@@ -250,23 +247,23 @@ class PersonalizationEngine:
     def _default_profile(self) -> Dict:
         """Return default profile for new users."""
         return {
-            'category_preferences': {},
-            'hour_preferences': {},
-            'price_sensitivity': 'medium',
-            'adventure_level': 0.5,
-            'favorite_venues': [],
-            'average_lead_time': 7,  # days
+            "category_preferences": {},
+            "hour_preferences": {},
+            "price_sensitivity": "medium",
+            "adventure_level": 0.5,
+            "favorite_venues": [],
+            "average_lead_time": 7,  # days
         }
 
     def _interaction_weight(self, interaction_type: str) -> float:
         """Weight different interaction types."""
         weights = {
-            'view': 1.0,
-            'like': 3.0,
-            'super_like': 5.0,
-            'attend': 10.0,
-            'dislike': -2.0,
-            'skip': -0.5,
+            "view": 1.0,
+            "like": 3.0,
+            "super_like": 5.0,
+            "attend": 10.0,
+            "dislike": -2.0,
+            "skip": -0.5,
         }
         return weights.get(interaction_type, 0.0)
 
@@ -281,32 +278,32 @@ class PersonalizationEngine:
         reasons = []
 
         # Category match
-        category = event.get('category', '')
-        if category in profile['category_preferences']:
-            cat_score = profile['category_preferences'][category] * 50
+        category = event.get("category", "")
+        if category in profile["category_preferences"]:
+            cat_score = profile["category_preferences"][category] * 50
             score += cat_score
             if cat_score > 10:
                 reasons.append(f"Matches your interest in {category}")
 
         # Price match
-        price = event.get('price', 'Free')
-        if self._price_matches_sensitivity(price, profile['price_sensitivity']):
+        price = event.get("price", "Free")
+        if self._price_matches_sensitivity(price, profile["price_sensitivity"]):
             score += 10
-            if 'free' in price.lower():
+            if "free" in price.lower():
                 reasons.append("Free event")
 
         # Venue match
-        venue = event.get('venue', '')
-        if venue in profile['favorite_venues']:
+        venue = event.get("venue", "")
+        if venue in profile["favorite_venues"]:
             score += 15
             reasons.append(f"At one of your favorite venues")
 
         # Image quality (events with images score higher)
-        if event.get('image_url'):
+        if event.get("image_url"):
             score += 5
 
         # Recency boost
-        if event.get('scraped_at'):
+        if event.get("scraped_at"):
             score += 5
             reasons.append("Recently added")
 
@@ -320,7 +317,7 @@ class PersonalizationEngine:
     def _calculate_confidence(self, score: float, profile: Dict) -> int:
         """Calculate confidence percentage (0-100)."""
         # Higher confidence if we have more data about user
-        data_points = len(profile.get('category_preferences', {}))
+        data_points = len(profile.get("category_preferences", {}))
         data_confidence = min(data_points * 10, 30)
 
         # Score-based confidence
@@ -334,30 +331,31 @@ class PersonalizationEngine:
         hour_counts = Counter(hours)
         total = len(hours)
 
-        return {
-            hour: count / total
-            for hour, count in hour_counts.items()
-        } if total > 0 else {}
+        return (
+            {hour: count / total for hour, count in hour_counts.items()}
+            if total > 0
+            else {}
+        )
 
     def _calculate_price_sensitivity(self, interactions) -> str:
         """Determine user's price sensitivity."""
         # Look at price of events user attended/liked
         prices = []
         for i in interactions:
-            if i.interaction_type in ['like', 'attend'] and i.event:
-                price_str = i.event.price or 'Free'
-                if 'free' in price_str.lower():
+            if i.interaction_type in ["like", "attend"] and i.event:
+                price_str = i.event.price or "Free"
+                if "free" in price_str.lower():
                     prices.append(0)
                 # Could parse actual prices here
 
         avg_price = sum(prices) / len(prices) if prices else 0
 
         if avg_price == 0:
-            return 'low'
+            return "low"
         elif avg_price < 20:
-            return 'medium'
+            return "medium"
         else:
-            return 'high'
+            return "high"
 
     def _calculate_adventure_level(self, interactions) -> float:
         """Calculate how adventurous user is (0-1)."""
@@ -365,8 +363,9 @@ class PersonalizationEngine:
             return 0.5
 
         categories_tried = set(
-            i.event.category for i in interactions
-            if i.event and i.interaction_type in ['view', 'like', 'attend']
+            i.event.category
+            for i in interactions
+            if i.event and i.interaction_type in ["view", "like", "attend"]
         )
 
         # More categories = more adventurous
@@ -377,7 +376,7 @@ class PersonalizationEngine:
         venue_counts = Counter()
 
         for i in interactions:
-            if i.event and i.event.venue and i.interaction_type in ['like', 'attend']:
+            if i.event and i.event.venue and i.interaction_type in ["like", "attend"]:
                 venue_counts[i.event.venue] += 1
 
         return [venue for venue, _ in venue_counts.most_common(limit)]
@@ -396,12 +395,12 @@ class PersonalizationEngine:
 
     def _price_matches_sensitivity(self, price: str, sensitivity: str) -> bool:
         """Check if price matches user's sensitivity."""
-        if 'free' in price.lower():
+        if "free" in price.lower():
             return True  # Everyone likes free
 
-        if sensitivity == 'low':
-            return 'free' in price.lower()
-        elif sensitivity == 'medium':
+        if sensitivity == "low":
+            return "free" in price.lower()
+        elif sensitivity == "medium":
             return True  # Medium accepts anything
         else:  # high
             return True  # High spenders accept anything
@@ -409,10 +408,7 @@ class PersonalizationEngine:
         return True
 
     async def get_ai_personalized_recommendations(
-        self,
-        user_id: int,
-        events: List[Dict],
-        limit: int = 10
+        self, user_id: int, events: List[Dict], limit: int = 10
     ) -> List[Dict]:
         """
         Use AI (HybridLLM) to generate highly personalized event recommendations
@@ -430,9 +426,12 @@ class PersonalizationEngine:
         profile = self.calculate_user_taste_profile(user_id)
 
         # Get recent interactions for context
-        recent_interactions = self.Interaction.query.filter_by(
-            user_id=user_id
-        ).order_by(self.Interaction.timestamp.desc()).limit(10).all()
+        recent_interactions = (
+            self.Interaction.query.filter_by(user_id=user_id)
+            .order_by(self.Interaction.timestamp.desc())
+            .limit(10)
+            .all()
+        )
 
         # Build context for AI
         liked_events = []
@@ -441,9 +440,9 @@ class PersonalizationEngine:
         for interaction in recent_interactions:
             if interaction.event:
                 event_desc = f"{interaction.event.title} ({interaction.event.category})"
-                if interaction.interaction_type in ['like', 'super_like', 'attend']:
+                if interaction.interaction_type in ["like", "super_like", "attend"]:
                     liked_events.append(event_desc)
-                elif interaction.interaction_type == 'dislike':
+                elif interaction.interaction_type == "dislike":
                     disliked_events.append(event_desc)
 
         # Prepare candidate events (top 20 by basic scoring)
@@ -479,26 +478,38 @@ class PersonalizationEngine:
         liked_events: List[str],
         disliked_events: List[str],
         candidates: List[Dict],
-        limit: int
+        limit: int,
     ) -> str:
         """Build prompt for AI personalization."""
-        liked_str = "\n".join(f"- {e}" for e in liked_events[:5]) if liked_events else "None yet"
-        disliked_str = "\n".join(f"- {e}" for e in disliked_events[:5]) if disliked_events else "None"
+        liked_str = (
+            "\n".join(f"- {e}" for e in liked_events[:5])
+            if liked_events
+            else "None yet"
+        )
+        disliked_str = (
+            "\n".join(f"- {e}" for e in disliked_events[:5])
+            if disliked_events
+            else "None"
+        )
 
-        categories_str = ", ".join(
-            f"{cat} ({score:.0f}%)"
-            for cat, score in sorted(
-                profile['category_preferences'].items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:5]
-        ) if profile['category_preferences'] else "Still learning preferences"
+        categories_str = (
+            ", ".join(
+                f"{cat} ({score:.0f}%)"
+                for cat, score in sorted(
+                    profile["category_preferences"].items(),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )[:5]
+            )
+            if profile["category_preferences"]
+            else "Still learning preferences"
+        )
 
         candidates_str = ""
         for i, event in enumerate(candidates[:15], 1):
             candidates_str += f"\n{i}. {event.get('title', 'Untitled')} - {event.get('category', 'Unknown')} at {event.get('venue', 'TBD')}"
-            if event.get('description'):
-                desc = event['description'][:100]
+            if event.get("description"):
+                desc = event["description"][:100]
                 candidates_str += f"\n   Description: {desc}..."
 
         prompt = f"""You are an expert event recommendation AI. Analyze this user's preferences and recommend the {limit} best events from the candidates below.
@@ -533,15 +544,17 @@ Respond with ONLY the JSON array, no other text."""
 
         return prompt
 
-    def _parse_ai_response(self, response_text: str, candidates: List[Dict]) -> List[Dict]:
+    def _parse_ai_response(
+        self, response_text: str, candidates: List[Dict]
+    ) -> List[Dict]:
         """Parse AI response and attach recommendations to events."""
         try:
             # Extract JSON from response
             response_text = response_text.strip()
 
             # Find JSON array in response
-            start_idx = response_text.find('[')
-            end_idx = response_text.rfind(']') + 1
+            start_idx = response_text.find("[")
+            end_idx = response_text.rfind("]") + 1
 
             if start_idx == -1 or end_idx == 0:
                 return []
@@ -558,14 +571,16 @@ Respond with ONLY the JSON array, no other text."""
                 if not isinstance(rec, dict):
                     continue
 
-                event_num = rec.get('event_num')
+                event_num = rec.get("event_num")
                 if event_num is None or event_num < 1 or event_num > len(candidates):
                     continue
 
                 # Get the corresponding event (1-indexed)
                 event = candidates[event_num - 1].copy()
-                event['ai_match_score'] = rec.get('match_score', 50)
-                event['ai_explanation'] = rec.get('explanation', 'AI-recommended for you')
+                event["ai_match_score"] = rec.get("match_score", 50)
+                event["ai_explanation"] = rec.get(
+                    "explanation", "AI-recommended for you"
+                )
 
                 result.append(event)
 

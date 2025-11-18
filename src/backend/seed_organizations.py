@@ -41,7 +41,7 @@ ORGANIZATIONS = {
                     "lat": 29.7964,
                     "lon": -95.3865,
                 },
-            ]
+            ],
         },
         {
             "name": "BARC Animal Shelter",
@@ -67,7 +67,7 @@ ORGANIZATIONS = {
                     "lat": 29.7752,
                     "lon": -95.3435,
                 },
-            ]
+            ],
         },
         {
             "name": "Buffalo Bayou Partnership",
@@ -84,7 +84,7 @@ ORGANIZATIONS = {
                     "lat": 29.7633,
                     "lon": -95.3871,
                 },
-            ]
+            ],
         },
     ],
     "Dallas": [
@@ -112,7 +112,7 @@ ORGANIZATIONS = {
                     "lat": 33.0198,
                     "lon": -96.6989,
                 },
-            ]
+            ],
         },
         {
             "name": "Dallas Pets Alive",
@@ -138,7 +138,7 @@ ORGANIZATIONS = {
                     "lat": 32.7895,
                     "lon": -96.8017,
                 },
-            ]
+            ],
         },
         {
             "name": "Dallas Education Foundation",
@@ -155,7 +155,7 @@ ORGANIZATIONS = {
                     "lat": 32.7357,
                     "lon": -96.8197,
                 },
-            ]
+            ],
         },
     ],
     "New York": [
@@ -183,7 +183,7 @@ ORGANIZATIONS = {
                     "lat": 40.6537,
                     "lon": -74.0099,
                 },
-            ]
+            ],
         },
         {
             "name": "NYC Audubon Society",
@@ -209,7 +209,7 @@ ORGANIZATIONS = {
                     "lat": 40.7308,
                     "lon": -74.0092,
                 },
-            ]
+            ],
         },
         {
             "name": "New York Cares",
@@ -235,7 +235,7 @@ ORGANIZATIONS = {
                     "lat": 40.7248,
                     "lon": -73.9810,
                 },
-            ]
+            ],
         },
     ],
     "Los Angeles": [
@@ -263,7 +263,7 @@ ORGANIZATIONS = {
                     "lat": 34.0579,
                     "lon": -118.2774,
                 },
-            ]
+            ],
         },
         {
             "name": "Best Friends Animal Society LA",
@@ -289,7 +289,7 @@ ORGANIZATIONS = {
                     "lat": 34.0522,
                     "lon": -118.4437,
                 },
-            ]
+            ],
         },
         {
             "name": "TreePeople LA",
@@ -315,7 +315,7 @@ ORGANIZATIONS = {
                     "lat": 34.1168,
                     "lon": -118.4109,
                 },
-            ]
+            ],
         },
         {
             "name": "LA Works",
@@ -341,7 +341,7 @@ ORGANIZATIONS = {
                     "lat": 34.0454,
                     "lon": -118.2465,
                 },
-            ]
+            ],
         },
     ],
 }
@@ -377,8 +377,7 @@ def create_sample_events():
                 for event_data in org["events"]:
                     # Check if event already exists
                     existing = Event.query.filter_by(
-                        title=event_data["title"],
-                        organization=org_name
+                        title=event_data["title"], organization=org_name
                     ).first()
 
                     if existing:
@@ -392,7 +391,9 @@ def create_sample_events():
                     if days_until_saturday == 0:
                         days_until_saturday = 7
                     event_date = today + timedelta(days=days_until_saturday)
-                    event_date = event_date.replace(hour=10, minute=0, second=0, microsecond=0)
+                    event_date = event_date.replace(
+                        hour=10, minute=0, second=0, microsecond=0
+                    )
 
                     # Generate geohash
                     lat = event_data["lat"]
@@ -430,7 +431,9 @@ def create_sample_events():
 
         db.session.commit()
         print(f"\n🎉 Successfully created {events_created} sample volunteer events!")
-        print(f"\n💡 Tip: These events have contact info, so the 'Volunteer' button will appear!")
+        print(
+            f"\n💡 Tip: These events have contact info, so the 'Volunteer' button will appear!"
+        )
 
 
 if __name__ == "__main__":

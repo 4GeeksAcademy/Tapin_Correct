@@ -10,7 +10,14 @@ EVENT_CATEGORIES = {
     "Volunteer": {
         "icon": "🤝",
         "color": "#4CAF50",
-        "keywords": ["volunteer", "help", "serve", "nonprofit", "charity", "community service"],
+        "keywords": [
+            "volunteer",
+            "help",
+            "serve",
+            "nonprofit",
+            "charity",
+            "community service",
+        ],
         "description": "Give back to your community through volunteer opportunities",
     },
     "Hunger Relief": {
@@ -28,13 +35,29 @@ EVENT_CATEGORIES = {
     "Environment": {
         "icon": "🌱",
         "color": "#2196F3",
-        "keywords": ["environment", "cleanup", "sustainability", "recycling", "tree planting", "nature"],
+        "keywords": [
+            "environment",
+            "cleanup",
+            "sustainability",
+            "recycling",
+            "tree planting",
+            "nature",
+        ],
         "description": "Protect our planet through environmental action",
     },
     "Education": {
         "icon": "📚",
         "color": "#9C27B0",
-        "keywords": ["education", "tutoring", "mentoring", "teaching", "workshop", "class", "seminar", "training"],
+        "keywords": [
+            "education",
+            "tutoring",
+            "mentoring",
+            "teaching",
+            "workshop",
+            "class",
+            "seminar",
+            "training",
+        ],
         "description": "Learn new skills or help others learn",
     },
     "Seniors": {
@@ -43,12 +66,20 @@ EVENT_CATEGORIES = {
         "keywords": ["senior", "elderly", "aging", "retirement", "companion"],
         "description": "Support and companionship for seniors",
     },
-
     # Entertainment & Culture
     "Music & Concerts": {
         "icon": "🎵",
         "color": "#673AB7",
-        "keywords": ["concert", "live music", "band", "dj", "festival", "performance", "jazz", "rock"],
+        "keywords": [
+            "concert",
+            "live music",
+            "band",
+            "dj",
+            "festival",
+            "performance",
+            "jazz",
+            "rock",
+        ],
         "description": "Live music performances and concerts",
     },
     "Comedy": {
@@ -60,7 +91,15 @@ EVENT_CATEGORIES = {
     "Arts & Theater": {
         "icon": "🎭",
         "color": "#E91E63",
-        "keywords": ["art", "gallery", "theater", "performance", "exhibit", "museum", "dance"],
+        "keywords": [
+            "art",
+            "gallery",
+            "theater",
+            "performance",
+            "exhibit",
+            "museum",
+            "dance",
+        ],
         "description": "Visual arts, theater, and cultural performances",
     },
     "Film & Media": {
@@ -75,12 +114,19 @@ EVENT_CATEGORIES = {
         "keywords": ["book", "author", "reading", "literature", "poetry", "writing"],
         "description": "Book clubs, author talks, and literary events",
     },
-
     # Food & Drink
     "Food & Dining": {
         "icon": "🍽️",
         "color": "#FF9800",
-        "keywords": ["restaurant", "food", "dining", "tasting", "culinary", "chef", "cooking"],
+        "keywords": [
+            "restaurant",
+            "food",
+            "dining",
+            "tasting",
+            "culinary",
+            "chef",
+            "cooking",
+        ],
         "description": "Food festivals, tastings, and culinary experiences",
     },
     "Wine & Beer": {
@@ -89,12 +135,19 @@ EVENT_CATEGORIES = {
         "keywords": ["wine", "beer", "brewery", "winery", "craft beer", "tasting"],
         "description": "Wine tastings and craft beer events",
     },
-
     # Active & Sports
     "Sports": {
         "icon": "⚽",
         "color": "#4CAF50",
-        "keywords": ["sports", "game", "match", "tournament", "athletic", "basketball", "soccer"],
+        "keywords": [
+            "sports",
+            "game",
+            "match",
+            "tournament",
+            "athletic",
+            "basketball",
+            "soccer",
+        ],
         "description": "Sports games, tournaments, and athletic events",
     },
     "Fitness": {
@@ -109,7 +162,6 @@ EVENT_CATEGORIES = {
         "keywords": ["hiking", "outdoor", "nature", "park", "adventure", "camping"],
         "description": "Outdoor adventures and nature activities",
     },
-
     # Social & Professional
     "Nightlife": {
         "icon": "🌃",
@@ -126,10 +178,17 @@ EVENT_CATEGORIES = {
     "Tech & Innovation": {
         "icon": "💻",
         "color": "#00BCD4",
-        "keywords": ["tech", "startup", "innovation", "hackathon", "coding", "ai", "ml"],
+        "keywords": [
+            "tech",
+            "startup",
+            "innovation",
+            "hackathon",
+            "coding",
+            "ai",
+            "ml",
+        ],
         "description": "Technology meetups and innovation events",
     },
-
     # Family & Community
     "Family": {
         "icon": "👨‍👩‍👧‍👦",
@@ -196,11 +255,14 @@ def get_category_info(category: str) -> dict:
     Returns:
         Dictionary with icon, color, description
     """
-    return EVENT_CATEGORIES.get(category, {
-        "icon": "📅",
-        "color": "#607D8B",
-        "description": "Community events",
-    })
+    return EVENT_CATEGORIES.get(
+        category,
+        {
+            "icon": "📅",
+            "color": "#607D8B",
+            "description": "Community events",
+        },
+    )
 
 
 def get_all_categories() -> list:

@@ -141,7 +141,7 @@ Expected output:
 
 ### 1) Installation:
 
-> If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node 
+> If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node
 
 It is recommended to install the backend first. Make sure you have Python 3.10+, Node 20, and whichever database engine you plan to use (SQLite works out-of-the-box for local dev).
 
@@ -182,7 +182,7 @@ It is recommended to install the backend first. Make sure you have Python 3.10+,
 
 ### Front-End (src/front via root npm scripts)
 
-> **Where do npm commands live?**  
+> **Where do npm commands live?**
 > `package.json` sits at the repository root, so always run `npm install`, `npm run dev`, etc. from the root folder (`.../Tapin_Correct`). Those scripts automatically point to `src/front` via `vite.config.js`.
 
 1. From the repo root install the Vite dependencies and configure the API URL:
@@ -208,10 +208,10 @@ It is recommended to install the backend first. Make sure you have Python 3.10+,
 
 ### Start everything locally
 
-1. Back end: `cd src/backend && .\.venv\Scripts\activate && python app.py` (or `flask --app backend.app run`).  
+1. Back end: `cd src/backend && .\.venv\Scripts\activate && python app.py` (or `flask --app backend.app run`).
    - Default SQLite DB lives at `src/backend/data.db`. If you override `SQLALCHEMY_DATABASE_URI`, make sure it resolves from the directory you launch the server in.
-2. Front end: from the repo root run `npm run dev` and open the URL Vite prints (usually `http://localhost:5173`).  
-3. Ensure `.env` has `VITE_BACKEND_URL=http://localhost:5000` (or whatever host/port Flask uses) so the SPA can reach the API.  
+2. Front end: from the repo root run `npm run dev` and open the URL Vite prints (usually `http://localhost:5173`).
+3. Ensure `.env` has `VITE_BACKEND_URL=http://localhost:5000` (or whatever host/port Flask uses) so the SPA can reach the API.
 4. For production-style verification run `npm run build` and then hit the Flask root (`http://localhost:5000/`); it serves the files from `dist/`.
 
 ## Publish your website!

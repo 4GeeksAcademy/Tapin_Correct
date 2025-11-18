@@ -59,7 +59,7 @@ export default function ListingCard({ listing = {}, onOpen, onSelect }) {
             </div>
           )}
           {category && (
-            <div 
+            <div
               className="category-badge"
               style={{
                 backgroundColor: getCategoryColor(category),

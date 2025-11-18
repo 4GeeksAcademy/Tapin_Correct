@@ -1,11 +1,12 @@
 """
 Database migration script to add category and image_url columns to listing.
 """
+
 import sqlite3
 import os
 
 # Path to database
-db_path = os.path.join(os.path.dirname(__file__), 'data.db')
+db_path = os.path.join(os.path.dirname(__file__), "data.db")
 
 
 def migrate_database():
@@ -20,19 +21,17 @@ def migrate_database():
         columns = [col[1] for col in cursor.fetchall()]
 
         # Add category column if it doesn't exist
-        if 'category' not in columns:
+        if "category" not in columns:
             print("➕ Adding 'category' column to listing table...")
-            cursor.execute(
-                "ALTER TABLE listing ADD COLUMN category VARCHAR(100)")
+            cursor.execute("ALTER TABLE listing ADD COLUMN category VARCHAR(100)")
             print("✓ Added 'category' column")
         else:
             print("ℹ️  'category' column already exists")
 
         # Add image_url column if it doesn't exist
-        if 'image_url' not in columns:
+        if "image_url" not in columns:
             print("➕ Adding 'image_url' column to listing table...")
-            cursor.execute(
-                "ALTER TABLE listing ADD COLUMN image_url VARCHAR(500)")
+            cursor.execute("ALTER TABLE listing ADD COLUMN image_url VARCHAR(500)")
             print("✓ Added 'image_url' column")
         else:
             print("ℹ️  'image_url' column already exists")
@@ -48,5 +47,5 @@ def migrate_database():
         conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     migrate_database()

@@ -1,6 +1,7 @@
 """
 Tests for event_categories.py - Unified event category system
 """
+
 import pytest
 from backend.event_discovery.event_categories import (
     EVENT_CATEGORIES,
@@ -22,7 +23,7 @@ class TestEventCategories:
 
     def test_all_categories_have_required_fields(self):
         """Test that all categories have icon, color, keywords, description"""
-        required_fields = ['icon', 'color', 'keywords', 'description']
+        required_fields = ["icon", "color", "keywords", "description"]
 
         for category_name, category_data in EVENT_CATEGORIES.items():
             assert isinstance(category_data, dict), f"{category_name} is not a dict"
@@ -31,23 +32,22 @@ class TestEventCategories:
                 assert field in category_data, f"{category_name} missing {field}"
 
             # Validate field types
-            assert isinstance(category_data['icon'], str)
-            assert isinstance(category_data['color'], str)
-            assert isinstance(category_data['keywords'], list)
-            assert isinstance(category_data['description'], str)
+            assert isinstance(category_data["icon"], str)
+            assert isinstance(category_data["color"], str)
+            assert isinstance(category_data["keywords"], list)
+            assert isinstance(category_data["description"], str)
 
             # Validate color format (hex color)
-            assert category_data['color'].startswith('#')
-            assert len(category_data['color']) == 7
+            assert category_data["color"].startswith("#")
+            assert len(category_data["color"]) == 7
 
             # Keywords should be non-empty
-            assert len(category_data['keywords']) > 0
+            assert len(category_data["keywords"]) > 0
 
     def test_categorize_event_music(self):
         """Test categorization of music events"""
         result = categorize_event(
-            "Live Jazz Concert Tonight",
-            "Join us for an amazing jazz performance"
+            "Live Jazz Concert Tonight", "Join us for an amazing jazz performance"
         )
         assert result == "Music & Concerts"
 
@@ -55,7 +55,7 @@ class TestEventCategories:
         """Test categorization of food events"""
         result = categorize_event(
             "Restaurant Food Tasting Event",
-            "Sample delicious cuisine and dining from local restaurants"
+            "Sample delicious cuisine and dining from local restaurants",
         )
         assert result == "Food & Dining"
 
@@ -63,32 +63,27 @@ class TestEventCategories:
         """Test categorization of tech events"""
         result = categorize_event(
             "AI/ML Developer Meetup",
-            "Discuss latest trends in artificial intelligence and machine learning"
+            "Discuss latest trends in artificial intelligence and machine learning",
         )
         assert result == "Tech & Innovation"
 
     def test_categorize_event_volunteer(self):
         """Test categorization of volunteer events"""
         result = categorize_event(
-            "Community Cleanup Day",
-            "Help us clean up local parks and streets"
+            "Community Cleanup Day", "Help us clean up local parks and streets"
         )
         # Could be Environment or Community
         assert result in ["Environment", "Community", "Volunteer"]
 
     def test_categorize_event_default(self):
         """Test categorization with no matching keywords"""
-        result = categorize_event(
-            "Random Event",
-            "This is a very generic event"
-        )
+        result = categorize_event("Random Event", "This is a very generic event")
         assert result == "Community"  # Default category
 
     def test_categorize_event_multiple_keywords(self):
         """Test categorization with multiple keyword matches"""
         result = categorize_event(
-            "Comedy Night at Local Bar",
-            "Stand up comedy show with drinks and dancing"
+            "Comedy Night at Local Bar", "Stand up comedy show with drinks and dancing"
         )
         # Should match strongest category
         assert result in ["Comedy", "Nightlife"]
@@ -97,21 +92,21 @@ class TestEventCategories:
         """Test getting metadata for valid category"""
         info = get_category_info("Music & Concerts")
 
-        assert 'icon' in info
-        assert 'color' in info
-        assert 'description' in info
-        assert info['icon'] == "🎵"
-        assert info['color'] == "#673AB7"
+        assert "icon" in info
+        assert "color" in info
+        assert "description" in info
+        assert info["icon"] == "🎵"
+        assert info["color"] == "#673AB7"
 
     def test_get_category_info_invalid(self):
         """Test getting metadata for invalid category"""
         info = get_category_info("NonExistent Category")
 
         # Should return default
-        assert 'icon' in info
-        assert 'color' in info
-        assert 'description' in info
-        assert info['icon'] == "📅"
+        assert "icon" in info
+        assert "color" in info
+        assert "description" in info
+        assert info["icon"] == "📅"
 
     def test_get_all_categories(self):
         """Test getting list of all categories"""
@@ -164,18 +159,18 @@ class TestEventCategories:
     def test_keyword_uniqueness(self):
         """Test that keywords are meaningful and not too generic"""
         for category_name, category_data in EVENT_CATEGORIES.items():
-            keywords = category_data['keywords']
+            keywords = category_data["keywords"]
 
             # Each category should have unique keywords
             assert len(keywords) == len(set(keywords))
 
             # Keywords should be lowercase
             for keyword in keywords:
-                assert keyword.islower() or ' ' in keyword
+                assert keyword.islower() or " " in keyword
 
     def test_color_variety(self):
         """Test that categories have varied colors"""
-        colors = [cat['color'] for cat in EVENT_CATEGORIES.values()]
+        colors = [cat["color"] for cat in EVENT_CATEGORIES.values()]
 
         # Should have at least 15 unique colors for 23 categories
         unique_colors = set(colors)
@@ -184,7 +179,7 @@ class TestEventCategories:
     def test_description_quality(self):
         """Test that all descriptions are meaningful"""
         for category_name, category_data in EVENT_CATEGORIES.items():
-            description = category_data['description']
+            description = category_data["description"]
 
             # Description should be substantial
             assert len(description) > 20

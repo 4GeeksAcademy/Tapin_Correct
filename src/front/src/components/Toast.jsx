@@ -16,7 +16,7 @@ export function ToastProvider({ children }) {
   const addToast = useCallback((message, type = 'info', duration = 5000) => {
     const id = Date.now() + Math.random();
     const newToast = { id, message, type, duration };
-    
+
     setToasts((prev) => [...prev, newToast]);
 
     if (duration > 0) {

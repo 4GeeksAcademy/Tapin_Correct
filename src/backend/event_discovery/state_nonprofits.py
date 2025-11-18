@@ -22,7 +22,10 @@ STATE_NONPROFITS = {
     "AZ": [
         ("https://www.volunteermatch.org/search?l=Arizona", "VolunteerMatch Arizona"),
         ("https://www.firstfoodbank.org/volunteer/", "St. Mary's Food Bank"),
-        ("https://www.habitatcaz.org/volunteer", "Habitat for Humanity Central Arizona"),
+        (
+            "https://www.habitatcaz.org/volunteer",
+            "Habitat for Humanity Central Arizona",
+        ),
     ],
     # Arkansas (AR)
     "AR": [
@@ -32,7 +35,10 @@ STATE_NONPROFITS = {
     ],
     # California (CA)
     "CA": [
-        ("https://www.volunteermatch.org/search?l=California", "VolunteerMatch California"),
+        (
+            "https://www.volunteermatch.org/search?l=California",
+            "VolunteerMatch California",
+        ),
         ("https://www.lafoodbank.org/get-involved/volunteer/", "LA Food Bank"),
         ("https://www.sfmfoodbank.org/volunteer/", "SF-Marin Food Bank"),
         ("https://www.habitat.org/us-ca", "Habitat for Humanity California"),
@@ -42,11 +48,17 @@ STATE_NONPROFITS = {
     "CO": [
         ("https://www.volunteermatch.org/search?l=Colorado", "VolunteerMatch Colorado"),
         ("https://www.foodbankrockies.org/volunteer/", "Food Bank of the Rockies"),
-        ("https://www.habitatmetrodenver.org/volunteer", "Habitat for Humanity Metro Denver"),
+        (
+            "https://www.habitatmetrodenver.org/volunteer",
+            "Habitat for Humanity Metro Denver",
+        ),
     ],
     # Connecticut (CT)
     "CT": [
-        ("https://www.volunteermatch.org/search?l=Connecticut", "VolunteerMatch Connecticut"),
+        (
+            "https://www.volunteermatch.org/search?l=Connecticut",
+            "VolunteerMatch Connecticut",
+        ),
         ("https://www.ctfoodbank.org/volunteer/", "Connecticut Food Bank"),
         ("https://www.habitat.org/us-ct", "Habitat for Humanity Connecticut"),
     ],
@@ -60,7 +72,10 @@ STATE_NONPROFITS = {
     "FL": [
         ("https://www.volunteermatch.org/search?l=Florida", "VolunteerMatch Florida"),
         ("https://www.feedingflorida.org/volunteer", "Feeding Florida"),
-        ("https://www.habitatcfla.org/volunteer", "Habitat for Humanity Central Florida"),
+        (
+            "https://www.habitatcfla.org/volunteer",
+            "Habitat for Humanity Central Florida",
+        ),
         ("https://www.volunteerflorida.org/", "Volunteer Florida"),
     ],
     # Georgia (GA)
@@ -85,7 +100,10 @@ STATE_NONPROFITS = {
     # Illinois (IL)
     "IL": [
         ("https://www.volunteermatch.org/search?l=Illinois", "VolunteerMatch Illinois"),
-        ("https://www.chicagosfoodbank.org/volunteer/", "Greater Chicago Food Depository"),
+        (
+            "https://www.chicagosfoodbank.org/volunteer/",
+            "Greater Chicago Food Depository",
+        ),
         ("https://www.habitat.org/us-il", "Habitat for Humanity Illinois"),
         ("https://www.chicagocares.org/volunteer", "Chicago Cares"),
     ],
@@ -115,7 +133,10 @@ STATE_NONPROFITS = {
     ],
     # Louisiana (LA)
     "LA": [
-        ("https://www.volunteermatch.org/search?l=Louisiana", "VolunteerMatch Louisiana"),
+        (
+            "https://www.volunteermatch.org/search?l=Louisiana",
+            "VolunteerMatch Louisiana",
+        ),
         ("https://www.secondharvestgno.org/volunteer", "Second Harvest Food Bank"),
         ("https://www.habitat.org/us-la", "Habitat for Humanity Louisiana"),
     ],
@@ -129,11 +150,17 @@ STATE_NONPROFITS = {
     "MD": [
         ("https://www.volunteermatch.org/search?l=Maryland", "VolunteerMatch Maryland"),
         ("https://www.mdfoodbank.org/volunteer/", "Maryland Food Bank"),
-        ("https://www.habitatchesapeake.org/volunteer", "Habitat for Humanity Chesapeake"),
+        (
+            "https://www.habitatchesapeake.org/volunteer",
+            "Habitat for Humanity Chesapeake",
+        ),
     ],
     # Massachusetts (MA)
     "MA": [
-        ("https://www.volunteermatch.org/search?l=Massachusetts", "VolunteerMatch Massachusetts"),
+        (
+            "https://www.volunteermatch.org/search?l=Massachusetts",
+            "VolunteerMatch Massachusetts",
+        ),
         ("https://www.gbfb.org/volunteer/", "Greater Boston Food Bank"),
         ("https://www.habitat.org/us-ma", "Habitat for Humanity Massachusetts"),
         ("https://www.bostoncares.org/volunteer", "Boston Cares"),
@@ -146,13 +173,19 @@ STATE_NONPROFITS = {
     ],
     # Minnesota (MN)
     "MN": [
-        ("https://www.volunteermatch.org/search?l=Minnesota", "VolunteerMatch Minnesota"),
+        (
+            "https://www.volunteermatch.org/search?l=Minnesota",
+            "VolunteerMatch Minnesota",
+        ),
         ("https://www.2harvest.org/volunteer", "Second Harvest Heartland"),
         ("https://www.tchabitat.org/volunteer", "Twin Cities Habitat for Humanity"),
     ],
     # Mississippi (MS)
     "MS": [
-        ("https://www.volunteermatch.org/search?l=Mississippi", "VolunteerMatch Mississippi"),
+        (
+            "https://www.volunteermatch.org/search?l=Mississippi",
+            "VolunteerMatch Mississippi",
+        ),
         ("https://www.msfoodnet.org/volunteer", "Mississippi Food Network"),
         ("https://www.habitat.org/us-ms", "Habitat for Humanity Mississippi"),
     ],
@@ -183,25 +216,37 @@ STATE_NONPROFITS = {
     ],
     # New Hampshire (NH)
     "NH": [
-        ("https://www.volunteermatch.org/search?l=New%20Hampshire", "VolunteerMatch New Hampshire"),
+        (
+            "https://www.volunteermatch.org/search?l=New%20Hampshire",
+            "VolunteerMatch New Hampshire",
+        ),
         ("https://www.nhfoodbank.org/volunteer/", "New Hampshire Food Bank"),
         ("https://www.habitat.org/us-nh", "Habitat for Humanity New Hampshire"),
     ],
     # New Jersey (NJ)
     "NJ": [
-        ("https://www.volunteermatch.org/search?l=New%20Jersey", "VolunteerMatch New Jersey"),
+        (
+            "https://www.volunteermatch.org/search?l=New%20Jersey",
+            "VolunteerMatch New Jersey",
+        ),
         ("https://www.cfbnj.org/volunteer/", "Community FoodBank of New Jersey"),
         ("https://www.habitat.org/us-nj", "Habitat for Humanity New Jersey"),
     ],
     # New Mexico (NM)
     "NM": [
-        ("https://www.volunteermatch.org/search?l=New%20Mexico", "VolunteerMatch New Mexico"),
+        (
+            "https://www.volunteermatch.org/search?l=New%20Mexico",
+            "VolunteerMatch New Mexico",
+        ),
         ("https://www.rrfb.org/volunteer/", "Roadrunner Food Bank"),
         ("https://www.habitat.org/us-nm", "Habitat for Humanity New Mexico"),
     ],
     # New York (NY)
     "NY": [
-        ("https://www.volunteermatch.org/search?l=New%20York", "VolunteerMatch New York"),
+        (
+            "https://www.volunteermatch.org/search?l=New%20York",
+            "VolunteerMatch New York",
+        ),
         ("https://www.nycservice.org/volunteer", "NYC Service"),
         ("https://www.foodbanknyc.org/volunteer/", "Food Bank for New York City"),
         ("https://www.habitat.org/us-ny", "Habitat for Humanity New York"),
@@ -209,14 +254,23 @@ STATE_NONPROFITS = {
     ],
     # North Carolina (NC)
     "NC": [
-        ("https://www.volunteermatch.org/search?l=North%20Carolina", "VolunteerMatch North Carolina"),
-        ("https://www.secondharvestmetrolina.org/volunteer", "Second Harvest Food Bank"),
+        (
+            "https://www.volunteermatch.org/search?l=North%20Carolina",
+            "VolunteerMatch North Carolina",
+        ),
+        (
+            "https://www.secondharvestmetrolina.org/volunteer",
+            "Second Harvest Food Bank",
+        ),
         ("https://www.habitat.org/us-nc", "Habitat for Humanity North Carolina"),
         ("https://www.handsoncharlotte.org/volunteer", "Hands On Charlotte"),
     ],
     # North Dakota (ND)
     "ND": [
-        ("https://www.volunteermatch.org/search?l=North%20Dakota", "VolunteerMatch North Dakota"),
+        (
+            "https://www.volunteermatch.org/search?l=North%20Dakota",
+            "VolunteerMatch North Dakota",
+        ),
         ("https://www.greatplainsfoodbank.org/volunteer", "Great Plains Food Bank"),
         ("https://www.habitat.org/us-nd", "Habitat for Humanity North Dakota"),
     ],
@@ -230,45 +284,72 @@ STATE_NONPROFITS = {
     # Oklahoma (OK)
     "OK": [
         ("https://www.volunteermatch.org/search?l=Oklahoma", "VolunteerMatch Oklahoma"),
-        ("https://www.regionalfoodbank.org/volunteer/", "Regional Food Bank of Oklahoma"),
+        (
+            "https://www.regionalfoodbank.org/volunteer/",
+            "Regional Food Bank of Oklahoma",
+        ),
         ("https://www.habitat.org/us-ok", "Habitat for Humanity Oklahoma"),
     ],
     # Oregon (OR)
     "OR": [
         ("https://www.volunteermatch.org/search?l=Oregon", "VolunteerMatch Oregon"),
         ("https://www.oregonfoodbank.org/volunteer/", "Oregon Food Bank"),
-        ("https://www.habitatportlandmetro.org/volunteer", "Habitat for Humanity Portland Metro"),
+        (
+            "https://www.habitatportlandmetro.org/volunteer",
+            "Habitat for Humanity Portland Metro",
+        ),
         ("https://www.handsonportland.org/volunteer", "Hands On Portland"),
     ],
     # Pennsylvania (PA)
     "PA": [
-        ("https://www.volunteermatch.org/search?l=Pennsylvania", "VolunteerMatch Pennsylvania"),
+        (
+            "https://www.volunteermatch.org/search?l=Pennsylvania",
+            "VolunteerMatch Pennsylvania",
+        ),
         ("https://www.philabundance.org/volunteer/", "Philabundance"),
-        ("https://www.pittsburghfoodbank.org/volunteer/", "Greater Pittsburgh Food Bank"),
+        (
+            "https://www.pittsburghfoodbank.org/volunteer/",
+            "Greater Pittsburgh Food Bank",
+        ),
         ("https://www.habitat.org/us-pa", "Habitat for Humanity Pennsylvania"),
     ],
     # Rhode Island (RI)
     "RI": [
-        ("https://www.volunteermatch.org/search?l=Rhode%20Island", "VolunteerMatch Rhode Island"),
+        (
+            "https://www.volunteermatch.org/search?l=Rhode%20Island",
+            "VolunteerMatch Rhode Island",
+        ),
         ("https://www.rifoodbank.org/volunteer/", "Rhode Island Community Food Bank"),
         ("https://www.habitat.org/us-ri", "Habitat for Humanity Rhode Island"),
     ],
     # South Carolina (SC)
     "SC": [
-        ("https://www.volunteermatch.org/search?l=South%20Carolina", "VolunteerMatch South Carolina"),
+        (
+            "https://www.volunteermatch.org/search?l=South%20Carolina",
+            "VolunteerMatch South Carolina",
+        ),
         ("https://www.harvesthopeoodbank.org/volunteer", "Harvest Hope Food Bank"),
         ("https://www.habitat.org/us-sc", "Habitat for Humanity South Carolina"),
     ],
     # South Dakota (SD)
     "SD": [
-        ("https://www.volunteermatch.org/search?l=South%20Dakota", "VolunteerMatch South Dakota"),
+        (
+            "https://www.volunteermatch.org/search?l=South%20Dakota",
+            "VolunteerMatch South Dakota",
+        ),
         ("https://www.feedingsouthdakota.org/volunteer", "Feeding South Dakota"),
         ("https://www.habitat.org/us-sd", "Habitat for Humanity South Dakota"),
     ],
     # Tennessee (TN)
     "TN": [
-        ("https://www.volunteermatch.org/search?l=Tennessee", "VolunteerMatch Tennessee"),
-        ("https://www.secondharvestmidtn.org/volunteer", "Second Harvest Food Bank Middle TN"),
+        (
+            "https://www.volunteermatch.org/search?l=Tennessee",
+            "VolunteerMatch Tennessee",
+        ),
+        (
+            "https://www.secondharvestmidtn.org/volunteer",
+            "Second Harvest Food Bank Middle TN",
+        ),
         ("https://www.habitat.org/us-tn", "Habitat for Humanity Tennessee"),
         ("https://www.hon.org/volunteer", "Hands On Nashville"),
     ],
@@ -296,29 +377,44 @@ STATE_NONPROFITS = {
     # Virginia (VA)
     "VA": [
         ("https://www.volunteermatch.org/search?l=Virginia", "VolunteerMatch Virginia"),
-        ("https://www.feedingamerica.org/find-your-local-foodbank?address=Virginia", "Feeding America Virginia"),
+        (
+            "https://www.feedingamerica.org/find-your-local-foodbank?address=Virginia",
+            "Feeding America Virginia",
+        ),
         ("https://www.habitat.org/us-va", "Habitat for Humanity Virginia"),
         ("https://www.volunteerrichmond.org/volunteer", "Volunteer Richmond"),
     ],
     # Washington (WA)
     "WA": [
-        ("https://www.volunteermatch.org/search?l=Washington", "VolunteerMatch Washington"),
+        (
+            "https://www.volunteermatch.org/search?l=Washington",
+            "VolunteerMatch Washington",
+        ),
         ("https://www.seattlefoodbank.org/volunteer/", "Northwest Harvest"),
         ("https://www.habitat.org/us-wa", "Habitat for Humanity Washington"),
         ("https://www.uwkc.org/volunteer", "United Way King County"),
     ],
     # West Virginia (WV)
     "WV": [
-        ("https://www.volunteermatch.org/search?l=West%20Virginia", "VolunteerMatch West Virginia"),
+        (
+            "https://www.volunteermatch.org/search?l=West%20Virginia",
+            "VolunteerMatch West Virginia",
+        ),
         ("https://www.mountaineerfoodbank.org/volunteer", "Mountaineer Food Bank"),
         ("https://www.habitat.org/us-wv", "Habitat for Humanity West Virginia"),
     ],
     # Wisconsin (WI)
     "WI": [
-        ("https://www.volunteermatch.org/search?l=Wisconsin", "VolunteerMatch Wisconsin"),
+        (
+            "https://www.volunteermatch.org/search?l=Wisconsin",
+            "VolunteerMatch Wisconsin",
+        ),
         ("https://www.feedingwi.org/volunteer", "Feeding Wisconsin"),
         ("https://www.habitat.org/us-wi", "Habitat for Humanity Wisconsin"),
-        ("https://www.volunteeryourtime.org/volunteer", "Volunteer Center of Milwaukee"),
+        (
+            "https://www.volunteeryourtime.org/volunteer",
+            "Volunteer Center of Milwaukee",
+        ),
     ],
     # Wyoming (WY)
     "WY": [

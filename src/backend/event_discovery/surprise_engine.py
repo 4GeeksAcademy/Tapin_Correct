@@ -20,15 +20,27 @@ class SurpriseEngine:
 
     # Mood-to-category mappings
     MOOD_CATEGORIES = {
-        'energetic': ['Sports', 'Fitness', 'Music & Concerts', 'Nightlife', 'Dance'],
-        'chill': ['Yoga', 'Parks', 'Books & Literature', 'Wine & Beer', 'Outdoor'],
-        'creative': ['Arts & Theater', 'Film & Media', 'Books & Literature', 'Markets & Fairs'],
-        'social': ['Networking', 'Comedy', 'Food & Dining', 'Nightlife', 'Community'],
-        'romantic': ['Wine & Beer', 'Music & Concerts', 'Arts & Theater', 'Food & Dining'],
-        'adventurous': ['Outdoor', 'Sports', 'Tech & Innovation', 'New Experiences']
+        "energetic": ["Sports", "Fitness", "Music & Concerts", "Nightlife", "Dance"],
+        "chill": ["Yoga", "Parks", "Books & Literature", "Wine & Beer", "Outdoor"],
+        "creative": [
+            "Arts & Theater",
+            "Film & Media",
+            "Books & Literature",
+            "Markets & Fairs",
+        ],
+        "social": ["Networking", "Comedy", "Food & Dining", "Nightlife", "Community"],
+        "romantic": [
+            "Wine & Beer",
+            "Music & Concerts",
+            "Arts & Theater",
+            "Food & Dining",
+        ],
+        "adventurous": ["Outdoor", "Sports", "Tech & Innovation", "New Experiences"],
     }
 
-    def __init__(self, db, user_model, event_model, interaction_model, llm_provider=None):
+    def __init__(
+        self, db, user_model, event_model, interaction_model, llm_provider=None
+    ):
         self.db = db
         self.User = user_model
         self.llm = HybridLLM(provider=llm_provider or "perplexity")
@@ -39,10 +51,10 @@ class SurpriseEngine:
         self,
         user_id: int,
         events: List[Dict],
-        mood: str = 'adventurous',
+        mood: str = "adventurous",
         budget: float = 50,
         time_available: int = 3,
-        adventure_level: str = 'high'
+        adventure_level: str = "high",
     ) -> Optional[Dict]:
         """
         Generate a surprise event recommendation.
@@ -71,27 +83,32 @@ class SurpriseEngine:
         past_categories = self._get_user_categories(user_id)
 
         # Filter based on adventure level
-        if adventure_level == 'high':
+        if adventure_level == "high":
             # Prefer categories user hasn't tried
             candidates = [
-                e for e in affordable_events
-                if e.get('category') not in past_categories
+                e for e in affordable_events if e.get("category") not in past_categories
             ]
             if not candidates:
                 candidates = affordable_events  # Fallback
-        elif adventure_level == 'medium':
+        elif adventure_level == "medium":
             # Mix of familiar and new
-            familiar = [e for e in affordable_events if e.get('category') in past_categories]
-            new = [e for e in affordable_events if e.get('category') not in past_categories]
+            familiar = [
+                e for e in affordable_events if e.get("category") in past_categories
+            ]
+            new = [
+                e for e in affordable_events if e.get("category") not in past_categories
+            ]
 
-            candidates = familiar[:len(affordable_events)//2] + new[:len(affordable_events)//2]
+            candidates = (
+                familiar[: len(affordable_events) // 2]
+                + new[: len(affordable_events) // 2]
+            )
             if not candidates:
                 candidates = affordable_events
         else:  # low
             # Prefer familiar categories
             candidates = [
-                e for e in affordable_events
-                if e.get('category') in past_categories
+                e for e in affordable_events if e.get("category") in past_categories
             ]
             if not candidates:
                 candidates = affordable_events
@@ -99,8 +116,9 @@ class SurpriseEngine:
         # Filter by mood
         mood_categories = self.MOOD_CATEGORIES.get(mood, [])
         mood_matches = [
-            e for e in candidates
-            if any(cat in e.get('category', '') for cat in mood_categories)
+            e
+            for e in candidates
+            if any(cat in e.get("category", "") for cat in mood_categories)
         ]
 
         # Choose final candidates
@@ -117,14 +135,11 @@ class SurpriseEngine:
 
         # Generate explanation
         explanation = self._generate_explanation(
-            surprise_event,
-            mood,
-            adventure_level,
-            past_categories
+            surprise_event, mood, adventure_level, past_categories
         )
 
-        surprise_event['surprise_explanation'] = explanation
-        surprise_event['surprise_score'] = random.randint(80, 100)  # It's a surprise!
+        surprise_event["surprise_explanation"] = explanation
+        surprise_event["surprise_score"] = random.randint(80, 100)  # It's a surprise!
 
         return surprise_event
 
@@ -133,9 +148,9 @@ class SurpriseEngine:
         affordable = []
 
         for event in events:
-            price_str = event.get('price', 'Free')
+            price_str = event.get("price", "Free")
 
-            if 'free' in price_str.lower():
+            if "free" in price_str.lower():
                 affordable.append(event)
             elif budget >= 50:  # High budget, accept all
                 affordable.append(event)
@@ -145,9 +160,9 @@ class SurpriseEngine:
 
     def _get_user_categories(self, user_id: int) -> set:
         """Get categories user has interacted with."""
-        interactions = self.Interaction.query.filter_by(
-            user_id=user_id
-        ).join(self.Event).all()
+        interactions = (
+            self.Interaction.query.filter_by(user_id=user_id).join(self.Event).all()
+        )
 
         categories = set()
         for interaction in interactions:
@@ -157,16 +172,12 @@ class SurpriseEngine:
         return categories
 
     def _generate_explanation(
-        self,
-        event: Dict,
-        mood: str,
-        adventure_level: str,
-        past_categories: set
+        self, event: Dict, mood: str, adventure_level: str, past_categories: set
     ) -> str:
         """Generate explanation for why this event was chosen."""
         explanations = []
 
-        category = event.get('category', '')
+        category = event.get("category", "")
 
         # Mood-based explanation
         if mood in self.MOOD_CATEGORIES:
@@ -176,7 +187,7 @@ class SurpriseEngine:
 
         # Adventure level explanation
         if category not in past_categories:
-            if adventure_level == 'high':
+            if adventure_level == "high":
                 explanations.append("A new experience for you")
             else:
                 explanations.append("Something different to try")
@@ -184,8 +195,8 @@ class SurpriseEngine:
             explanations.append("Based on your past interests")
 
         # Price explanation
-        price = event.get('price', 'Free')
-        if 'free' in price.lower():
+        price = event.get("price", "Free")
+        if "free" in price.lower():
             explanations.append("Free to attend")
 
         # Default explanation
@@ -198,10 +209,10 @@ class SurpriseEngine:
         self,
         user_id: int,
         location: str,
-        mood: str = 'adventurous',
+        mood: str = "adventurous",
         budget: float = 50.0,
         time_available: int = 120,
-        adventure_level: str = 'medium'
+        adventure_level: str = "medium",
     ) -> Optional[Dict]:
         """
         Use AI (HybridLLM) to generate a truly surprising and personalized
@@ -227,16 +238,18 @@ class SurpriseEngine:
         # Convert to dict for easier processing
         events_list = []
         for event in events:
-            events_list.append({
-                'id': event.id,
-                'title': event.title,
-                'category': event.category,
-                'description': event.description or '',
-                'venue': event.venue,
-                'price': event.price or 'Free',
-                'date_start': str(event.date_start) if event.date_start else 'TBD',
-                'image_url': event.image_url
-            })
+            events_list.append(
+                {
+                    "id": event.id,
+                    "title": event.title,
+                    "category": event.category,
+                    "description": event.description or "",
+                    "venue": event.venue,
+                    "price": event.price or "Free",
+                    "date_start": str(event.date_start) if event.date_start else "TBD",
+                    "image_url": event.image_url,
+                }
+            )
 
         # Get user's past interactions
         interactions = self.Interaction.query.filter_by(user_id=user_id).all()
@@ -245,20 +258,29 @@ class SurpriseEngine:
 
         for interaction in interactions:
             if interaction.event:
-                if interaction.interaction_type in ['like', 'super_like', 'attend']:
-                    past_events.append(f"{interaction.event.title} ({interaction.event.category})")
+                if interaction.interaction_type in ["like", "super_like", "attend"]:
+                    past_events.append(
+                        f"{interaction.event.title} ({interaction.event.category})"
+                    )
                     liked_categories.add(interaction.event.category)
 
         # Build AI prompt
         prompt = self._build_surprise_prompt(
-            mood, budget, time_available, adventure_level,
-            past_events, liked_categories, events_list
+            mood,
+            budget,
+            time_available,
+            adventure_level,
+            past_events,
+            liked_categories,
+            events_list,
         )
 
         try:
             # Call AI
             response = await self.llm.ainvoke(prompt)
-            surprise_event = self._parse_surprise_response(response.content, events_list)
+            surprise_event = self._parse_surprise_response(
+                response.content, events_list
+            )
 
             if surprise_event:
                 return surprise_event
@@ -278,10 +300,14 @@ class SurpriseEngine:
         adventure_level: str,
         past_events: List[str],
         liked_categories: set,
-        candidates: List[Dict]
+        candidates: List[Dict],
     ) -> str:
         """Build AI prompt for surprise generation."""
-        past_str = "\n".join(f"- {e}" for e in past_events[:10]) if past_events else "No history yet"
+        past_str = (
+            "\n".join(f"- {e}" for e in past_events[:10])
+            if past_events
+            else "No history yet"
+        )
         liked_cats_str = ", ".join(liked_categories) if liked_categories else "None yet"
 
         # Select 20 random candidates for variety
@@ -290,8 +316,8 @@ class SurpriseEngine:
         candidates_str = ""
         for i, event in enumerate(sample_candidates, 1):
             candidates_str += f"\n{i}. {event.get('title')} - {event.get('category')} at {event.get('venue')}"
-            if event.get('description'):
-                desc = event['description'][:80]
+            if event.get("description"):
+                desc = event["description"][:80]
                 candidates_str += f"\n   {desc}..."
             candidates_str += f"\n   Price: {event.get('price', 'Free')}"
 
@@ -327,15 +353,17 @@ Respond with ONLY the JSON object, no other text."""
 
         return prompt
 
-    def _parse_surprise_response(self, response_text: str, candidates: List[Dict]) -> Optional[Dict]:
+    def _parse_surprise_response(
+        self, response_text: str, candidates: List[Dict]
+    ) -> Optional[Dict]:
         """Parse AI surprise response."""
         try:
             # Extract JSON from response
             response_text = response_text.strip()
 
             # Find JSON object in response
-            start_idx = response_text.find('{')
-            end_idx = response_text.rfind('}') + 1
+            start_idx = response_text.find("{")
+            end_idx = response_text.rfind("}") + 1
 
             if start_idx == -1 or end_idx == 0:
                 return None
@@ -346,14 +374,16 @@ Respond with ONLY the JSON object, no other text."""
             if not isinstance(result, dict):
                 return None
 
-            event_num = result.get('event_num')
+            event_num = result.get("event_num")
             if event_num is None or event_num < 1 or event_num > len(candidates):
                 return None
 
             # Get the event (1-indexed)
             event = candidates[event_num - 1].copy()
-            event['surprise_score'] = result.get('surprise_score', 85)
-            event['surprise_explanation'] = result.get('explanation', 'AI-picked surprise for you!')
+            event["surprise_score"] = result.get("surprise_score", 85)
+            event["surprise_explanation"] = result.get(
+                "explanation", "AI-picked surprise for you!"
+            )
 
             return event
 

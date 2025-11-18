@@ -9,6 +9,7 @@ Tests cover:
 - State nonprofit mapping usage
 - Geohash-based caching
 """
+
 import json
 import asyncio
 from types import SimpleNamespace
@@ -61,8 +62,11 @@ def mock_geocoder():
     )
 
 
-def fake_loader_factory(html_content="<html><body>Volunteer opportunities</body></html>"):
+def fake_loader_factory(
+    html_content="<html><body>Volunteer opportunities</body></html>",
+):
     """Factory for fake AsyncHtmlLoader (now using async aload)."""
+
     class FakeDoc:
         def __init__(self, page_content):
             self.page_content = page_content
@@ -79,6 +83,7 @@ def fake_loader_factory(html_content="<html><body>Volunteer opportunities</body>
 
 def make_fake_llm(events_payload):
     """Create fake LLM that returns specified events."""
+
     class Resp:
         def __init__(self, content):
             self.content = content
@@ -93,6 +98,7 @@ def make_fake_llm(events_payload):
 # =============================================================================
 # API Parameter Validation Tests
 # =============================================================================
+
 
 def test_search_missing_state_returns_400(events_client):
     """Endpoint requires state parameter."""
@@ -132,11 +138,13 @@ def test_search_with_city_and_state_returns_200(events_client):
 # Cache Hit Tests
 # =============================================================================
 
+
 def test_cache_hit_returns_cached_events(events_client, sample_event_data):
     """When cache has non-expired events, return them without scraping."""
     with app.app_context():
         # Pre-populate cache with a non-expired event
         import pygeohash as geohash
+
         gh6 = geohash.encode(30.2672, -97.7431, precision=6)
         gh4 = geohash.encode(30.2672, -97.7431, precision=4)
 
@@ -179,6 +187,7 @@ def test_expired_cache_triggers_scrape(events_client, sample_event_data, mock_ge
     with app.app_context():
         # Pre-populate with EXPIRED event
         import pygeohash as geohash
+
         gh6 = geohash.encode(30.2672, -97.7431, precision=6)
         gh4 = geohash.encode(30.2672, -97.7431, precision=4)
 
@@ -199,8 +208,14 @@ def test_expired_cache_triggers_scrape(events_client, sample_event_data, mock_ge
         db.session.add(expired_event)
         db.session.commit()
 
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([sample_event_data])):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm([sample_event_data]),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -219,10 +234,17 @@ def test_expired_cache_triggers_scrape(events_client, sample_event_data, mock_ge
 # Cache Miss / Scraping Tests
 # =============================================================================
 
+
 def test_cache_miss_triggers_scraping(events_client, sample_event_data, mock_geocoder):
     """Empty cache should trigger scraping and persist results."""
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([sample_event_data])):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm([sample_event_data]),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -254,11 +276,11 @@ def test_scraping_persists_images(sample_event_data, mock_geocoder):
 
         with patch(
             "backend.event_discovery.cache_manager.AsyncHtmlLoader",
-            new=fake_loader_factory()
+            new=fake_loader_factory(),
         ):
             with patch(
                 "backend.event_discovery.cache_manager.HybridLLM",
-                new=make_fake_llm([sample_event_data])
+                new=make_fake_llm([sample_event_data]),
             ):
                 manager = EventCacheManager()
                 manager.geocoder = mock_geocoder
@@ -267,9 +289,7 @@ def test_scraping_persists_images(sample_event_data, mock_geocoder):
                 manager.facebook_scraper.search_events = AsyncMock(return_value=[])
 
                 # Direct call to search_by_location
-                result = asyncio.run(
-                    manager.search_by_location("Austin", "TX")
-                )
+                result = asyncio.run(manager.search_by_location("Austin", "TX"))
 
                 assert len(result) >= 1
                 event = result[0]
@@ -283,9 +303,11 @@ def test_scraping_persists_images(sample_event_data, mock_geocoder):
                     url="http://greenearth.org/events/garden-day"
                 ).first()
                 assert db_event is not None
-                db_images = EventImage.query.filter_by(
-                    event_id=db_event.id
-                ).order_by(EventImage.position).all()
+                db_images = (
+                    EventImage.query.filter_by(event_id=db_event.id)
+                    .order_by(EventImage.position)
+                    .all()
+                )
                 assert len(db_images) == 2
                 assert db_images[0].position == 0
                 assert db_images[1].position == 1
@@ -295,6 +317,7 @@ def test_scraping_persists_images(sample_event_data, mock_geocoder):
                 # Also verify legacy fields are set
                 assert db_event.image_url == "http://example.com/garden1.jpg"
                 import json
+
                 stored_urls = json.loads(db_event.image_urls)
                 assert len(stored_urls) == 2
 
@@ -329,8 +352,14 @@ def test_multiple_events_scraped_in_parallel(events_client, mock_geocoder):
         },
     ]
 
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm(events_batch)):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm(events_batch),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -347,19 +376,67 @@ def test_multiple_events_scraped_in_parallel(events_client, mock_geocoder):
 # State Nonprofit Mapping Tests
 # =============================================================================
 
+
 def test_all_50_states_have_nonprofits():
     """Verify all 50 US states are mapped."""
     us_states = [
-        "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-        "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-        "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-        "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-        "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"
+        "AL",
+        "AK",
+        "AZ",
+        "AR",
+        "CA",
+        "CO",
+        "CT",
+        "DE",
+        "FL",
+        "GA",
+        "HI",
+        "ID",
+        "IL",
+        "IN",
+        "IA",
+        "KS",
+        "KY",
+        "LA",
+        "ME",
+        "MD",
+        "MA",
+        "MI",
+        "MN",
+        "MS",
+        "MO",
+        "MT",
+        "NE",
+        "NV",
+        "NH",
+        "NJ",
+        "NM",
+        "NY",
+        "NC",
+        "ND",
+        "OH",
+        "OK",
+        "OR",
+        "PA",
+        "RI",
+        "SC",
+        "SD",
+        "TN",
+        "TX",
+        "UT",
+        "VT",
+        "VA",
+        "WA",
+        "WV",
+        "WI",
+        "WY",
     ]
 
     for state in us_states:
         assert state in STATE_NONPROFITS, f"Missing state: {state}"
-        assert len(STATE_NONPROFITS[state]) >= 2, f"State {state} needs at least 2 nonprofit sources"
+        assert (
+            len(STATE_NONPROFITS[state]) >= 2
+        ), f"State {state} needs at least 2 nonprofit sources"
 
 
 def test_each_state_has_valid_nonprofit_structure():
@@ -387,10 +464,15 @@ def test_texas_uses_correct_nonprofits(mock_geocoder):
             async def aload(self):
                 class FakeDoc:
                     page_content = "<html>test</html>"
+
                 return [FakeDoc()]
 
-        with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", TrackingLoader):
-            with patch("backend.event_discovery.cache_manager.HybridLLM", make_fake_llm([])):
+        with patch(
+            "backend.event_discovery.cache_manager.AsyncHtmlLoader", TrackingLoader
+        ):
+            with patch(
+                "backend.event_discovery.cache_manager.HybridLLM", make_fake_llm([])
+            ):
                 manager = EventCacheManager()
                 manager.geocoder = mock_geocoder
                 asyncio.run(manager.search_by_location("Houston", "TX"))
@@ -407,6 +489,7 @@ def test_texas_uses_correct_nonprofits(mock_geocoder):
 # =============================================================================
 # Geohash Caching Tests
 # =============================================================================
+
 
 def test_geohash_precision_6_for_city_level():
     """Events should use precision-6 geohash for city-level caching."""
@@ -427,8 +510,14 @@ def test_geohash_precision_6_for_city_level():
 
 def test_events_indexed_by_geohash(events_client, sample_event_data, mock_geocoder):
     """Persisted events should have geohash indexes set."""
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([sample_event_data])):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm([sample_event_data]),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -437,7 +526,9 @@ def test_events_indexed_by_geohash(events_client, sample_event_data, mock_geocod
                 events_client.get("/events/search?city=Austin&state=TX")
 
                 with app.app_context():
-                    event = Event.query.filter_by(url="http://greenearth.org/events/garden-day").first()
+                    event = Event.query.filter_by(
+                        url="http://greenearth.org/events/garden-day"
+                    ).first()
                     assert event is not None
                     assert event.geohash_6 is not None
                     assert len(event.geohash_6) == 6
@@ -448,6 +539,7 @@ def test_events_indexed_by_geohash(events_client, sample_event_data, mock_geocod
 # =============================================================================
 # Error Handling Tests
 # =============================================================================
+
 
 def test_geocoder_failure_returns_empty(events_client):
     """If geocoder can't find location, return empty list."""
@@ -464,6 +556,7 @@ def test_geocoder_failure_returns_empty(events_client):
 
 def test_scraping_error_handled_gracefully(events_client, mock_geocoder):
     """Scraping errors shouldn't crash the endpoint."""
+
     class ErrorLoader:
         def __init__(self, urls=None):
             pass
@@ -486,13 +579,18 @@ def test_scraping_error_handled_gracefully(events_client, mock_geocoder):
 
 def test_llm_invalid_json_handled(events_client, mock_geocoder):
     """Invalid JSON from LLM should be handled gracefully."""
+
     class BadLLM:
         async def ainvoke(self, prompt):
             class Resp:
                 content = "This is not valid JSON"
+
             return Resp()
 
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
         with patch("backend.event_discovery.cache_manager.HybridLLM", BadLLM):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
@@ -510,10 +608,17 @@ def test_llm_invalid_json_handled(events_client, mock_geocoder):
 # Data Integrity Tests
 # =============================================================================
 
+
 def test_upsert_deduplicates_by_url(events_client, sample_event_data, mock_geocoder):
     """Same URL scraped twice should update, not duplicate."""
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([sample_event_data])):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm([sample_event_data]),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -527,9 +632,12 @@ def test_upsert_deduplicates_by_url(events_client, sample_event_data, mock_geoco
 
                 # Invalidate cache to trigger re-scrape
                 with app.app_context():
-                    Event.query.update({
-                        "cache_expires_at": datetime.now(timezone.utc) - timedelta(days=1)
-                    })
+                    Event.query.update(
+                        {
+                            "cache_expires_at": datetime.now(timezone.utc)
+                            - timedelta(days=1)
+                        }
+                    )
                     db.session.commit()
 
                 # Second scrape - same event
@@ -542,10 +650,18 @@ def test_upsert_deduplicates_by_url(events_client, sample_event_data, mock_geoco
                 assert count2 == count1
 
 
-def test_cache_expiration_set_to_30_days(events_client, sample_event_data, mock_geocoder):
+def test_cache_expiration_set_to_30_days(
+    events_client, sample_event_data, mock_geocoder
+):
     """New events should have cache_expires_at set 30 days in future."""
-    with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-        with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([sample_event_data])):
+    with patch(
+        "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+        new=fake_loader_factory(),
+    ):
+        with patch(
+            "backend.event_discovery.cache_manager.HybridLLM",
+            new=make_fake_llm([sample_event_data]),
+        ):
             with patch("backend.routes.events.EventCacheManager") as MockManager:
                 real_manager = EventCacheManager()
                 real_manager.geocoder = mock_geocoder
@@ -583,11 +699,19 @@ def test_event_date_parsing():
             "date": "2025-12-25T10:00:00",
         }
 
-        with patch("backend.event_discovery.cache_manager.AsyncHtmlLoader", new=fake_loader_factory()):
-            with patch("backend.event_discovery.cache_manager.HybridLLM", new=make_fake_llm([event_with_date])):
+        with patch(
+            "backend.event_discovery.cache_manager.AsyncHtmlLoader",
+            new=fake_loader_factory(),
+        ):
+            with patch(
+                "backend.event_discovery.cache_manager.HybridLLM",
+                new=make_fake_llm([event_with_date]),
+            ):
                 manager = EventCacheManager()
                 manager.geocoder = SimpleNamespace(
-                    geocode=lambda q: SimpleNamespace(latitude=30.2672, longitude=-97.7431)
+                    geocode=lambda q: SimpleNamespace(
+                        latitude=30.2672, longitude=-97.7431
+                    )
                 )
                 asyncio.run(manager.search_by_location("Austin", "TX"))
 

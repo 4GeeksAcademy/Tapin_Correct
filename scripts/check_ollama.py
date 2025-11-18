@@ -32,10 +32,14 @@ def check_http_api():
 def check_cli():
     if shutil.which("ollama"):
         try:
-            out = subprocess.check_output([
-                "ollama",
-                "ls",
-            ], stderr=subprocess.STDOUT, text=True)
+            out = subprocess.check_output(
+                [
+                    "ollama",
+                    "ls",
+                ],
+                stderr=subprocess.STDOUT,
+                text=True,
+            )
             print("Ollama CLI available. Output of `ollama ls`:\n")
             print(out)
             return True
@@ -54,22 +58,15 @@ def main():
 
     if ok:
         print("\nOllama appears to be available in your environment.")
-        print(
-            "Set `OLLAMA_MODEL` in your `.env` to the model name you want to"
-        )
+        print("Set `OLLAMA_MODEL` in your `.env` to the model name you want to")
         sys.exit(0)
 
-    print("\nOllama does not appear to be running or installed on this"
-          " machine.")
+    print("\nOllama does not appear to be running or installed on this" " machine.")
     print("Common setup steps:")
     print(" - Install Ollama (macOS Homebrew): `brew install ollama`")
-    print(
-        " - Or use the official installer:"
-    )
+    print(" - Or use the official installer:")
     print("   curl -sSf https://ollama.ai/install.sh | sh")
-    print(
-        " - Pull or start a model, for example: `ollama pull mistral`"
-    )
+    print(" - Pull or start a model, for example: `ollama pull mistral`")
     print("   or: `ollama run mistral`")
     print(" - Start Ollama daemon (if needed) and retry this script:")
     print("     curl -s http://localhost:11434/api/models | jq .")

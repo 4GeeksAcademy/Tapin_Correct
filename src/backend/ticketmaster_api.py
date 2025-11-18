@@ -89,9 +89,7 @@ class TicketmasterAPI:
 
         try:
             response = requests.get(
-                f"{self.BASE_URL}/events.json",
-                params=params,
-                timeout=10
+                f"{self.BASE_URL}/events.json", params=params, timeout=10
             )
             response.raise_for_status()
 
@@ -152,8 +150,16 @@ class TicketmasterAPI:
                 # Location data
                 if "location" in venue:
                     location = venue["location"]
-                    latitude = float(location.get("latitude", 0)) if location.get("latitude") else None
-                    longitude = float(location.get("longitude", 0)) if location.get("longitude") else None
+                    latitude = (
+                        float(location.get("latitude", 0))
+                        if location.get("latitude")
+                        else None
+                    )
+                    longitude = (
+                        float(location.get("longitude", 0))
+                        if location.get("longitude")
+                        else None
+                    )
 
                 # Address data
                 if "address" in venue:
@@ -208,7 +214,11 @@ class TicketmasterAPI:
                     category = classification["genre"].get("name", "Events")
 
         # Extract description
-        description = tm_event.get("info") or tm_event.get("pleaseNote") or f"See {name} live! Get tickets now on Ticketmaster."
+        description = (
+            tm_event.get("info")
+            or tm_event.get("pleaseNote")
+            or f"See {name} live! Get tickets now on Ticketmaster."
+        )
 
         # Build our event format
         return {
@@ -237,11 +247,7 @@ class TicketmasterAPI:
         }
 
     def get_events_for_city(
-        self,
-        city: str,
-        state_code: str,
-        limit: int = 50,
-        classification: str = None
+        self, city: str, state_code: str, limit: int = 50, classification: str = None
     ) -> List[Dict]:
         """
         Get future events for a specific city in our app's format.

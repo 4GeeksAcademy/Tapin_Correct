@@ -11,6 +11,7 @@ STRICT COMPLIANCE RULES:
 7. Only nonprofit/volunteer organizations
 8. Include proper attribution and source URLs
 """
+
 import asyncio
 import logging
 import time
@@ -66,9 +67,7 @@ class FacebookEventScraper:
             "(+https://tapin.org/bot; nonprofit event aggregator)"
         )
 
-    async def search_events(
-        self, city: str, state: str, limit: int = 10
-    ) -> List[Dict]:
+    async def search_events(self, city: str, state: str, limit: int = 10) -> List[Dict]:
         """
         Search for volunteer events on Facebook nonprofit pages.
 
@@ -99,9 +98,7 @@ class FacebookEventScraper:
 
                 # In production, this would use Facebook Graph API
                 # For now, generate realistic sample data
-                events = await self._scrape_page_events(
-                    page_id, city, state
-                )
+                events = await self._scrape_page_events(page_id, city, state)
                 all_events.extend(events)
 
                 if len(all_events) >= limit:
@@ -175,9 +172,7 @@ class FacebookEventScraper:
 
         return sample_events
 
-    def _generate_sample_events_with_images(
-        self, city: str, state: str
-    ) -> List[Dict]:
+    def _generate_sample_events_with_images(self, city: str, state: str) -> List[Dict]:
         """
         Generate sample volunteer events with images when
         Facebook scraping is unavailable.
@@ -185,10 +180,7 @@ class FacebookEventScraper:
         These represent realistic events you'd find on Facebook
         nonprofit pages.
         """
-        base_url = (
-            f"https://www.facebook.com/events/search/"
-            f"?q={city}+volunteer"
-        )
+        base_url = f"https://www.facebook.com/events/search/" f"?q={city}+volunteer"
 
         return [
             {
@@ -283,16 +275,21 @@ class FacebookEventScraper:
         - Community service focus
         """
         nonprofit_keywords = [
-            "volunteer", "donate", "501c3", "nonprofit",
-            "charity", "community", "service", "help",
-            "support", "mission", "cause"
+            "volunteer",
+            "donate",
+            "501c3",
+            "nonprofit",
+            "charity",
+            "community",
+            "service",
+            "help",
+            "support",
+            "mission",
+            "cause",
         ]
 
         content_lower = content.lower()
-        matches = sum(
-            1 for keyword in nonprofit_keywords
-            if keyword in content_lower
-        )
+        matches = sum(1 for keyword in nonprofit_keywords if keyword in content_lower)
 
         # Require at least 3 nonprofit indicators
         return matches >= 3
@@ -308,25 +305,29 @@ class FacebookEventScraper:
         Returns:
             List of image dictionaries with url and caption
         """
-        soup = BeautifulSoup(html, 'html.parser')
+        soup = BeautifulSoup(html, "html.parser")
         images = []
 
         # Find event cover photo
-        cover_img = soup.find('img', {'class': re.compile(r'.*coverPhoto.*')})
-        if cover_img and cover_img.get('src'):
-            images.append({
-                'url': cover_img['src'],
-                'caption': cover_img.get('alt', 'Event cover photo'),
-            })
+        cover_img = soup.find("img", {"class": re.compile(r".*coverPhoto.*")})
+        if cover_img and cover_img.get("src"):
+            images.append(
+                {
+                    "url": cover_img["src"],
+                    "caption": cover_img.get("alt", "Event cover photo"),
+                }
+            )
 
         # Find additional event photos
-        photo_divs = soup.find_all('img', limit=5)
+        photo_divs = soup.find_all("img", limit=5)
         for img in photo_divs:
-            src = img.get('src')
-            if src and 'fbcdn.net' in src:
-                images.append({
-                    'url': src,
-                    'caption': img.get('alt', 'Event photo'),
-                })
+            src = img.get("src")
+            if src and "fbcdn.net" in src:
+                images.append(
+                    {
+                        "url": src,
+                        "caption": img.get("alt", "Event photo"),
+                    }
+                )
 
         return images[:5]  # Limit to 5 images per event

@@ -20,6 +20,7 @@ Sources:
 - Instagram hashtags
 - City event pages
 """
+
 import asyncio
 from typing import List, Dict
 from datetime import datetime, timedelta, timezone
@@ -42,29 +43,23 @@ class LocalEventsScraper:
         "Comedy": ["comedy", "stand up", "improv", "comedy show"],
         "Nightlife": ["club", "bar", "dance", "party", "happy hour"],
         "Arts & Theater": ["art", "gallery", "theater", "performance", "exhibit"],
-
         # Food & Drink
         "Food & Dining": ["restaurant", "food", "dining", "tasting", "culinary"],
         "Wine & Beer": ["wine", "beer", "brewery", "winery", "craft beer"],
-
         # Active & Sports
         "Sports": ["sports", "game", "match", "tournament", "athletic"],
         "Fitness": ["yoga", "workout", "fitness", "running", "cycling"],
         "Outdoor": ["hiking", "outdoor", "nature", "park", "adventure"],
-
         # Social & Community
         "Networking": ["networking", "business", "professional", "meetup"],
         "Community": ["community", "local", "neighborhood", "town hall"],
         "Volunteer": ["volunteer", "charity", "nonprofit", "service"],
-
         # Learning & Culture
         "Education": ["workshop", "class", "seminar", "training", "learn"],
         "Tech & Innovation": ["tech", "startup", "innovation", "hackathon"],
         "Books & Literature": ["book", "author", "reading", "literature"],
-
         # Family & Kids
         "Family": ["family", "kids", "children", "family-friendly"],
-
         # Other
         "Markets & Fairs": ["market", "fair", "bazaar", "festival", "vendor"],
         "Film & Media": ["movie", "film", "screening", "cinema"],
@@ -80,8 +75,7 @@ class LocalEventsScraper:
 
     def __init__(self):
         self.user_agent = (
-            "TapinLocalEvents/1.0 "
-            "(+https://tapin.org; local event aggregator)"
+            "TapinLocalEvents/1.0 " "(+https://tapin.org; local event aggregator)"
         )
 
     async def discover_tonight(
@@ -115,13 +109,13 @@ class LocalEventsScraper:
                 all_events.extend(result)
 
         # Sort by start time (soonest first)
-        all_events.sort(key=lambda e: e.get('start_time', ''))
+        all_events.sort(key=lambda e: e.get("start_time", ""))
 
         # Deduplicate by title + venue
         seen = set()
         unique_events = []
         for event in all_events:
-            key = (event.get('title', ''), event.get('venue', ''))
+            key = (event.get("title", ""), event.get("venue", ""))
             if key not in seen:
                 seen.add(key)
                 unique_events.append(event)
@@ -193,9 +187,7 @@ class LocalEventsScraper:
             },
         ]
 
-    async def _scrape_meetup(
-        self, city: str, state: str, timeframe: str
-    ) -> List[Dict]:
+    async def _scrape_meetup(self, city: str, state: str, timeframe: str) -> List[Dict]:
         """
         Scrape Meetup for local group events.
 
@@ -366,12 +358,10 @@ class LocalEventsScraper:
             ISO formatted datetime string
         """
         now = datetime.now(timezone.utc)
-        hours, minutes = map(int, time_str.split(':'))
+        hours, minutes = map(int, time_str.split(":"))
 
         # Create datetime for tonight
-        tonight = now.replace(
-            hour=hours, minute=minutes, second=0, microsecond=0
-        )
+        tonight = now.replace(hour=hours, minute=minutes, second=0, microsecond=0)
 
         # If the time has already passed today, use tomorrow
         if tonight < now:

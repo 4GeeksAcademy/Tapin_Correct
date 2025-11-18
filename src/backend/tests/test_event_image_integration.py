@@ -74,6 +74,7 @@ def test_scrape_and_persist_images(tmp_path):
 
                 # Mock facebook_scraper to return empty list so LLM data is used
                 from unittest.mock import AsyncMock
+
                 mgr.facebook_scraper = AsyncMock()
                 mgr.facebook_scraper.search_events = AsyncMock(return_value=[])
 

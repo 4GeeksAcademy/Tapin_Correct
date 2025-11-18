@@ -1,6 +1,7 @@
 """
 Tests for facebook_scraper.py - Facebook nonprofit event scraper
 """
+
 import pytest
 import asyncio
 import time
@@ -18,21 +19,21 @@ class TestFacebookEventScraper:
     def test_scraper_initialization(self, scraper):
         """Test that scraper initializes correctly"""
         assert scraper is not None
-        assert hasattr(scraper, 'user_agent')
-        assert 'TapinVolunteerBot' in scraper.user_agent
+        assert hasattr(scraper, "user_agent")
+        assert "TapinVolunteerBot" in scraper.user_agent
         assert scraper.min_request_interval == 3  # 3 seconds rate limit
 
     def test_nonprofit_pages_defined(self, scraper):
         """Test that nonprofit pages whitelist is defined"""
-        assert hasattr(scraper, 'NONPROFIT_PAGES')
+        assert hasattr(scraper, "NONPROFIT_PAGES")
         assert isinstance(scraper.NONPROFIT_PAGES, dict)
         assert len(scraper.NONPROFIT_PAGES) > 0
 
         # Check specific states
-        assert 'TX' in scraper.NONPROFIT_PAGES
-        assert 'CA' in scraper.NONPROFIT_PAGES
-        assert 'NY' in scraper.NONPROFIT_PAGES
-        assert 'FL' in scraper.NONPROFIT_PAGES
+        assert "TX" in scraper.NONPROFIT_PAGES
+        assert "CA" in scraper.NONPROFIT_PAGES
+        assert "NY" in scraper.NONPROFIT_PAGES
+        assert "FL" in scraper.NONPROFIT_PAGES
 
     def test_nonprofit_pages_structure(self, scraper):
         """Test structure of nonprofit pages data"""
@@ -72,16 +73,16 @@ class TestFacebookEventScraper:
 
         for event in events:
             # Required fields
-            assert 'title' in event
-            assert 'organization' in event
-            assert 'city' in event
-            assert 'state' in event
-            assert 'category' in event
+            assert "title" in event
+            assert "organization" in event
+            assert "city" in event
+            assert "state" in event
+            assert "category" in event
 
             # Check data types
-            assert isinstance(event['title'], str)
-            assert isinstance(event['organization'], str)
-            assert len(event['title']) > 0
+            assert isinstance(event["title"], str)
+            assert isinstance(event["organization"], str)
+            assert len(event["title"]) > 0
 
     @pytest.mark.asyncio
     async def test_search_events_images(self, scraper):
@@ -92,16 +93,16 @@ class TestFacebookEventScraper:
 
         images_found = 0
         for event in events:
-            if 'images' in event:
+            if "images" in event:
                 images_found += 1
-                assert isinstance(event['images'], list)
+                assert isinstance(event["images"], list)
 
-                for img in event['images']:
-                    assert 'url' in img
-                    assert isinstance(img['url'], str)
+                for img in event["images"]:
+                    assert "url" in img
+                    assert isinstance(img["url"], str)
                     # Should have caption
-                    if 'caption' in img:
-                        assert isinstance(img['caption'], str)
+                    if "caption" in img:
+                        assert isinstance(img["caption"], str)
 
         # At least some events should have images
         assert images_found > 0
@@ -112,13 +113,18 @@ class TestFacebookEventScraper:
         events = await scraper.search_events("San Antonio", "TX", limit=5)
 
         valid_categories = {
-            'Hunger Relief', 'Animals', 'Environment',
-            'Education', 'Youth', 'Seniors', 'Community'
+            "Hunger Relief",
+            "Animals",
+            "Environment",
+            "Education",
+            "Youth",
+            "Seniors",
+            "Community",
         }
 
         for event in events:
             # Category should be nonprofit-related
-            assert 'category' in event
+            assert "category" in event
 
     @pytest.mark.asyncio
     async def test_search_events_url_present(self, scraper):
@@ -126,9 +132,9 @@ class TestFacebookEventScraper:
         events = await scraper.search_events("Austin", "TX", limit=3)
 
         for event in events:
-            assert 'url' in event
-            assert isinstance(event['url'], str)
-            assert 'facebook.com' in event['url']
+            assert "url" in event
+            assert isinstance(event["url"], str)
+            assert "facebook.com" in event["url"]
 
     @pytest.mark.asyncio
     async def test_search_events_source_attribution(self, scraper):
@@ -136,8 +142,8 @@ class TestFacebookEventScraper:
         events = await scraper.search_events("Dallas", "TX", limit=3)
 
         for event in events:
-            assert 'source' in event
-            assert 'facebook.com' in event['source']
+            assert "source" in event
+            assert "facebook.com" in event["source"]
 
     @pytest.mark.asyncio
     async def test_search_events_limit_respected(self, scraper):
@@ -180,8 +186,8 @@ class TestFacebookEventScraper:
         assert len(events) > 0
 
         for event in events:
-            assert 'title' in event
-            assert 'images' in event
+            assert "title" in event
+            assert "images" in event
 
     def test_generate_sample_events(self, scraper):
         """Test sample event generation"""
@@ -191,10 +197,10 @@ class TestFacebookEventScraper:
         assert len(events) > 0
 
         for event in events:
-            assert event['city'] == "Seattle"
-            assert event['state'] == "WA"
-            assert 'images' in event
-            assert len(event['images']) > 0
+            assert event["city"] == "Seattle"
+            assert event["state"] == "WA"
+            assert "images" in event
+            assert len(event["images"]) > 0
 
     def test_validate_nonprofit_content_valid(self):
         """Test validation of nonprofit content"""
@@ -260,8 +266,8 @@ class TestFacebookEventScraper:
         events = await scraper.search_events("Dallas", "TX", limit=5)
 
         for event in events:
-            if 'description' in event:
-                desc = event['description']
+            if "description" in event:
+                desc = event["description"]
                 assert len(desc) > 20  # Should be substantial
 
     @pytest.mark.asyncio
@@ -271,12 +277,12 @@ class TestFacebookEventScraper:
 
         for event in events:
             # Should have date field
-            assert 'date' in event
+            assert "date" in event
 
     @pytest.mark.asyncio
     async def test_multiple_states_coverage(self, scraper):
         """Test that multiple states are supported"""
-        states_to_test = ['TX', 'CA', 'NY', 'FL']
+        states_to_test = ["TX", "CA", "NY", "FL"]
 
         for state in states_to_test:
             assert state in scraper.NONPROFIT_PAGES
@@ -285,8 +291,11 @@ class TestFacebookEventScraper:
 
     def test_user_agent_compliance(self, scraper):
         """Test that user agent includes proper attribution"""
-        assert '+https://tapin.org' in scraper.user_agent
-        assert 'nonprofit' in scraper.user_agent.lower() or 'volunteer' in scraper.user_agent.lower()
+        assert "+https://tapin.org" in scraper.user_agent
+        assert (
+            "nonprofit" in scraper.user_agent.lower()
+            or "volunteer" in scraper.user_agent.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_respect_rate_limit_timing(self, scraper):

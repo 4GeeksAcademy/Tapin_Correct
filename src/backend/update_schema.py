@@ -1,4 +1,5 @@
 """Update the password_hash column to be larger"""
+
 import sys
 import os
 

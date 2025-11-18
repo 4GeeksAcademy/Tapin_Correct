@@ -73,7 +73,7 @@ class HybridLLM:
         self.google = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
         self.local = Ollama(model="mistral")
         self.requests_today = 0
-    
+
     def invoke(self, prompt):
         # Use free tier until exhausted
         if self.requests_today < 900:
@@ -117,30 +117,30 @@ async def scrape_nonprofit(url, org_name):
     try:
         loader = PlaywrightURLLoader(urls=[url])
         docs = loader.load()
-        
+
         # LLM extracts structured data (costs 1 free request)
         prompt = f"""
         Extract ALL volunteer opportunities from {org_name} website.
         Return ONLY valid JSON array:
-        [{{"title": "...", "organization": "{org_name}", "description": "...", 
+        [{{"title": "...", "organization": "{org_name}", "description": "...",
           "date": "YYYY-MM-DD or null", "location": "...", "url": "..."}}]
-        
+
         HTML content:
         {docs[0].page_content[:5000]}
         """
-        
+
         result = await llm.ainvoke(prompt)
         events = json.loads(result.content)
         print(f"✅ {org_name}: {len(events)} events discovered")
         return events
-        
+
     except Exception as e:
         print(f"❌ {org_name}: {e}")
         return []
 
 async def main():
     """Discover Houston volunteer opportunities"""
-    
+
     houston_nonprofits = [
         ("https://volunteerhouston.org/needs", "Volunteer Houston"),
         ("https://houstonarboretum.org/volunteer", "Houston Arboretum"),
@@ -148,17 +148,17 @@ async def main():
         ("https://cmhouston.org/volunteer", "Children's Museum"),
         # ... add 15+ more sources
     ]
-    
+
     all_events = []
-    
+
     for url, org_name in houston_nonprofits:
         events = await scrape_nonprofit(url, org_name)
         all_events.extend(events)
-    
+
     # Save results
     with open("houston_events.json", "w") as f:
         json.dump(all_events, f, indent=2)
-    
+
     print(f"\n📊 Total: {len(all_events)} Houston volunteer opportunities discovered!")
     print("💰 Cost: $0 (used free tier)")
 
@@ -200,13 +200,13 @@ python discovery.py
 ## Reality Check
 
 **What you get for $0:**
-✅ Extract 1,000 events per day from web scraping  
-✅ LLM-powered data cleaning & normalization  
-✅ Automated scheduling (6 AM & 6 PM daily scrapes)  
-✅ Database to store everything  
-✅ API endpoint to display events  
-✅ Future events filtering  
-✅ Unlimited production volume with Ollama  
+✅ Extract 1,000 events per day from web scraping
+✅ LLM-powered data cleaning & normalization
+✅ Automated scheduling (6 AM & 6 PM daily scrapes)
+✅ Database to store everything
+✅ API endpoint to display events
+✅ Future events filtering
+✅ Unlimited production volume with Ollama
 
 **This is a production-ready event discovery system costing absolutely nothing.**
 
@@ -248,12 +248,12 @@ Transform Tapin from Houston-only to **nationwide** by implementing **lazy-loadi
 - Repeat for any location in USA
 
 **Benefits:**
-âœ… Scale nationwide without storing millions of events upfront  
-âœ… Fresh data per location (real-time scraping on first search)  
-âœ… Smart caching reduces redundant scrapes  
-âœ… Zero API costs (use Gemini free tier + Ollama)  
-âœ… Storage efficient (pay only for cached data)  
-âœ… User-driven = always relevant results  
+âœ… Scale nationwide without storing millions of events upfront
+âœ… Fresh data per location (real-time scraping on first search)
+âœ… Smart caching reduces redundant scrapes
+âœ… Zero API costs (use Gemini free tier + Ollama)
+âœ… Storage efficient (pay only for cached data)
+âœ… User-driven = always relevant results
 
 ---
 
@@ -370,19 +370,19 @@ CREATE TABLE events (
     location_city TEXT NOT NULL,
     location_state TEXT NOT NULL,
     location_zip TEXT,
-    
+
     -- Geolocation for caching
     latitude DECIMAL(10, 8) NOT NULL,
     longitude DECIMAL(11, 8) NOT NULL,
     geohash_4 VARCHAR(4),    -- ~150 km (state)
     geohash_6 VARCHAR(6),    -- ~2.4 km (city)
-    
+
     category TEXT,
     url TEXT,
     source TEXT,
     scraped_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     cache_expires_at TIMESTAMP WITH TIME ZONE,  -- TTL
-    
+
     -- Full text search
     search_vector tsvector GENERATED ALWAYS AS (
         to_tsvector('english', title || ' ' || description)
@@ -398,7 +398,7 @@ CREATE INDEX idx_events_state_city ON events(location_state, location_city);
 -- View: Get fresh events (not expired)
 CREATE VIEW fresh_events AS
 SELECT * FROM events
-WHERE cache_expires_at IS NULL 
+WHERE cache_expires_at IS NULL
    OR cache_expires_at > NOW();
 ```
 
@@ -449,97 +449,97 @@ class LocationBasedEventDiscovery:
     def __init__(self):
         self.llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
         self.supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    
+
     async def search_by_location(self, city: str, state: str, radius_km: int = 25):
         """User-triggered search: scrape on demand"""
-        
+
         # Step 1: Geocode location
         coords = await self.geocode_location(city, state)
         lat, lon = coords["lat"], coords["lon"]
-        
+
         # Step 2: Check cache
         geohash = encode(lat, lon, precision=6)
         cached_events = self.check_cache(geohash)
-        
+
         if cached_events:
             print(f"âœ… Cache hit! Returning {len(cached_events)} cached events")
             return cached_events
-        
+
         # Step 3: Cache miss - scrape nonprofits in that area
         print(f"ðŸ” Cache miss for {city}, {state}. Starting scrape...")
-        
+
         nearby_nonprofits = self.find_nonprofits_in_state(state)
         all_events = await self.scrape_nonprofits_parallel(nearby_nonprofits)
-        
+
         # Step 4: Geohash and cache results
         for event in all_events:
             event_geohash_6 = encode(event["lat"], event["lon"], precision=6)
             event_geohash_4 = encode(event["lat"], event["lon"], precision=4)
-            
+
             self.supabase.table("events").upsert({
                 **event,
                 "geohash_6": event_geohash_6,
                 "geohash_4": event_geohash_4,
                 "cache_expires_at": datetime.now() + timedelta(days=30)  # Cache for 30 days
             }).execute()
-        
+
         print(f"âœ… Scraped & cached {len(all_events)} events")
         return all_events
-    
+
     async def scrape_nonprofits_parallel(self, nonprofits: list) -> list:
         """Scrape multiple nonprofits in parallel"""
-        tasks = [self.scrape_nonprofit_opportunities(url, org) 
+        tasks = [self.scrape_nonprofit_opportunities(url, org)
                 for url, org in nonprofits[:15]]  # Limit parallel tasks
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        
+
         all_events = []
         for result in results:
             if isinstance(result, list):
                 all_events.extend(result)
-        
+
         return all_events
-    
+
     async def scrape_nonprofit_opportunities(self, url: str, org_name: str) -> list:
         """Scrape one nonprofit website"""
         try:
             loader = PlaywrightURLLoader(urls=[url])
             docs = loader.load()
-            
+
             prompt = f"""
             Extract volunteer opportunities from {org_name}.
             Include: title, description, location (city, state), date, latitude, longitude
             Return JSON array: [{{"title": "...", "city": "...", "state": "...", "lat": 0.0, "lon": 0.0}}]
             HTML: {docs[0].page_content[:5000]}
             """
-            
+
             result = await self.llm.ainvoke(prompt)
             events = json.loads(result.content)
             return events
         except Exception as e:
             print(f"âŒ Error scraping {org_name}: {e}")
             return []
-    
+
     def check_cache(self, geohash_6: str) -> list:
         """Check if we already have events for this geohash"""
         result = self.supabase.table("fresh_events")\
             .select("*")\
             .eq("geohash_6", geohash_6)\
             .execute()
-        
+
         return result.data
-    
+
     async def geocode_location(self, city: str, state: str) -> dict:
         """Convert city/state to coordinates"""
         from geopy.geocoders import Nominatim
         geolocator = Nominatim(user_agent="tapin_app")
         location = geolocator.geocode(f"{city}, {state}, USA")
-        
+
         return {
             "lat": location.latitude,
             "lon": location.longitude
         }
-    
+
     def find_nonprofits_in_state(self, state: str) -> list:
         """Get list of nonprofits to scrape for state"""
         return STATE_NONPROFITS.get(state, NATIONAL_SOURCES)
@@ -578,7 +578,7 @@ async def invalidate_expired_cache():
         .delete()\
         .lt("cache_expires_at", datetime.now())\
         .execute()
-    
+
     print("ðŸ§¹ Cleaned up expired cache entries")
 
 # Schedule this to run nightly via GitHub Actions
@@ -643,24 +643,24 @@ async def search_events(request: EventSearchRequest) -> EventSearchResponse:
     First time: scrapes & caches (2-5 seconds)
     Future times: returns cached results (<1 second)
     """
-    
+
     start_time = time.time()
-    
+
     # Check if cache exists
     coords = await discovery.geocode_location(request.city, request.state)
     geohash = encode(coords["lat"], coords["lon"], precision=6)
-    
+
     cached = discovery.check_cache(geohash)
-    
+
     if cached:
         events = cached
         from_cache = True
     else:
         events = await discovery.search_by_location(request.city, request.state)
         from_cache = False
-    
+
     elapsed = time.time() - start_time
-    
+
     return EventSearchResponse(
         events=events,
         count=len(events),
@@ -676,16 +676,16 @@ async def get_nearby_events(
     limit: int = Query(50, le=100)
 ):
     """Get events near user's current location"""
-    
+
     geohash = encode(latitude, longitude, precision=6)
     nearby_hashes = [geohash] + neighbors(geohash)
-    
+
     result = supabase.table("fresh_events")\
         .select("*")\
         .in_("geohash_6", nearby_hashes)\
         .limit(limit)\
         .execute()
-    
+
     return {"events": result.data, "count": len(result.data)}
 ```
 
@@ -704,15 +704,15 @@ export function LocationSearch() {
 
   async function handleSearch() {
     setLoading(true);
-    
+
     const response = await fetch('/api/events/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ city, state })
     });
-    
+
     const data = await response.json();
-    
+
     setResults(data.events);
     setCached(data.cached);
     setLoading(false);
@@ -720,12 +720,12 @@ export function LocationSearch() {
 
   return (
     <div className="search">
-      <input 
+      <input
         placeholder="City"
         value={city}
         onChange={(e) => setCity(e.target.value)}
       />
-      <input 
+      <input
         placeholder="State"
         value={state}
         onChange={(e) => setState(e.target.value)}
@@ -733,9 +733,9 @@ export function LocationSearch() {
       <button onClick={handleSearch} disabled={loading}>
         {loading ? 'ðŸ” Searching...' : 'Search'}
       </button>
-      
+
       {cached && <span className="badge">âš¡ Cached</span>}
-      
+
       <div className="results">
         {results.map(event => (
           <EventCard key={event.id} event={event} />
@@ -820,11 +820,11 @@ export function LocationSearch() {
 | **API Aggregators** | Dependent on 3rd parties | Limited (no Eventbrite, Meetup) | None (API-dependent) |
 
 **Tapin's Edge:**
-âœ… Fresh data on every new location search  
-âœ… Scales nationwide without massive upfront costs  
-âœ… No API dependency (scrapes directly)  
-âœ… User-driven = always relevant results  
-âœ… Self-healing cache (expires & refreshes naturally)  
+âœ… Fresh data on every new location search
+âœ… Scales nationwide without massive upfront costs
+âœ… No API dependency (scrapes directly)
+âœ… User-driven = always relevant results
+âœ… Self-healing cache (expires & refreshes naturally)
 
 ---
 
@@ -834,7 +834,7 @@ By combining **geolocation-based caching** + **lazy-loading on user demand**, Ta
 
 **The key insight:** Don't pre-scrape everything. Let users drive discovery. Cache what they search. Refresh intelligently. Scale infinitely without proportional cost.
 
-First user searches LA â†’ events scraped & cached  
-Next user searches LA â†’ instant cache hit  
-System learns geography as people use it  
+First user searches LA â†’ events scraped & cached
+Next user searches LA â†’ instant cache hit
+System learns geography as people use it
 Eventually: nationwide coverage emerging from real usage patterns
