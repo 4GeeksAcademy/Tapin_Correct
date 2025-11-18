@@ -556,8 +556,8 @@ textarea {
 }
 
 .chip {
-  background: #fff;
-  border: 1px solid #ddd;
+  background: var(--surface);
+  border: 1px solid var(--border);
   padding: 6px 10px;
   border-radius: 16px;
   cursor: pointer;
@@ -570,7 +570,7 @@ textarea {
 
 .chip.active {
   background: var(--primary);
-  color: #fff;
+  color: var(--surface);
   border-color: var(--primary);
 }
 

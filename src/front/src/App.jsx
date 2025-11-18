@@ -242,7 +242,7 @@ export default function App() {
         )}
 
         {/* Event Search Component */}
-        {showEventSearch && <EventSearch onEventsLoaded={(evts) => console.log('Events loaded:', evts)} />}
+        {showEventSearch && <EventSearch />}
 
         {/* View Mode Toggle */}
         {!loading && !error && listings.length > 0 && (
