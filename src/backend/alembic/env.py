@@ -15,7 +15,7 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here for 'autogenerate' support
 # Import the app and db to get the metadata
-import backend.app as app_module
+import backend.app as app_module  # noqa: E402
 
 target_metadata = app_module.db.metadata
 

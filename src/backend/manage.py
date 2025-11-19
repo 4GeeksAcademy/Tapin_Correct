@@ -10,7 +10,6 @@ Commands:
   current              Show current revision
   history              Show revision history
 """
-import os
 import shlex
 import subprocess
 import sys
@@ -49,7 +48,9 @@ def downgrade(rev):
 
 @cli.command()
 @click.option('--message', '-m', required=True, help='Revision message')
-@click.option('--autogenerate', is_flag=True, default=False, help='Run alembic --autogenerate')
+@click.option(
+    '--autogenerate', is_flag=True, default=False, help='Run alembic --autogenerate'
+)
 def revision(message, autogenerate):
     """Create a new migration revision."""
     auto = '--autogenerate' if autogenerate else ''
