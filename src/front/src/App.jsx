@@ -56,6 +56,7 @@ export default function App() {
     const q = params.get('q') || 'All';
     setActiveFilter(q);
     fetchListings(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

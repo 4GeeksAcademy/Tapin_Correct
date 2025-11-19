@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import EditListingForm from './EditListingForm';
 import ReviewForm from './ReviewForm';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 export default function ListingDetail({
   listing,
   onClose,
@@ -33,13 +35,13 @@ export default function ListingDetail({
       setLoadingReviews(true);
       try {
         const [reviewsRes, ratingRes] = await Promise.all([
-          fetch(`http://127.0.0.1:5000/listings/${listing.id}/reviews`),
-          fetch(`http://127.0.0.1:5000/listings/${listing.id}/average-rating`),
+          fetch(`${API_URL}/listings/${listing.id}/reviews`),
+          fetch(`${API_URL}/listings/${listing.id}/average-rating`),
         ]);
 
         if (reviewsRes.ok) {
           const reviewsData = await reviewsRes.json();
-          setReviews(reviewsData.reviews || []);
+          setReviews(Array.isArray(reviewsData) ? reviewsData : reviewsData.reviews || []);
         }
 
         if (ratingRes.ok) {
@@ -77,7 +79,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}/signup`, {
+      const res = await fetch(`${API_URL}/listings/${listing.id}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +113,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}`, {
+      const res = await fetch(`${API_URL}/listings/${listing.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
