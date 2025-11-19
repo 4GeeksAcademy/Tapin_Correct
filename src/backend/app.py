@@ -53,7 +53,8 @@ if isinstance(db_url, str) and db_url.lower().startswith("postgresql"):
         "options": "-c statement_timeout=30000",
     }
 elif isinstance(db_url, str) and db_url.lower().startswith("sqlite"):
-    # SQLite does not accept the above options; leave empty or set sqlite-specific options
+    # SQLite does not accept the above options; leave empty or set
+    # sqlite-specific options
     engine_options["connect_args"] = {}
 
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
@@ -87,9 +88,11 @@ def _warn_on_default_secrets():
         val = os.environ.get(key, app.config.get(key))
         if not val or (isinstance(val, str) and val == default_val):
             missing.append(key)
-    # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the same as the dev key
+    # JWT_SECRET_KEY may default to SECRET_KEY; still warn if it's the
+    # same as the dev key
     jwt_key = os.environ.get("JWT_SECRET_KEY", app.config.get("JWT_SECRET_KEY"))
-    if not jwt_key or jwt_key == app.config.get("SECRET_KEY") == defaults["SECRET_KEY"]:
+    secret_key = app.config.get("SECRET_KEY")
+    if not jwt_key or (jwt_key == secret_key == defaults["SECRET_KEY"]):
         missing.append("JWT_SECRET_KEY")
 
     if missing:
@@ -375,11 +378,8 @@ def reset_password():
     user = User.query.filter_by(email=email).first()
     if not user:
         # Do not reveal whether the email exists
-        return jsonify(
-            {
-                "message": "If an account exists for that email, a reset link has been sent."
-            }
-        )
+        msg = "If an account exists for that email, a reset link has been sent."
+        return jsonify({"message": msg})
 
     serializer = get_serializer()
     token = serializer.dumps(email, salt=app.config["SECURITY_PASSWORD_SALT"])
@@ -425,7 +425,8 @@ def confirm_reset(token):
 
 @app.route("/listings", methods=["GET"])
 def get_listings():
-    # Support simple filtering via query params: q (text search on title/description or category), location
+    # Support simple filtering via query params:
+    # q (text search on title/description or category), location
     q = request.args.get("q", type=str)
     location = request.args.get("location", type=str)
 
@@ -439,14 +440,14 @@ def get_listings():
         else:
             # Text search on title/description
             like = f"%{q}%"
-            query = query.filter(
-                (Listing.title.ilike(like)) | (Listing.description.ilike(like))
-            )
+            title_match = Listing.title.ilike(like)
+            desc_match = Listing.description.ilike(like)
+            query = query.filter(title_match | desc_match)
     if location:
         query = query.filter(Listing.location.ilike(f"%{location}%"))
 
     listings = query.order_by(Listing.created_at.desc()).all()
-    return jsonify([l.to_dict() for l in listings])
+    return jsonify([listing.to_dict() for listing in listings])
 
 
 @app.route("/listings", methods=["POST"])
@@ -552,7 +553,7 @@ def delete_listing(id):
 @jwt_required()
 def signup_for_listing(id):
     """Volunteer signs up for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _ = Listing.query.get_or_404(id)  # Verify listing exists
     user_id = int(get_jwt_identity())
 
     # Check if already signed up
@@ -636,7 +637,7 @@ def update_signup_status(id):
 @jwt_required()
 def create_review(id):
     """Create a review for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _ = Listing.query.get_or_404(id)  # Verify listing exists
     user_id = int(get_jwt_identity())
 
     # Check if already reviewed
@@ -662,7 +663,7 @@ def create_review(id):
 @app.route("/listings/<int:id>/reviews", methods=["GET"])
 def get_listing_reviews(id):
     """Get all reviews for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _ = Listing.query.get_or_404(id)  # Verify listing exists
     reviews = (
         Review.query.filter_by(listing_id=id).order_by(Review.created_at.desc()).all()
     )
@@ -682,7 +683,7 @@ def get_listing_reviews(id):
 @app.route("/listings/<int:id>/average-rating", methods=["GET"])
 def get_listing_average_rating(id):
     """Get average rating for a listing."""
-    listing = Listing.query.get_or_404(id)
+    _ = Listing.query.get_or_404(id)  # Verify listing exists
     reviews = Review.query.filter_by(listing_id=id).all()
 
     if not reviews:
