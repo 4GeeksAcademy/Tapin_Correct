@@ -64,8 +64,8 @@ export default function LocationDropdown({ value, onChange, onSelect, userCoords
         }
         if (userCoords) {
             candidates.sort((a, b) => {
-                const da = haversine(userCoords, [a.lat ?? a.coords?.[0], a.lon ?? a.coords?.[1]]);
-                const db = haversine(userCoords, [b.lat ?? b.coords?.[0], b.lon ?? b.coords?.[1]]);
+                const da = haversine(userCoords, [a.lat, a.lon]);
+                const db = haversine(userCoords, [b.lat, b.lon]);
                 return da - db;
             });
         }

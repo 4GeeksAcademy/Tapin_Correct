@@ -58,6 +58,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
     if (mapRef.current) {
       mapRef.current.setView(LOCAL_CITY_CENTER, zoom);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mappableListings]);
 
   // Component to handle map clicks and react to external selectedLocation
