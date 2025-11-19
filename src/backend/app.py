@@ -1066,9 +1066,11 @@ def search_events_simple():
     state = parts[1]
 
     try:
-        # Query database directly - only future events
+        # Query database directly - only future volunteer events (exclude Ticketmaster)
         query = Event.query.filter(
-            Event.location_city == city, Event.date_start >= datetime.now(timezone.utc)
+            Event.location_city.ilike(city),
+            Event.date_start >= datetime.now(timezone.utc),
+            Event.source != "Ticketmaster",  # Exclude Ticketmaster events
         )
 
         # Filter by category if provided
@@ -1411,9 +1413,10 @@ def surprise_me():
     state = parts[1]
 
     try:
-        # Get events
+        # Get events from both volunteer opportunities AND Ticketmaster
         import asyncio
         from backend.event_discovery import EventCacheManager
+        from backend.ticketmaster_api import TicketmasterAPI
 
         manager = EventCacheManager(
             db=db, event_model=Event, event_image_model=EventImage
@@ -1427,13 +1430,25 @@ def surprise_me():
             ctx.push()
 
             try:
-                events = loop.run_until_complete(
-                    manager.discover_tonight(city, state, limit=100)
+                # Get volunteer events
+                volunteer_events = loop.run_until_complete(
+                    manager.discover_tonight(city, state, limit=50)
                 )
             finally:
                 ctx.pop()
         finally:
             loop.close()
+
+        # Also fetch Ticketmaster events
+        ticketmaster_events = []
+        try:
+            tm_api = TicketmasterAPI()
+            ticketmaster_events = tm_api.get_events_for_city(city, state, limit=50)
+        except Exception as tm_error:
+            print(f"Ticketmaster API error (non-fatal): {tm_error}")
+
+        # Combine both event sources
+        all_events = volunteer_events + ticketmaster_events
 
         # Generate AI-powered surprise event
         from backend.event_discovery.surprise_engine import SurpriseEngine

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import LocationDropdown from './LocationDropdown';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
@@ -10,6 +10,21 @@ export default function EventSearch({ onEventsLoaded }) {
   const [error, setError] = useState(null);
   const [events, setEvents] = useState([]);
   const [searched, setSearched] = useState(false);
+  const [userCoords, setUserCoords] = useState(null);
+
+  // Auto-detect location on mount
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserCoords([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => {
+          console.log('Geolocation not available:', error);
+        }
+      );
+    }
+  }, []);
 
   const handleCitySelect = (city) => {
     if (!city) return;
@@ -136,12 +151,14 @@ export default function EventSearch({ onEventsLoaded }) {
               color: '#555',
             }}
           >
-            Location
+            Location {userCoords && <span style={{ fontSize: '12px', color: '#10b981' }}>📍 Nearby cities first</span>}
           </label>
           <LocationDropdown
             value={selectedCity}
             onChange={(val) => setSelectedCity(val)}
             onSelect={handleCitySelect}
+            userCoords={userCoords}
+            countryFilter="US"
             placeholder="Enter city (e.g., Austin, TX)"
           />
         </div>

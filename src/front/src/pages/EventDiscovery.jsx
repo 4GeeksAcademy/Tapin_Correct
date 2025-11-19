@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import EventCard from '../components/EventCard';
 import CategoryFilter from '../components/CategoryFilter';
-import LocationSelector from '../components/LocationSelector';
+import LocationDropdown from '../components/LocationDropdown';
 import EventSwiper from '../components/EventSwiper';
 import SurpriseMe from '../components/SurpriseMe';
 import AchievementsPanel from '../components/AchievementsPanel';
@@ -32,6 +32,7 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
   const [showAchievements, setShowAchievements] = useState(false);
   const [showARNav, setShowARNav] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+  const [locationInput, setLocationInput] = useState(''); // For the location dropdown
 
   // Get user's geolocation
   useEffect(() => {
@@ -224,10 +225,18 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
           {/* Location selector */}
           <div className="row g-2">
             <div className="col-md-9">
-              <LocationSelector
-                value={userLocation}
-                onChange={onLocationChange}
+              <LocationDropdown
+                value={locationInput}
+                onChange={setLocationInput}
+                onSelect={(city) => {
+                  setLocationInput(city.name);
+                  if (onLocationChange) {
+                    onLocationChange({ coords: [city.lat, city.lon], name: city.name, type: 'city' });
+                  }
+                }}
+                userCoords={userCoords ? [userCoords.latitude, userCoords.longitude] : null}
                 placeholder="Enter city, state (e.g., Dallas, TX)"
+                countryFilter="US"
               />
             </div>
             <div className="col-md-3">

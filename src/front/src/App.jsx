@@ -12,6 +12,7 @@ import MapView from './components/MapView';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
 import EventSearch from './components/EventSearch';
+import TicketmasterEvents from './components/TicketmasterEvents';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 export default function App() {
@@ -243,6 +244,9 @@ export default function App() {
 
         {/* Event Search Component */}
         {showEventSearch && <EventSearch />}
+
+        {/* Ticketmaster Events Section - Always visible when logged in */}
+        {user && <TicketmasterEvents token={token} />}
 
         {/* View Mode Toggle */}
         {!loading && !error && listings.length > 0 && (
