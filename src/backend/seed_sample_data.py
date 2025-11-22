@@ -2,6 +2,7 @@
 Seed the database with fun sample listings
 Run with: python seed_sample_data.py
 """
+
 import sys
 from app import app, db, Listing, User
 from werkzeug.security import generate_password_hash
@@ -19,15 +20,15 @@ def seed_data():
         users = [
             User(
                 email="deathrow@records.com",
-                password_hash=generate_password_hash("sample123")
+                password_hash=generate_password_hash("sample123"),
             ),
             User(
                 email="nwa@compton.com",
-                password_hash=generate_password_hash("sample123")
+                password_hash=generate_password_hash("sample123"),
             ),
             User(
                 email="badboy@entertainment.com",
-                password_hash=generate_password_hash("sample123")
+                password_hash=generate_password_hash("sample123"),
             ),
         ]
 
@@ -56,7 +57,7 @@ def seed_data():
                     " gold records preferred but not required."
                 ),
                 location="Los Angeles, CA",
-                owner_id=deathrow_user.id if deathrow_user else 1
+                owner_id=deathrow_user.id if deathrow_user else 1,
             ),
             Listing(
                 title="N.W.A Community Garden Project",
@@ -67,7 +68,7 @@ def seed_data():
                     " might drop by with gardening tips."
                 ),
                 location="Compton, CA",
-                owner_id=nwa_user.id if nwa_user else 1
+                owner_id=nwa_user.id if nwa_user else 1,
             ),
             Listing(
                 title="Bad Boy Entertainment - Event Setup Crew",
@@ -78,7 +79,7 @@ def seed_data():
                     " 50+ lbs and have impeccable taste in music."
                 ),
                 location="New York, NY",
-                owner_id=badboy_user.id if badboy_user else 1
+                owner_id=badboy_user.id if badboy_user else 1,
             ),
             Listing(
                 title="Tupac's Poetry Workshop Assistant",
@@ -89,7 +90,7 @@ def seed_data():
                     " with aspiring poets."
                 ),
                 location="Oakland, CA",
-                owner_id=deathrow_user.id if deathrow_user else 1
+                owner_id=deathrow_user.id if deathrow_user else 1,
             ),
             Listing(
                 title="Ice Cube's Film Production Internship",
@@ -99,7 +100,7 @@ def seed_data():
                     " from a legend. Must be available weekends and ready to work hard."
                 ),
                 location="Los Angeles, CA",
-                owner_id=nwa_user.id if nwa_user else 1
+                owner_id=nwa_user.id if nwa_user else 1,
             ),
             Listing(
                 title="Biggie's Food Truck Volunteer",
@@ -110,7 +111,7 @@ def seed_data():
                     " attitude (in a good way)."
                 ),
                 location="Brooklyn, NY",
-                owner_id=badboy_user.id if badboy_user else 1
+                owner_id=badboy_user.id if badboy_user else 1,
             ),
             Listing(
                 title="Dr. Dre's Beat Making Workshop Helper",
@@ -121,7 +122,7 @@ def seed_data():
                     " No production experience needed."
                 ),
                 location="Los Angeles, CA",
-                owner_id=nwa_user.id if nwa_user else 1
+                owner_id=nwa_user.id if nwa_user else 1,
             ),
             Listing(
                 title="Tupac Shakur Youth Center - Sports Coordinator",
@@ -131,7 +132,7 @@ def seed_data():
                     " If you've got game and heart, we want you on the team."
                 ),
                 location="Oakland, CA",
-                owner_id=deathrow_user.id if deathrow_user else 1
+                owner_id=deathrow_user.id if deathrow_user else 1,
             ),
         ]
 
