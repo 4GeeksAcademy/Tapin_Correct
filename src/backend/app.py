@@ -1,15 +1,27 @@
-from flask import Flask, request, jsonify, url_for
-from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity
-from auth import token_for
-from flask_cors import CORS
-from datetime import datetime
 import os
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-import smtplib
-from email.message import EmailMessage
-
+from flask import Flask, request, jsonify, url_for
+from flask_migrate import Migrate
+from flask_swagger import swagger
+from flask_cors import CORS
+from flask_jwt_extended import (
+    create_access_token,
+    get_jwt_identity,
+    jwt_required,
+    JWTManager,
+)
+from werkzeug.security import generate_password_hash, check_password_hash
+from models import (
+    db,
+    User,
+    Organization,
+    Item,
+    Listing,
+    Review,
+    UserValues,
+    UserAchievement,
+    Achievement,
+)
+from google_search import search_events
 
 app = Flask(__name__)
 base_dir = os.path.abspath(os.path.dirname(__file__))
@@ -29,6 +41,10 @@ try:
 except Exception:
     # python-dotenv not installed or .env missing; proceed with environment variables
     pass
+
+# GPT-5 monkeypatch import removed per project owner request.
+# The runtime monkeypatch file was removed; do not attempt to enable
+# GPT-5 without appropriate provider access and approvals.
 
 # Allow overriding the database URL via environment (useful for CI or production)
 default_db = "sqlite:///" + os.path.join(base_dir, "data.db")
@@ -60,16 +76,15 @@ elif isinstance(db_url, str) and db_url.lower().startswith("sqlite"):
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 # Secret key used for serializer tokens and other Flask features
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
-app.config["JWT_SECRET_KEY"] = os.environ.get(
-    "JWT_SECRET_KEY", app.config["SECRET_KEY"]
-)
+app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-key")
 app.config["SECURITY_PASSWORD_SALT"] = os.environ.get(
     "SECURITY_PASSWORD_SALT", "dev-salt"
 )
 
 CORS(app)
 
-db = SQLAlchemy(app)
+db.init_app(app)
+migrate = Migrate(app, db)
 jwt = JWTManager(app)
 
 
@@ -105,123 +120,6 @@ def _warn_on_default_secrets():
 
 
 _warn_on_default_secrets()
-
-
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    # simple role column for basic RBAC (default: "user")
-    role = db.Column(db.String(50), default="user")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        return {"id": self.id, "email": self.email}
-
-
-class Listing(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    location = db.Column(db.String(200))
-    latitude = db.Column(db.Float, nullable=True)
-    longitude = db.Column(db.Float, nullable=True)
-    category = db.Column(
-        db.String(100), nullable=True
-    )  # Community, Environment, Education, Health, Animals
-    image_url = db.Column(db.String(500), nullable=True)  # URL to listing image
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "title": self.title,
-            "description": self.description,
-            "location": self.location,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "category": self.category,
-            "image_url": self.image_url,
-            "owner_id": self.owner_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class Item(db.Model):
-    """Simple persistent items for the MVP /api/items endpoints."""
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-
-    def to_dict(self):
-        return {"id": self.id, "name": self.name, "description": self.description}
-
-
-class SignUp(db.Model):
-    """Track volunteer sign-ups for listings."""
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listing.id"), nullable=False)
-    status = db.Column(
-        db.String(50), default="pending"
-    )  # pending, accepted, declined, cancelled
-    message = db.Column(db.Text)  # Optional message from volunteer
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Add unique constraint to prevent duplicate sign-ups
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "listing_id", name="_user_listing_uc"),
-    )
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "listing_id": self.listing_id,
-            "status": self.status,
-            "message": self.message,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-class Review(db.Model):
-    """User reviews for listings."""
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listing.id"), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)  # 1-5 stars
-    comment = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Add unique constraint to prevent multiple reviews from same user
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "listing_id", name="_user_listing_review_uc"),
-    )
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "listing_id": self.listing_id,
-            "rating": self.rating,
-            "comment": self.comment,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
-        }
-
-
-def get_serializer():
-    return URLSafeTimedSerializer(app.config["SECRET_KEY"])
-
-
-# Ensure database tables exist when the app starts. Using app.app_context()
-# is more robust than the before_first_request decorator which may not be
-# available in all runtime contexts.
-with app.app_context():
-    db.create_all()
 
 
 @app.route("/")
@@ -282,7 +180,7 @@ def register_user():
     if User.query.filter_by(email=email).first():
         return jsonify({"error": "user already exists"}), 400
     pw_hash = generate_password_hash(password)
-    user = User(email=email, password_hash=pw_hash)
+    user = User(email=email, password_hash=pw_hash, is_active=True)
     db.session.add(user)
     db.session.commit()
     # return both access and refresh tokens (identity stored as string)
@@ -693,6 +591,83 @@ def get_listing_average_rating(id):
     return jsonify(
         {"average_rating": round(avg_rating, 1), "review_count": len(reviews)}
     )
+
+
+@app.route("/user/values", methods=["GET"])
+@jwt_required()
+def get_user_values():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    return jsonify({"values": [v.value for v in user.values]}), 200
+
+
+@app.route("/user/values", methods=["POST"])
+@jwt_required()
+def add_user_value():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    data = request.get_json()
+    value = UserValues(user_id=user.id, value=data["value"])
+    db.session.add(value)
+    db.session.commit()
+    return jsonify({"msg": "Value added successfully"}), 200
+
+
+@app.route("/user/values", methods=["DELETE"])
+@jwt_required()
+def delete_user_value():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    data = request.get_json()
+    value = UserValues.query.filter_by(user_id=user.id, value=data["value"]).first()
+    db.session.delete(value)
+    db.session.commit()
+    return jsonify({"msg": "Value deleted successfully"}), 200
+
+
+@app.route("/api/search/events", methods=["GET"])
+def search_external_events():
+    query = request.args.get("q")
+    category = request.args.get("category")
+
+    if not query:
+        return jsonify({"error": "Missing search query"}), 400
+
+    search_query = f"{query} in {category}" if category and category != "All" else query
+
+    results = search_events(search_query)
+    return jsonify(results), 200
+
+
+@app.route("/api/user/<int:user_id>/achievements", methods=["GET"])
+@jwt_required()
+def get_user_achievements(user_id):
+    """
+    Gets all achievements for a specific user.
+    """
+    current_user_id = get_jwt_identity()
+    # Optional: Ensure only the user themselves or an admin can view achievements.
+    # For this demo, we'll allow any authenticated user to view any user's achievements.
+
+    user_achievements = UserAchievement.query.filter_by(user_id=user_id).all()
+
+    if not user_achievements:
+        return jsonify([]), 200
+
+    achievements_data = []
+    for ua in user_achievements:
+        achievement = Achievement.query.get(ua.achievement_id)
+        if achievement:
+            achievements_data.append(
+                {
+                    "id": achievement.id,
+                    "name": achievement.name,
+                    "description": achievement.description,
+                    "icon": achievement.icon,
+                }
+            )
+
+    return jsonify(achievements_data), 200
 
 
 if __name__ == "__main__":
