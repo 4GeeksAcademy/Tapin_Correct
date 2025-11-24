@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 're
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix for default marker icons in React-Leaflet
+
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -15,13 +15,13 @@ export default function MapView({ listings, onListingClick, userLocation, select
   const mapRef = useRef();
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  // Use user's selected location or default to Houston/Dallas area
-  const LOCAL_CITY_CENTER = userLocation?.coords || [29.7604, -95.3698]; // Houston, TX (default)
-  const MAX_DISTANCE_KM = 50; // Only show listings within 50km of city center
 
-  // Helper function to calculate distance between two coordinates (Haversine formula)
+  const LOCAL_CITY_CENTER = userLocation?.coords || [29.7604, -95.3698];
+  const MAX_DISTANCE_KM = 50;
+
+
   const getDistanceKm = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Earth's radius in km
+    const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a =
@@ -32,7 +32,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
     return R * c;
   };
 
-  // Filter listings that have coordinates AND are within local area
+
   const mappableListings = listings.filter(
     (listing) => {
       if (listing.latitude == null || listing.longitude == null) return false;
@@ -46,30 +46,30 @@ export default function MapView({ listings, onListingClick, userLocation, select
     }
   );
 
-  // Fixed center on local city
+
   const center = LOCAL_CITY_CENTER;
 
-  // Fixed zoom level for city view (prevent zooming out to see entire country)
+
   const zoom = 11;
 
   useEffect(() => {
-    // Keep map centered on local city, don't auto-fit to all markers
-    // This ensures the map stays focused on your local area
+
+
     if (mapRef.current) {
       mapRef.current.setView(LOCAL_CITY_CENTER, zoom);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [mappableListings]);
 
-  // Component to handle map clicks and react to external selectedLocation
+
   function MapController({ selectedLocation }) {
     const map = useMap();
 
-    // Smoothly pan to selectedLocation when it changes
+
     useEffect(() => {
       if (selectedLocation && selectedLocation.coords && map) {
         const [lat, lon] = selectedLocation.coords;
-        // use flyTo for a smooth animated pan
+
         try {
           map.flyTo([lat, lon], Math.max(12, zoom), { duration: 1.0 });
         } catch (e) {
@@ -78,11 +78,11 @@ export default function MapView({ listings, onListingClick, userLocation, select
       }
     }, [selectedLocation, map]);
 
-    // Register click handler to pick a location from the map
+
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
-        // Attempt reverse-geocoding (Mapbox if token provided, else Nominatim)
+
         (async () => {
           setIsGeocoding(true);
           let displayName = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
@@ -98,7 +98,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
                 }
               }
             } else {
-              // Fallback to Nominatim (OpenStreetMap)
+
               const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
               const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
               if (res.ok) {
@@ -107,7 +107,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
               }
             }
           } catch (err) {
-            // ignore; we'll use lat/lon as name
+
             console.error('Reverse geocode error', err);
           } finally {
             setIsGeocoding(false);
@@ -171,7 +171,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
           [LOCAL_CITY_CENTER[0] + 0.5, LOCAL_CITY_CENTER[1] + 0.5]
         ]}
       >
-        {/* controller to handle clicks and panning to external selected location */}
+        {}
         <MapController selectedLocation={selectedLocation} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -221,7 +221,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
           </Marker>
         ))}
 
-        {/* Marker for the externally-selected location (from LocationSelector or map click) */}
+        {}
         {selectedLocation && selectedLocation.coords && (
           <Marker position={[selectedLocation.coords[0], selectedLocation.coords[1]]}>
             <Popup>
@@ -234,7 +234,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
         )}
       </MapContainer>
 
-      {/* Loading spinner overlay during reverse-geocoding */}
+      {}
       {isGeocoding && (
         <div
           style={{

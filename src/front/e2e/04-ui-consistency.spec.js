@@ -4,7 +4,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
   test('should use consistent color scheme', async ({ page }) => {
     await page.goto('/');
 
-    // Check CSS custom properties are defined
+
     const hasCSSVariables = await page.evaluate(() => {
       const styles = getComputedStyle(document.documentElement);
       const primary = styles.getPropertyValue('--primary');
@@ -18,7 +18,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
   test('should have consistent spacing throughout', async ({ page }) => {
     await page.goto('/');
 
-    // Check for consistent padding/margin using CSS variables
+
     const usesSpacingVars = await page.evaluate(() => {
       const styles = getComputedStyle(document.documentElement);
       const spaceMd = styles.getPropertyValue('--space-md');
@@ -33,7 +33,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Find interactive elements (buttons, cards)
+
     const buttons = page.locator('button').first();
     const cards = page.locator('[class*="card"]').first();
 
@@ -48,7 +48,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
         )
       );
 
-      // All should have some border radius
+
       radiusValues.forEach(radius => {
         expect(radius).not.toBe('0px');
       });
@@ -82,7 +82,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
       );
     }
 
-    // H1 should be larger than H2, which should be larger than body
+
     if (sizes.h1 && sizes.body) {
       expect(sizes.h1).toBeGreaterThan(sizes.body);
     }
@@ -109,15 +109,15 @@ test.describe('UI/UX Consistency & Professionalism', () => {
         window.getComputedStyle(el).backgroundColor
       );
 
-      // Hover state might change background or opacity
-      // This is optional but enhances UX
+
+
     }
   });
 
   test('should have appropriate contrast ratios', async ({ page }) => {
     await page.goto('/');
 
-    // Check that text is readable against background
+
     const textElement = page.locator('p, h1, h2, span').first();
 
     if (await textElement.isVisible()) {
@@ -125,7 +125,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
         const color = window.getComputedStyle(el).color;
         const bgColor = window.getComputedStyle(el).backgroundColor;
 
-        // Helper to parse rgb
+
         const parseRGB = (str) => {
           const match = str.match(/\d+/g);
           return match ? match.map(Number) : [255, 255, 255];
@@ -134,7 +134,7 @@ test.describe('UI/UX Consistency & Professionalism', () => {
         const textRGB = parseRGB(color);
         const bgRGB = parseRGB(bgColor);
 
-        // Calculate relative luminance
+
         const getLuminance = (rgb) => {
           const [r, g, b] = rgb.map(val => {
             val /= 255;
@@ -149,24 +149,24 @@ test.describe('UI/UX Consistency & Professionalism', () => {
         return l1 > l2 ? (l1 + 0.05) / (l2 + 0.05) : (l2 + 0.05) / (l1 + 0.05);
       });
 
-      // WCAG AA requires 4.5:1 for normal text
-      expect(contrast).toBeGreaterThanOrEqual(3); // Allowing slightly lower for now
+
+      expect(contrast).toBeGreaterThanOrEqual(3);
     }
   });
 
   test('should be keyboard navigable', async ({ page }) => {
     await page.goto('/');
 
-    // Press Tab to navigate
+
     await page.keyboard.press('Tab');
     await page.waitForTimeout(100);
 
-    // Check if focus moved
+
     const focusedElement = await page.evaluate(() =>
       document.activeElement.tagName
     );
 
-    // Should focus on interactive elements (not BODY)
+
     expect(focusedElement).not.toBe('BODY');
   });
 
@@ -174,13 +174,13 @@ test.describe('UI/UX Consistency & Professionalism', () => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.goto('/');
 
-    // No horizontal scroll
+
     const hasHorizontalScroll = await page.evaluate(() =>
       document.documentElement.scrollWidth > document.documentElement.clientWidth
     );
     expect(hasHorizontalScroll).toBe(false);
 
-    // Content should be visible
+
     await expect(page.locator('body')).toBeVisible();
   });
 });

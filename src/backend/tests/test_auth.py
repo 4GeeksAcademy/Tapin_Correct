@@ -4,13 +4,11 @@ from auth import token_for
 
 
 def test_register_and_login(client):
-    # register
     resp = client.post("/register", json={"email": "a1@example.com", "password": "pw"})
     assert resp.status_code == 201
     data = resp.get_json()
     assert "access_token" in data
 
-    # login
     resp2 = client.post("/login", json={"email": "a1@example.com", "password": "pw"})
     assert resp2.status_code == 200
     data2 = resp2.get_json()

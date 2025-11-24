@@ -21,7 +21,7 @@ export default function ValuesSelector({ user, onSave }) {
     const [selectedValues, setSelectedValues] = useState([]);
 
     useEffect(() => {
-        // Fetch user's current values and set them as selected
+
         const fetchUserValues = async () => {
             const token = localStorage.getItem('access_token');
             const response = await fetch('/user/values', {
@@ -44,7 +44,7 @@ export default function ValuesSelector({ user, onSave }) {
 
     const handleSave = async () => {
         const token = localStorage.getItem('access_token');
-        // First, delete all existing values
+
         for (const value of selectedValues) {
             await fetch('/user/values', {
                 method: 'DELETE',
@@ -55,7 +55,7 @@ export default function ValuesSelector({ user, onSave }) {
                 body: JSON.stringify({ value })
             });
         }
-        // Then, add all selected values
+
         for (const value of selectedValues) {
             await fetch('/user/values', {
                 method: 'POST',

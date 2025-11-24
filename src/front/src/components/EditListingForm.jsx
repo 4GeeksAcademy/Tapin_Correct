@@ -40,7 +40,7 @@ export default function EditListingForm({ listing, token, onClose, onUpdated, us
         category: category || null
       };
 
-      // Only include lat/lng if both are provided
+
       if (latitude && longitude) {
         body.latitude = parseFloat(latitude);
         body.longitude = parseFloat(longitude);

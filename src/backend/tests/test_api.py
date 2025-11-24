@@ -13,7 +13,6 @@ def test_health(client):
 
 
 def test_list_items(client):
-    # Initially there are no items; create one directly
     with app.app_context():
         it = Item(name="Seed", description="seed")
         db.session.add(it)

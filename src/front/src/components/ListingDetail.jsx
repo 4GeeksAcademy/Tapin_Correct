@@ -29,7 +29,7 @@ export default function ListingDetail({
 
   const isOwner = user && listing.owner_id === user.id;
 
-  // Fetch reviews and average rating on mount
+
   useEffect(() => {
     async function fetchReviews() {
       setLoadingReviews(true);
@@ -60,7 +60,7 @@ export default function ListingDetail({
 
   function handleReviewAdded(newReview) {
     setReviews([newReview, ...reviews]);
-    // Recalculate average
+
     if (reviews.length === 0) {
       setAverageRating(newReview.rating);
     } else {
@@ -155,7 +155,7 @@ export default function ListingDetail({
               <small>Created: {new Date(listing.created_at || Date.now()).toLocaleString()}</small>
             </p>
 
-            {/* Reviews Section */}
+            {}
             <div style={{ marginTop: '24px', borderTop: '1px solid #eee', paddingTop: '16px' }}>
               <div
                 style={{

@@ -40,10 +40,8 @@ try:
             load_dotenv(env_path)
             break
 except Exception:
-    # python-dotenv not installed or .env missing; proceed with environment variables
     pass
 
-# Allow overriding the database URL via environment (useful for CI or production)
 repo_root = Path(__file__).resolve().parents[2]
 # Default to a repo-root SQLite DB when no DB URL provided. This makes local
 # development and examples use `data.db` at the repository root rather than
@@ -54,7 +52,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Supabase connection pooling configuration for transaction mode (port 6543)
-# Configure SQLAlchemy engine options; adapt connect_args by driver
 db_url = app.config["SQLALCHEMY_DATABASE_URI"]
 
 # Skip engine options entirely for testing/SQLite
@@ -78,7 +75,7 @@ else:
         }
 
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
-# Secret key used for serializer tokens and other Flask features
+
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-key")
 app.config["SECURITY_PASSWORD_SALT"] = os.environ.get(
@@ -136,7 +133,6 @@ def api_health():
     """Enhanced health check including database connectivity."""
     health_status = {"status": "ok", "components": {}}
 
-    # Check database connection
     try:
         db.session.execute(db.text("SELECT 1"))
         health_status["components"]["database"] = {
@@ -156,7 +152,6 @@ def api_health():
 
 @app.route("/api/items", methods=["GET"])
 def api_list_items():
-    # Return all items from the database
     items = Item.query.order_by(Item.id.asc()).all()
     return jsonify({"items": [i.to_dict() for i in items]}), 200
 
@@ -187,7 +182,6 @@ def register_user():
     user = User(email=email, password_hash=pw_hash, is_active=True)
     db.session.add(user)
     db.session.commit()
-    # return both access and refresh tokens (identity stored as string)
     from auth import token_pair
 
     tokens = token_pair(user)
@@ -202,7 +196,6 @@ def login_user():
     user = User.query.filter_by(email=email).first()
     if not user or not check_password_hash(user.password_hash, password):
         return jsonify({"error": "invalid credentials"}), 401
-    # return both access and refresh tokens to the client
     from auth import token_pair
 
     tokens = token_pair(user)
@@ -229,12 +222,10 @@ def refresh_token():
 @jwt_required()
 def me():
     uid = get_jwt_identity()
-    # convert back to int because tokens store identity as string
     try:
         uid_int = int(uid)
     except Exception:
         uid_int = uid
-    # Use Session.get() which is the modern SQLAlchemy API (avoids LegacyAPIWarning)
     user = db.session.get(User, uid_int)
     if not user:
         return jsonify({"error": "user not found"}), 404
@@ -279,7 +270,6 @@ def reset_password():
         return jsonify({"error": "email required"}), 400
     user = User.query.filter_by(email=email).first()
     if not user:
-        # Do not reveal whether the email exists
         msg = "If an account exists for that email, a reset link has been sent."
         return jsonify({"message": msg})
 
@@ -291,7 +281,6 @@ def reset_password():
     if sent:
         return jsonify({"message": "reset email sent"})
     else:
-        # Fallback in dev: return the reset_url so developers can use it
         return jsonify(
             {
                 "message": "smtp not configured, returning reset link (dev)",
@@ -327,20 +316,15 @@ def confirm_reset(token):
 
 @app.route("/listings", methods=["GET"])
 def get_listings():
-    # Support simple filtering via query params:
-    # q (text search on title/description or category), location
     q = request.args.get("q", type=str)
     location = request.args.get("location", type=str)
 
     query = Listing.query
     if q:
-        # Check if q matches a category exactly (case-insensitive)
         categories = ["Community", "Environment", "Education", "Health", "Animals"]
         if q.lower() in [c.lower() for c in categories]:
-            # Filter by category
             query = query.filter(Listing.category.ilike(q))
         else:
-            # Text search on title/description
             like = f"%{q}%"
             title_match = Listing.title.ilike(like)
             desc_match = Listing.description.ilike(like)
@@ -359,15 +343,12 @@ def create_listing():
     title = data.get("title")
     if not title:
         return jsonify({"error": "title required"}), 400
-    # JWT identity is stored as string; convert back to int for DB foreign key
     owner_id = int(get_jwt_identity())
-    # Validate optional category
     category = data.get("category")
     allowed = ["Community", "Environment", "Education", "Health", "Animals"]
     if category and category not in allowed:
         return jsonify({"error": "invalid category"}), 400
 
-    # Parse optional coordinates
     latitude = data.get("latitude")
     longitude = data.get("longitude")
     try:
@@ -401,7 +382,6 @@ def get_listing_detail(id):
 @jwt_required()
 def update_listing(id):
     listing = db.session.get(Listing, id) or abort(404)
-    # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
         return jsonify({"error": "unauthorized - you are not the owner"}), 403
@@ -409,7 +389,6 @@ def update_listing(id):
     listing.title = data.get("title", listing.title)
     listing.description = data.get("description", listing.description)
     listing.location = data.get("location", listing.location)
-    # Optional fields
     if "category" in data:
         category = data.get("category")
         allowed = ["Community", "Environment", "Education", "Health", "Animals"]
@@ -442,7 +421,6 @@ def update_listing(id):
 @jwt_required()
 def delete_listing(id):
     listing = db.session.get(Listing, id) or abort(404)
-    # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
         return jsonify({"error": "unauthorized - you are not the owner"}), 403
@@ -455,10 +433,9 @@ def delete_listing(id):
 @jwt_required()
 def signup_for_listing(id):
     """Volunteer signs up for a listing."""
-    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)
     user_id = int(get_jwt_identity())
 
-    # Check if already signed up
     existing = SignUp.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
         return jsonify({"error": "already signed up for this listing"}), 400
@@ -480,7 +457,6 @@ def get_listing_signups(id):
     listing = db.session.get(Listing, id) or abort(404)
     owner_id = int(get_jwt_identity())
 
-    # Verify ownership
     if listing.owner_id != owner_id:
         return jsonify({"error": "unauthorized - you are not the owner"}), 403
 
@@ -488,7 +464,6 @@ def get_listing_signups(id):
         SignUp.query.filter_by(listing_id=id).order_by(SignUp.created_at.desc()).all()
     )
 
-    # Include user email with each sign-up
     results = []
     for signup in signups:
         signup_dict = signup.to_dict()
@@ -512,12 +487,10 @@ def update_signup_status(id):
     if not new_status:
         return jsonify({"error": "status required"}), 400
 
-    # Get the listing to check ownership
     listing = db.session.get(Listing, signup.listing_id)
     if not listing:
         return jsonify({"error": "listing not found"}), 404
 
-    # Owner can accept/decline, volunteer can cancel
     if listing.owner_id == user_id:
         if new_status not in ["accepted", "declined"]:
             return (
@@ -539,10 +512,9 @@ def update_signup_status(id):
 @jwt_required()
 def create_review(id):
     """Create a review for a listing."""
-    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)
     user_id = int(get_jwt_identity())
 
-    # Check if already reviewed
     existing = Review.query.filter_by(user_id=user_id, listing_id=id).first()
     if existing:
         return jsonify({"error": "you have already reviewed this listing"}), 400
@@ -565,12 +537,11 @@ def create_review(id):
 @app.route("/listings/<int:id>/reviews", methods=["GET"])
 def get_listing_reviews(id):
     """Get all reviews for a listing."""
-    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)
     reviews = (
         Review.query.filter_by(listing_id=id).order_by(Review.created_at.desc()).all()
     )
 
-    # Include user email with each review
     results = []
     for review in reviews:
         review_dict = review.to_dict()
@@ -585,7 +556,7 @@ def get_listing_reviews(id):
 @app.route("/listings/<int:id>/average-rating", methods=["GET"])
 def get_listing_average_rating(id):
     """Get average rating for a listing."""
-    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)
     reviews = Review.query.filter_by(listing_id=id).all()
 
     if not reviews:
@@ -646,12 +617,8 @@ def search_external_events():
 @app.route("/api/user/<int:user_id>/achievements", methods=["GET"])
 @jwt_required()
 def get_user_achievements(user_id):
-    """
-    Gets all achievements for a specific user.
-    """
+    """Gets all achievements for a specific user."""
     current_user_id = get_jwt_identity()
-    # Optional: Ensure only the user themselves or an admin can view achievements.
-    # For this demo, we'll allow any authenticated user to view any user's achievements.
 
     user_achievements = UserAchievement.query.filter_by(user_id=user_id).all()
 

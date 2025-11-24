@@ -3,7 +3,6 @@ import os
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# Set test environment BEFORE importing app
 os.environ["TESTING"] = "1"
 os.environ["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
 
@@ -38,7 +37,6 @@ def create_user():
             if email is None:
                 email = f"user+{uuid4().hex}@example.com"
 
-            # Check if user already exists to avoid UNIQUE constraint errors
             existing = User.query.filter_by(email=email).first()
             if existing:
                 return existing.id

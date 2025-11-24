@@ -24,8 +24,8 @@ export default defineConfig({
     alias: {
       "@": "./src",
     },
-    // Ensure Vite resolves to a single copy of react/react-dom to avoid
-    // Invalid Hook Call errors in Vitest (duplicate React instances).
+
+
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {

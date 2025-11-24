@@ -71,13 +71,11 @@ class TestSignUpFeature:
         token = token_for(volunteer_id)
         headers = {"Authorization": f"Bearer {token}"}
 
-        # First sign-up
         resp1 = client.post(
             f"/listings/{listing_id}/signup", json={"message": "First"}, headers=headers
         )
         assert resp1.status_code == 201
 
-        # Second sign-up (should fail)
         resp2 = client.post(
             f"/listings/{listing_id}/signup",
             json={"message": "Second"},
@@ -108,7 +106,6 @@ class TestSignUpFeature:
         other_user_id = create_user(email="other@test.com")
         listing_id = create_listing(owner_id=owner_id)
 
-        # Create a sign-up
         volunteer_token = token_for(volunteer_id)
         client.post(
             f"/listings/{listing_id}/signup",
@@ -116,7 +113,6 @@ class TestSignUpFeature:
             headers={"Authorization": f"Bearer {volunteer_token}"},
         )
 
-        # Owner should see sign-ups
         owner_token = token_for(owner_id)
         resp_owner = client.get(
             f"/listings/{listing_id}/signups",
@@ -127,7 +123,6 @@ class TestSignUpFeature:
         assert len(data) == 1
         assert "user_email" in data[0]
 
-        # Other user should not see sign-ups
         other_token = token_for(other_user_id)
         resp_other = client.get(
             f"/listings/{listing_id}/signups",
@@ -141,7 +136,6 @@ class TestSignUpFeature:
         volunteer_id = create_user(email="volunteer@test.com")
         listing_id = create_listing(owner_id=owner_id)
 
-        # Create sign-up
         volunteer_token = token_for(volunteer_id)
         resp_signup = client.post(
             f"/listings/{listing_id}/signup",
@@ -150,7 +144,6 @@ class TestSignUpFeature:
         )
         signup_id = resp_signup.get_json()["id"]
 
-        # Owner accepts
         owner_token = token_for(owner_id)
         resp = client.put(
             f"/signups/{signup_id}",
@@ -169,7 +162,6 @@ class TestSignUpFeature:
         volunteer_id = create_user(email="volunteer@test.com")
         listing_id = create_listing(owner_id=owner_id)
 
-        # Create sign-up
         volunteer_token = token_for(volunteer_id)
         resp_signup = client.post(
             f"/listings/{listing_id}/signup",
@@ -178,7 +170,6 @@ class TestSignUpFeature:
         )
         signup_id = resp_signup.get_json()["id"]
 
-        # Volunteer cancels
         resp = client.put(
             f"/signups/{signup_id}",
             json={"status": "cancelled"},
@@ -232,7 +223,6 @@ class TestReviewFeature:
         token = token_for(reviewer_id)
         headers = {"Authorization": f"Bearer {token}"}
 
-        # Test rating too low
         resp_low = client.post(
             f"/listings/{listing_id}/reviews",
             json={"rating": 0, "comment": "Bad"},
@@ -240,7 +230,6 @@ class TestReviewFeature:
         )
         assert resp_low.status_code == 400
 
-        # Test rating too high
         resp_high = client.post(
             f"/listings/{listing_id}/reviews",
             json={"rating": 6, "comment": "Good"},
@@ -248,7 +237,6 @@ class TestReviewFeature:
         )
         assert resp_high.status_code == 400
 
-        # Test valid rating
         resp_valid = client.post(
             f"/listings/{listing_id}/reviews",
             json={"rating": 3, "comment": "OK"},
@@ -265,7 +253,6 @@ class TestReviewFeature:
         token = token_for(reviewer_id)
         headers = {"Authorization": f"Bearer {token}"}
 
-        # First review
         resp1 = client.post(
             f"/listings/{listing_id}/reviews",
             json={"rating": 5, "comment": "First"},
@@ -273,7 +260,6 @@ class TestReviewFeature:
         )
         assert resp1.status_code == 201
 
-        # Second review (should fail)
         resp2 = client.post(
             f"/listings/{listing_id}/reviews",
             json={"rating": 4, "comment": "Second"},
@@ -306,7 +292,6 @@ class TestReviewFeature:
         reviewer_id = create_user(email="reviewer@test.com")
         listing_id = create_listing(owner_id=owner_id)
 
-        # Create a review
         token = token_for(reviewer_id)
         client.post(
             f"/listings/{listing_id}/reviews",
@@ -314,7 +299,6 @@ class TestReviewFeature:
             headers={"Authorization": f"Bearer {token}"},
         )
 
-        # Get reviews (no auth needed)
         resp = client.get(f"/listings/{listing_id}/reviews")
 
         assert resp.status_code == 200
@@ -328,7 +312,6 @@ class TestReviewFeature:
         owner_id = create_user(email="owner@test.com")
         listing_id = create_listing(owner_id=owner_id)
 
-        # Create multiple reviews
         for i, rating in enumerate([5, 4, 3], 1):
             reviewer_id = create_user(email=f"reviewer{i}@test.com")
             token = token_for(reviewer_id)
@@ -338,12 +321,10 @@ class TestReviewFeature:
                 headers={"Authorization": f"Bearer {token}"},
             )
 
-        # Get average
         resp = client.get(f"/listings/{listing_id}/average-rating")
 
         assert resp.status_code == 200
         data = resp.get_json()
-        # Average of 5, 4, 3 = 4.0
         assert data["average_rating"] == 4.0
         assert data["review_count"] == 3
 

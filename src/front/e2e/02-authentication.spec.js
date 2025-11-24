@@ -4,7 +4,7 @@ test.describe('Authentication Flow', () => {
   test('should display login/signup form', async ({ page }) => {
     await page.goto('/');
 
-    // Look for login/signup buttons or forms
+
     const authElements = await page.locator(
       'button:has-text(/log.*in/i), a:has-text(/sign.*up/i), input[type="email"], input[type="password"]'
     ).count();
@@ -15,7 +15,7 @@ test.describe('Authentication Flow', () => {
   test('should show validation errors for empty login form', async ({ page }) => {
     await page.goto('/');
 
-    // Try to find and interact with login form
+
     const emailInput = page.locator('input[type="email"]').first();
     const passwordInput = page.locator('input[type="password"]').first();
 
@@ -23,7 +23,7 @@ test.describe('Authentication Flow', () => {
       await emailInput.click();
       await emailInput.blur();
 
-      // Check for validation message (might not exist, that's okay)
+
       const validationText = await page.locator('[class*="error"], [role="alert"]').textContent().catch(() => '');
     }
   });
@@ -42,10 +42,10 @@ test.describe('Authentication Flow', () => {
       if (await submitButton.isVisible()) {
         await submitButton.click();
 
-        // Should show some error message or stay on page
+
         await page.waitForTimeout(1000);
         const hasError = await page.locator('[class*="error"], [role="alert"], .toast').isVisible().catch(() => false);
-        // Error message is optional but good to have
+
       }
     }
   });
@@ -56,7 +56,7 @@ test.describe('Authentication Flow', () => {
     const emailInput = page.locator('input[type="email"]').first();
 
     if (await emailInput.isVisible()) {
-      // Check if input has label or aria-label
+
       const hasLabel = await emailInput.evaluate((el) => {
         const label = document.querySelector(`label[for="${el.id}"]`);
         return label !== null || el.getAttribute('aria-label') !== null || el.getAttribute('placeholder') !== null;

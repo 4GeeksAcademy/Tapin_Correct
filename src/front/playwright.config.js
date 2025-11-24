@@ -1,9 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Playwright E2E Testing Configuration for Tapin
- * @see https://playwright.dev/docs/test-configuration
- */
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,

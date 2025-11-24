@@ -3,7 +3,7 @@ import ForgotPassword from './ForgotPassword';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
 export default function AuthForm({ onLogin }) {
-  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

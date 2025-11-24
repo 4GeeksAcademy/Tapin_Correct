@@ -18,12 +18,12 @@ export default function DashboardLanding({ onLogin, onEnter }) {
           <AuthForm
             onLogin={(data) => {
               try {
-                // Prefer tokens from response
+
                 if (data?.access_token) {
                   localStorage.setItem('access_token', data.access_token);
                 }
               } catch { }
-              // Notify parent if provided
+
               if (typeof onLogin === 'function') {
                 const user = data?.user || null;
                 const token = data?.access_token || null;
