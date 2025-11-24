@@ -1,5 +1,6 @@
 import os
-from flask import Flask, request, jsonify, url_for
+from pathlib import Path
+from flask import Flask, request, jsonify, url_for, abort
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
@@ -20,34 +21,34 @@ from models import (
     UserValues,
     UserAchievement,
     Achievement,
+    SignUp,
 )
 from google_search import search_events
+from auth import token_for
 
 app = Flask(__name__)
 base_dir = os.path.abspath(os.path.dirname(__file__))
-# Load .env from repository root in development if python-dotenv is installed
+# Load .env: prefer repository root `.env`, then backend `.env` (robust for local dev).
 try:
     from dotenv import load_dotenv
 
-    repo_root = os.path.abspath(os.path.join(base_dir, ".."))
-    env_candidates = [
-        os.path.join(repo_root, ".env"),
-        os.path.join(repo_root, "..", ".env"),
-    ]
+    repo_root = Path(__file__).resolve().parents[2]
+    backend_env = Path(__file__).resolve().parent / ".env"
+    env_candidates = [repo_root / ".env", backend_env]
     for env_path in env_candidates:
-        if os.path.exists(env_path):
+        if env_path.exists():
             load_dotenv(env_path)
             break
 except Exception:
     # python-dotenv not installed or .env missing; proceed with environment variables
     pass
 
-# GPT-5 monkeypatch import removed per project owner request.
-# The runtime monkeypatch file was removed; do not attempt to enable
-# GPT-5 without appropriate provider access and approvals.
-
 # Allow overriding the database URL via environment (useful for CI or production)
-default_db = "sqlite:///" + os.path.join(base_dir, "data.db")
+repo_root = Path(__file__).resolve().parents[2]
+# Default to a repo-root SQLite DB when no DB URL provided. This makes local
+# development and examples use `data.db` at the repository root rather than
+# scattering DB files inside service directories.
+default_db = "sqlite:///" + str(repo_root / "data.db")
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
     "SQLALCHEMY_DATABASE_URI", default_db
 )
@@ -55,25 +56,28 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Supabase connection pooling configuration for transaction mode (port 6543)
 # Configure SQLAlchemy engine options; adapt connect_args by driver
 db_url = app.config["SQLALCHEMY_DATABASE_URI"]
-engine_options = {
-    "pool_pre_ping": True,
-    "pool_recycle": 300,
-    "pool_size": 5,
-    "max_overflow": 10,
-}
 
-# Use PostgreSQL-specific connect args only when using psycopg2
-if isinstance(db_url, str) and db_url.lower().startswith("postgresql"):
-    engine_options["connect_args"] = {
-        "connect_timeout": 10,
-        "options": "-c statement_timeout=30000",
+# Skip engine options entirely for testing/SQLite
+if os.environ.get("TESTING") == "1" or (
+    isinstance(db_url, str) and db_url.lower().startswith("sqlite")
+):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {}
+else:
+    engine_options = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10,
     }
-elif isinstance(db_url, str) and db_url.lower().startswith("sqlite"):
-    # SQLite does not accept the above options; leave empty or set
-    # sqlite-specific options
-    engine_options["connect_args"] = {}
 
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
+    # Use PostgreSQL-specific connect args only when using psycopg2
+    if isinstance(db_url, str) and db_url.lower().startswith("postgresql"):
+        engine_options["connect_args"] = {
+            "connect_timeout": 10,
+            "options": "-c statement_timeout=30000",
+        }
+
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 # Secret key used for serializer tokens and other Flask features
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY", "dev-jwt-secret-key")
@@ -389,18 +393,18 @@ def create_listing():
 
 @app.route("/listings/<int:id>", methods=["GET"])
 def get_listing_detail(id):
-    listing = Listing.query.get_or_404(id)
+    listing = db.session.get(Listing, id) or abort(404)
     return jsonify(listing.to_dict())
 
 
 @app.route("/listings/<int:id>", methods=["PUT"])
 @jwt_required()
 def update_listing(id):
-    listing = Listing.query.get_or_404(id)
+    listing = db.session.get(Listing, id) or abort(404)
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+        return jsonify({"error": "unauthorized - you are not the owner"}), 403
     data = request.get_json() or {}
     listing.title = data.get("title", listing.title)
     listing.description = data.get("description", listing.description)
@@ -437,11 +441,11 @@ def update_listing(id):
 @app.route("/listings/<int:id>", methods=["DELETE"])
 @jwt_required()
 def delete_listing(id):
-    listing = Listing.query.get_or_404(id)
+    listing = db.session.get(Listing, id) or abort(404)
     # Verify ownership
     owner_id = int(get_jwt_identity())
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+        return jsonify({"error": "unauthorized - you are not the owner"}), 403
     db.session.delete(listing)
     db.session.commit()
     return jsonify({"message": "deleted"})
@@ -451,7 +455,7 @@ def delete_listing(id):
 @jwt_required()
 def signup_for_listing(id):
     """Volunteer signs up for a listing."""
-    _ = Listing.query.get_or_404(id)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
     user_id = int(get_jwt_identity())
 
     # Check if already signed up
@@ -473,12 +477,12 @@ def signup_for_listing(id):
 @jwt_required()
 def get_listing_signups(id):
     """Get all sign-ups for a listing (owner only)."""
-    listing = Listing.query.get_or_404(id)
+    listing = db.session.get(Listing, id) or abort(404)
     owner_id = int(get_jwt_identity())
 
     # Verify ownership
     if listing.owner_id != owner_id:
-        return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+        return jsonify({"error": "unauthorized - you are not the owner"}), 403
 
     signups = (
         SignUp.query.filter_by(listing_id=id).order_by(SignUp.created_at.desc()).all()
@@ -500,7 +504,7 @@ def get_listing_signups(id):
 @jwt_required()
 def update_signup_status(id):
     """Update sign-up status (owner can accept/decline, volunteer can cancel)."""
-    signup = SignUp.query.get_or_404(id)
+    signup = db.session.get(SignUp, id) or abort(404)
     user_id = int(get_jwt_identity())
     data = request.get_json() or {}
     new_status = data.get("status")
@@ -535,7 +539,7 @@ def update_signup_status(id):
 @jwt_required()
 def create_review(id):
     """Create a review for a listing."""
-    _ = Listing.query.get_or_404(id)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
     user_id = int(get_jwt_identity())
 
     # Check if already reviewed
@@ -561,7 +565,7 @@ def create_review(id):
 @app.route("/listings/<int:id>/reviews", methods=["GET"])
 def get_listing_reviews(id):
     """Get all reviews for a listing."""
-    _ = Listing.query.get_or_404(id)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
     reviews = (
         Review.query.filter_by(listing_id=id).order_by(Review.created_at.desc()).all()
     )
@@ -581,7 +585,7 @@ def get_listing_reviews(id):
 @app.route("/listings/<int:id>/average-rating", methods=["GET"])
 def get_listing_average_rating(id):
     """Get average rating for a listing."""
-    _ = Listing.query.get_or_404(id)  # Verify listing exists
+    _ = db.session.get(Listing, id) or abort(404)  # Verify listing exists
     reviews = Review.query.filter_by(listing_id=id).all()
 
     if not reviews:
@@ -597,7 +601,7 @@ def get_listing_average_rating(id):
 @jwt_required()
 def get_user_values():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, int(current_user_id))
     return jsonify({"values": [v.value for v in user.values]}), 200
 
 
@@ -605,7 +609,7 @@ def get_user_values():
 @jwt_required()
 def add_user_value():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, int(current_user_id))
     data = request.get_json()
     value = UserValues(user_id=user.id, value=data["value"])
     db.session.add(value)
@@ -617,7 +621,7 @@ def add_user_value():
 @jwt_required()
 def delete_user_value():
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, int(current_user_id))
     data = request.get_json()
     value = UserValues.query.filter_by(user_id=user.id, value=data["value"]).first()
     db.session.delete(value)
@@ -656,7 +660,7 @@ def get_user_achievements(user_id):
 
     achievements_data = []
     for ua in user_achievements:
-        achievement = Achievement.query.get(ua.achievement_id)
+        achievement = db.session.get(Achievement, ua.achievement_id)
         if achievement:
             achievements_data.append(
                 {

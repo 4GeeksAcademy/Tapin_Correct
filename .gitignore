@@ -83,3 +83,7 @@ database.database
 database.db
 diagram.png
 __pycache__/
+
+# Playwright test artifacts
+src/front/test-results/
+src/front/playwright-report/

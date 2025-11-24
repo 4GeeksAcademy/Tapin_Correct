@@ -16,6 +16,9 @@ import sys
 from pathlib import Path
 
 import click
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ALEMBIC_INI = REPO_ROOT / "alembic.ini"
@@ -67,6 +70,9 @@ def current():
 def history():
     """Show revision history."""
     _run_alembic(f"-c {ALEMBIC_INI} history")
+
+
+from models import User, Organization, Item, Listing, Review, UserValues  # noqa: E402
 
 
 if __name__ == "__main__":

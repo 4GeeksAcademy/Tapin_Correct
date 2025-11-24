@@ -9,16 +9,31 @@ import os
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 
-from app import app, db, User, Listing, Item, SignUp, Review  # noqa: E402
-from werkzeug.security import generate_password_hash  # noqa: E402
+from models import (
+    db,
+    User,
+    Listing,
+    Item,
+    Review,
+    UserValues,
+    Achievement,
+    UserAchievement,
+    SignUp,
+    Organization,
+)
+
+from werkzeug.security import generate_password_hash
+from categories import CATEGORIES
 
 
 def clear_database():
     """Clear all data from the database"""
     print("🗑️  Clearing existing data...")
     with app.app_context():
+        UserAchievement.query.delete()
+        Achievement.query.delete()
+        UserValues.query.delete()
         Review.query.delete()
-        SignUp.query.delete()
         Item.query.delete()
         Listing.query.delete()
         User.query.delete()
@@ -58,7 +73,92 @@ def create_sample_users():
         return [u.id for u in users]
 
 
-def create_sample_listings(user_ids):
+def create_sample_organizations(user_ids):
+    """Create sample organizations"""
+    print("\n🏢 Creating sample organizations...")
+
+    orgs_data = [
+        {
+            "name": "Good Deeds Inc.",
+            "description": "A non-profit dedicated to doing good deeds.",
+            "user_id": user_ids[3],
+        },
+        {
+            "name": "Helping Hands",
+            "description": "Lending a helping hand to those in need.",
+            "user_id": user_ids[4],
+        },
+        {
+            "name": "Community Builders",
+            "description": "Building a better community, one project at a time.",
+            "user_id": user_ids[5],
+        },
+    ]
+
+    orgs = []
+    with app.app_context():
+        for data in orgs_data:
+            org = Organization(
+                name=data["name"],
+                description=data["description"],
+            )
+            db.session.add(org)
+            orgs.append(org)
+
+        db.session.commit()
+        # Refresh to get IDs
+        for org in orgs:
+            db.session.refresh(org)
+        print(f"✓ Created {len(orgs)} organizations")
+        return [o.id for o in orgs]
+
+
+def create_real_organizations():
+    """Create real organizations"""
+    print("\n🏢 Creating real organizations...")
+
+    orgs_data = [
+        {
+            "name": "American Red Cross",
+            "description": "A humanitarian organization that provides emergency assistance, disaster relief, and disaster preparedness education in the United States.",
+        },
+        {
+            "name": "Habitat for Humanity",
+            "description": "A nonprofit organization that helps families build and improve places to call home.",
+        },
+        {
+            "name": "Doctors Without Borders",
+            "description": "An international humanitarian medical non-governmental organization best known for its projects in conflict zones and in countries affected by endemic diseases.",
+        },
+        {
+            "name": "The Humane Society",
+            "description": "An organization dedicated to promoting the welfare of animals.",
+        },
+        {
+            "name": "United Way",
+            "description": "A nonprofit organization that works to improve the health, education, and financial stability of every person in every community.",
+        },
+    ]
+
+    orgs = []
+    with app.app_context():
+        for data in orgs_data:
+            org = Organization(
+                name=data["name"],
+                description=data["description"],
+            )
+            db.session.add(org)
+            orgs.append(org)
+
+        db.session.commit()
+        # Refresh to get IDs
+        for org in orgs:
+            db.session.refresh(org)
+        print(f"✓ Created {len(orgs)} organizations")
+        return [o.id for o in orgs]
+
+
+def create_sample_listings(user_ids, org_ids):
     """Create sample volunteer opportunity listings"""
     print("\n📋 Creating sample listings...")
 
@@ -70,39 +170,6 @@ def create_sample_listings(user_ids):
                 "clean and protect marine life. All supplies provided. "
                 "Perfect for individuals, families, and groups. No "
                 "experience necessary."
-            ),
-            "location": "Santa Monica Beach, CA",
-            "latitude": 34.0195,
-            "longitude": -118.4912,
-            "category": "Environment",
-            "image_url": (
-                "https://images.unsplash.com/photo-1618477461853-cf6ed80faba5"
-                "?w=800&h=600&fit=crop"
-            ),
-        },
-        {
-            "title": "Food Bank Volunteer",
-            "description": (
-                "Help sort and distribute food to families in need. Morning "
-                "and afternoon shifts available. Great opportunity to give "
-                "back to your local community. Training provided on-site."
-            ),
-            "location": "Downtown LA Food Bank",
-            "latitude": 34.0407,
-            "longitude": -118.2468,
-            "category": "Community",
-            "image_url": (
-                "https://images.unsplash.com/photo-1593113598332-cd288d649433"
-                "?w=800&h=600&fit=crop"
-            ),
-        },
-        {
-            "title": "Senior Center Activities Helper",
-            "description": (
-                "Assist with recreational activities at our senior center. "
-                "Help organize game nights, craft sessions, and social "
-                "events. Bring joy to our elderly community members. Patient "
-                "and friendly volunteers welcome."
             ),
             "location": "Pasadena Senior Center",
             "latitude": 34.1478,
@@ -217,42 +284,7 @@ def create_sample_listings(user_ids):
             "title": "Literacy Program Reading Buddy",
             "description": (
                 "Read with elementary students to improve their literacy "
-                "skills. One-on-one or small group sessions. Patient and "
-                "encouraging volunteers needed. See the joy of reading come "
-                "alive!"
-            ),
-            "location": "Long Beach Library",
-            "latitude": 33.7701,
-            "longitude": -118.1937,
-            "category": "Education",
-            "image_url": (
-                "https://images.unsplash.com/photo-1503676260728-1c00da094a0b"
-                "?w=800&h=600&fit=crop"
-            ),
-        },
-        {
-            "title": "Habitat for Humanity Build Day",
-            "description": (
-                "Help build affordable housing for families in need. No "
-                "construction experience required - we'll teach you! Bring "
-                "work gloves and closed-toe shoes. Ages 16+ welcome with "
-                "adult."
-            ),
-            "location": "Culver City Build Site",
-            "latitude": 34.0211,
-            "longitude": -118.3965,
-            "category": "Community",
-            "image_url": (
-                "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122"
-                "?w=800&h=600&fit=crop"
-            ),
-        },
-        {
-            "title": "Museum Tour Guide",
-            "description": (
-                "Share your passion for art and history as a volunteer tour "
-                "guide. Training program provided. Flexible schedule, minimum "
-                "2 tours per month. Great public speaking opportunity."
+                "skills. One-on-one or small group sessions. Patient"
             ),
             "location": "Getty Center",
             "latitude": 34.0780,
@@ -468,6 +500,102 @@ def create_sample_reviews(user_ids, listing_ids):
         print(f"✓ Created {len(reviews)} reviews")
 
 
+def create_achievements():
+    """Create sample achievements"""
+    print("\n🏆 Creating sample achievements...")
+
+    achievements_data = [
+        {
+            "name": "First Steps",
+            "description": "Completed your first volunteer opportunity.",
+            "icon": "fa-shoe-prints",
+        },
+        {
+            "name": "Helping Hand",
+            "description": "Completed 5 volunteer opportunities.",
+            "icon": "fa-hands-helping",
+        },
+        {
+            "name": "Community Champion",
+            "description": "Completed 10 volunteer opportunities.",
+            "icon": "fa-trophy",
+        },
+        {
+            "name": "Good Samaritan",
+            "description": "Received a 5-star rating on a review.",
+            "icon": "fa-star",
+        },
+        {
+            "name": "Superstar Volunteer",
+            "description": "Received 5 5-star ratings.",
+            "icon": "fa-meteor",
+        },
+    ]
+
+    achievements = []
+    with app.app_context():
+        for data in achievements_data:
+            achievement = Achievement(
+                name=data["name"],
+                description=data["description"],
+                icon=data["icon"],
+            )
+            db.session.add(achievement)
+            achievements.append(achievement)
+
+        db.session.commit()
+        # Refresh to get IDs
+        for achievement in achievements:
+            db.session.refresh(achievement)
+        print(f"✓ Created {len(achievements)} achievements")
+        return [a.id for a in achievements]
+
+
+def create_superstar_volunteers_and_assign_achievements(user_ids, achievement_ids):
+    """Create superstar volunteers and assign achievements"""
+    print("\n🌟 Creating superstar volunteers and assigning achievements...")
+
+    with app.app_context():
+        # Assign "First Steps" and "Helping Hand" to volunteer1
+        db.session.add(
+            UserAchievement(user_id=user_ids[0], achievement_id=achievement_ids[0])
+        )
+        db.session.add(
+            UserAchievement(user_id=user_ids[0], achievement_id=achievement_ids[1])
+        )
+
+        # Assign "Community Champion" and "Good Samaritan" to volunteer2
+        db.session.add(
+            UserAchievement(user_id=user_ids[1], achievement_id=achievement_ids[2])
+        )
+        db.session.add(
+            UserAchievement(user_id=user_ids[1], achievement_id=achievement_ids[3])
+        )
+
+        # Assign "Superstar Volunteer" to volunteer3
+        db.session.add(
+            UserAchievement(user_id=user_ids[2], achievement_id=achievement_ids[4])
+        )
+
+        db.session.commit()
+        print("✓ Superstar volunteers created and achievements assigned")
+
+
+def assign_user_values(user_ids):
+    """Assign values to users"""
+    print("\n💖 Assigning user values...")
+
+    with app.app_context():
+        for i, user_id in enumerate(user_ids):
+            # Assign a few values to each user
+            for j in range(3):
+                value = CATEGORIES[(i + j) % len(CATEGORIES)]
+                db.session.add(UserValues(user_id=user_id, value=value))
+
+        db.session.commit()
+        print("✓ User values assigned")
+
+
 def main():
     """Main seeding function"""
     print("🌱 Starting database seeding...")
@@ -478,9 +606,13 @@ def main():
 
     # Create sample data
     user_ids = create_sample_users()
-    listing_ids = create_sample_listings(user_ids)
+    org_ids = create_real_organizations()
+    listing_ids = create_sample_listings(user_ids, org_ids)
     create_sample_signups(user_ids, listing_ids)
     create_sample_reviews(user_ids, listing_ids)
+    achievement_ids = create_achievements()
+    create_superstar_volunteers_and_assign_achievements(user_ids, achievement_ids)
+    assign_user_values(user_ids)
 
     print("\n" + "=" * 50)
     print("✅ Database seeding completed successfully!")

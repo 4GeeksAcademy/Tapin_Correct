@@ -1,5 +1,5 @@
 import React from 'react';
-import logoTransparent from '@/assets/brand/logo-transparent.svg';
+import logoTransparent from '../assets/brand/logo-transparent.svg';
 
 export default function Header({ user, onLogout }) {
   return (
