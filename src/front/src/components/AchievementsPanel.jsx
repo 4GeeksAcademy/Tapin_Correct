@@ -17,63 +17,63 @@ export default function AchievementsPanel({ token }) {
   const achievementDefinitions = {
     weekend_warrior: {
       name: 'Weekend Warrior',
-      description: 'Attend events 5 weekends in a row',
-      icon: '🎯',
-      color: '#FF6B6B'
+      description: 'Make a difference 5 weekends in a row',
+      badge: '/src/assets/badges/weekend-warrior.svg',
+      color: '#17B8A3'  // Teal - commitment & consistency
     },
     category_completionist: {
-      name: 'Category Completionist',
-      description: 'Try all 22 event categories',
-      icon: '🏆',
-      color: '#FFD93D'
+      name: 'Impact Explorer',
+      description: 'Experience all 22 ways to volunteer',
+      badge: '🏆',
+      color: '#FF9D42'  // Orange - achievement
     },
     early_bird: {
       name: 'Early Bird',
-      description: 'Attend 10 events discovered >1 week before',
-      icon: '🐦',
-      color: '#6BCB77'
+      description: 'Plan ahead: 10 events booked 1+ week early',
+      badge: '/src/assets/badges/early-bird.svg',
+      color: '#10b981'  // Green - preparation
     },
     last_minute_larry: {
-      name: 'Last Minute Larry',
-      description: 'Attend 10 same-day events',
-      icon: '⚡',
-      color: '#4D96FF'
+      name: 'Quick Responder',
+      description: 'Jump in to help: 10 same-day events',
+      badge: '⚡',
+      color: '#17B8A3'  // Teal - responsiveness
     },
     social_butterfly: {
       name: 'Social Butterfly',
-      description: 'Bring friends to 20 events',
-      icon: '🦋',
-      color: '#9D4EDD'
+      description: 'Inspire others: bring friends to 20 events',
+      badge: '/src/assets/badges/social-butterfly.svg',
+      color: '#FF9D42'  // Orange - community building
     },
     local_legend: {
       name: 'Local Legend',
-      description: 'Attend 50 events in your city',
-      icon: '⭐',
-      color: '#FCA311'
+      description: 'Community champion: 50 events in your city',
+      badge: '/src/assets/badges/local-legend.svg',
+      color: '#FF9D42'  // Orange - dedication
     },
     explorer: {
-      name: 'Explorer',
-      description: 'Attend events in 5 different cities',
-      icon: '🗺️',
-      color: '#06FFA5'
+      name: 'Regional Impact Maker',
+      description: 'Spread kindness: volunteer in 5 cities',
+      badge: '🗺️',
+      color: '#17B8A3'  // Teal - exploration
     },
     night_owl: {
-      name: 'Night Owl',
-      description: 'Attend 15 events starting after 8 PM',
-      icon: '🦉',
-      color: '#5E5EFF'
+      name: 'Evening Champion',
+      description: 'After-hours hero: 15 evening events',
+      badge: '🦉',
+      color: '#10b981'  // Green - flexibility
     },
     free_spirit: {
-      name: 'Free Spirit',
-      description: 'Attend 20 free events',
-      icon: '💫',
-      color: '#FF9ECD'
+      name: 'Generous Heart',
+      description: 'Give freely: 20 volunteer-only events',
+      badge: '💫',
+      color: '#FF9D42'  // Orange - generosity
     },
     culture_vulture: {
-      name: 'Culture Vulture',
-      description: 'Attend 15 arts/theater/museum events',
-      icon: '🎭',
-      color: '#E63946'
+      name: 'Arts & Culture Advocate',
+      description: 'Support the arts: 15 cultural events',
+      badge: '🎭',
+      color: '#17B8A3'  // Teal - cultural enrichment
     }
   };
 
@@ -116,8 +116,8 @@ export default function AchievementsPanel({ token }) {
     return {
       name: info.name || achievement.achievement_type,
       description: info.description || '',
-      icon: info.icon || '🏅',
-      color: info.color || '#667eea'
+      badge: info.badge || '🏅',
+      color: info.color || '#17B8A3'
     };
   }
 
@@ -215,11 +215,18 @@ export default function AchievementsPanel({ token }) {
           Achievements
         </h4>
 
-        {/* Level Info */}
+        {/* Level Info with Panda */}
         {levelInfo && (
-          <div className="card mb-3 bg-gradient-primary text-white">
+          <div className="card mb-3" style={{
+            background: 'linear-gradient(135deg, #17B8A3 0%, #0E9F8E 100%)',
+            color: 'white',
+            border: 'none'
+          }}>
             <div className="card-body">
               <div className="row text-center align-items-center">
+                <div className="col-auto">
+                  <div style={{ fontSize: '3rem' }}>🐼</div>
+                </div>
                 <div className="col">
                   <div className="stat-value">Level {levelInfo.level}</div>
                   <div className="stat-label">{levelInfo.title}</div>
@@ -269,7 +276,15 @@ export default function AchievementsPanel({ token }) {
               <div className="achievement-icon" style={{
                 backgroundColor: achievement.unlocked ? info.color : '#e0e0e0'
               }}>
-                {achievement.unlocked ? info.icon : '🔒'}
+                {achievement.unlocked ? (
+                  info.badge?.startsWith('/') ? (
+                    <img src={info.badge} alt={info.name} style={{ width: '40px', height: '40px' }} />
+                  ) : (
+                    <span>{info.badge}</span>
+                  )
+                ) : (
+                  '🔒'
+                )}
               </div>
 
               <div className="achievement-content">
@@ -313,10 +328,10 @@ export default function AchievementsPanel({ token }) {
       {/* Empty state */}
       {achievements.length === 0 && (
         <div className="text-center py-5">
-          <div className="display-4 mb-3">🎯</div>
-          <h5>Start Your Journey!</h5>
+          <div className="display-4 mb-3">🐼</div>
+          <h5>Start Your Volunteer Journey!</h5>
           <p className="text-muted">
-            Attend events to unlock achievements
+            Make an impact in your community and unlock achievements along the way
           </p>
         </div>
       )}
@@ -327,7 +342,7 @@ export default function AchievementsPanel({ token }) {
         }
 
         .achievement-stats {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          background: linear-gradient(135deg, #17B8A3 0%, #0E9F8E 100%);
           color: white;
           border: none;
         }

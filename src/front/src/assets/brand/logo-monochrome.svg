@@ -1,20 +1,35 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" width="240" height="80">
-  <!-- Monochrome version - for dark backgrounds -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="280" height="80">
+  <!-- Monochrome TapIn Logo - Single color for dark backgrounds -->
+
+  <!-- Panda Icon in Location Pin -->
+  <g transform="translate(40, 40)">
+    <!-- Location pin shape -->
+    <path d="M 0,-30 C -16,-30 -28,-18 -28,0 C -28,18 0,30 0,30 C 0,30 28,18 28,0 C 28,-18 16,-30 0,-30 Z"
+          fill="white"/>
+
+    <!-- Panda face -->
+    <circle cx="-8" cy="-5" r="4" fill="white" opacity="0.3"/>
+    <circle cx="8" cy="-5" r="4" fill="white" opacity="0.3"/>
+    <circle cx="0" cy="0" r="12" fill="white" opacity="0.9"/>
+
+    <!-- Eyes -->
+    <ellipse cx="-4" cy="-2" rx="3" ry="4" fill="white" opacity="0.3"/>
+    <ellipse cx="4" cy="-2" rx="3" ry="4" fill="white" opacity="0.3"/>
+    <circle cx="-4" cy="-2.5" r="1.5" fill="white"/>
+    <circle cx="4" cy="-2.5" r="1.5" fill="white"/>
+
+    <!-- Nose and smile -->
+    <ellipse cx="0" cy="2" rx="1.5" ry="1" fill="white" opacity="0.3"/>
+    <path d="M -3,5 Q 0,7 3,5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+  </g>
 
   <!-- TapIn Text -->
-  <text x="15" y="52" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1f2937">
+  <text x="85" y="52" font-family="'Segoe UI', Arial, sans-serif" font-size="38" font-weight="700" fill="white">
     TapIn
   </text>
 
-  <!-- Connection icon -->
-  <g transform="translate(195, 40)">
-    <circle cx="0" cy="0" r="18" fill="none" stroke="#1f2937" stroke-width="3"/>
-    <circle cx="0" cy="0" r="10" fill="#1f2937"/>
-    <path d="M -8,-8 L 8,8 M -8,8 L 8,-8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
-  </g>
-
   <!-- Tagline -->
-  <text x="15" y="68" font-family="Arial, sans-serif" font-size="11" fill="#4b5563">
-    Connect Your Community
+  <text x="85" y="68" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="white" opacity="0.7">
+    Volunteer with Purpose
   </text>
 </svg>
