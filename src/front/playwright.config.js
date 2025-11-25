@@ -1,43 +1,64 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from '@playwright/test';
 
-// Allow opting into the lightweight mock API for CI/dev by setting
-// USE_MOCK_API=1. By default tests will assume a real backend is available
-// (so deployments and real-db debugging use the real database).
-const useMock = process.env.USE_MOCK_API === "1";
-
-const webServerCommand = useMock
-  ? "node mock-api.cjs & npm --prefix ../.. run dev"
-  : "npm --prefix ../.. run dev";
-
+/**
+ * Playwright configuration for Tapin E2E tests
+ * @see https://playwright.dev/docs/test-configuration
+ */
 export default defineConfig({
-  testDir: "./e2e",
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: [
+    ['html', { outputFolder: 'playwright-report', open: 'never' }],
+    ['list']
+  ],
 
   use: {
-    baseURL: "http://localhost:5173",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    baseURL: 'http://localhost:5173',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'] },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 12'] },
     },
   ],
 
-  webServer: {
-    // Start the frontend dev server. When USE_MOCK_API=1 the test harness
-    // will start the lightweight `mock-api.cjs` on :5000 first. By default
-    // we prefer using a real backend so deployments and local realtime
-    // testing use the actual DB.
-    command: webServerCommand,
-    url: "http://localhost:5173",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  webServer: [
+    {
+      command: 'cd ../backend && PYTHONPATH=/Users/houseofobi/Documents/GitHub/Tapin_Correct/src/backend LLM_PROVIDER=mock pipenv run python app.py',
+      url: 'http://127.0.0.1:5000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 120 * 1000,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    },
+    {
+      command: 'npm run dev',
+      url: 'http://localhost:5173',
+      reuseExistingServer: !process.env.CI,
+      timeout: 60 * 1000,
+    },
+  ],
 });

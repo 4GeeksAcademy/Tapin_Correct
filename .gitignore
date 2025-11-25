@@ -93,4 +93,8 @@ instance/
 
 # local env file (should not be committed)
 .env
+
+# Playwright test artifacts
 src/front/playwright-report/
+src/front/test-results/
+test-results/
