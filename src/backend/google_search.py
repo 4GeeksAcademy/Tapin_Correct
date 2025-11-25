@@ -64,143 +64,15 @@ def _increment_google_usage():
 
 
 def search_events_perplexity(query):
-    """
-    Query a Perplexity-like API endpoint for events.
-
-    Configuration:
-      - PERPLEXITY_API_KEY: API key
-      - PERPLEXITY_API_URL: Full URL to the Perplexity-compatible endpoint
-
-    The exact Perplexity API contract may vary; this function tries a
-    reasonable POST with JSON {query: ...} and will attempt to normalize
-    returned items into a list of {title, snippet, link} objects.
-    """
-    api_key = os.getenv("PERPLEXITY_API_KEY")
-    api_url = os.getenv("PERPLEXITY_API_URL")
-
-    if not api_key or not api_url:
-        return {
-            "error": (
-                "Perplexity API not configured "
-                "(PERPLEXITY_API_KEY/PERPLEXITY_API_URL)."
-            )
-        }
-
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
-
-    # If the Perplexity chat completions endpoint is used, send a chat-style
-    # payload; otherwise send a simple {query, limit} body to support older
-    # or mock endpoints.
-    is_chat_endpoint = "/chat" in api_url or "chat/completions" in api_url
-    if is_chat_endpoint:
-        payload = {
-            "messages": [{"role": "user", "content": query}],
-            "temperature": 0.2,
-            "max_tokens": 512,
-        }
-    else:
-        payload = {"query": query, "limit": 10}
-
-    try:
-        resp = requests.post(api_url, headers=headers, json=payload, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-
-        # If this is a chat-style response, try to extract the assistant's
-        # textual reply from common fields (choices/message, outputs, answer).
-        text = None
-        if isinstance(data, dict):
-            # OpenAI-like shape: {choices:[{message:{content:...}}]}
-            choices = data.get("choices")
-            if isinstance(choices, list) and len(choices) > 0:
-                first = choices[0]
-                if isinstance(first, dict):
-                    msg = first.get("message") or first
-                    if isinstance(msg, dict):
-                        text = msg.get("content") or msg.get("text")
-                    else:
-                        text = first.get("text")
-
-            # Perplexity/other shape: {outputs:[{content:[{text:...}]}, ...]}
-            if not text and "outputs" in data and isinstance(data["outputs"], list):
-                out = data["outputs"][0]
-                content = out.get("content") if isinstance(out, dict) else None
-                if isinstance(content, list):
-                    parts = []
-                    for c in content:
-                        if isinstance(c, dict):
-                            parts.append(c.get("text") or c.get("content") or "")
-                        else:
-                            parts.append(str(c))
-                    text = "\n".join([p for p in parts if p])
-                else:
-                    text = out.get("text") if isinstance(out, dict) else None
-
-            # Fallback fields
-            if not text and "answer" in data:
-                ans = data.get("answer")
-                text = ans if isinstance(ans, str) else json.dumps(ans)
-
-            # If there's a 'results' list, normalize that as items
-            results = data.get("results") or data.get("items") or data.get("answers")
-            if isinstance(results, list) and len(results) > 0:
-                normalized = []
-                for it in results:
-                    if not isinstance(it, dict):
-                        normalized.append(
-                            {"title": None, "snippet": str(it), "link": None}
-                        )
-                        continue
-                    title = it.get("title") or it.get("heading") or it.get("name")
-                    snippet = (
-                        it.get("snippet")
-                        or it.get("summary")
-                        or it.get("text")
-                        or it.get("answer")
-                    )
-                    link = it.get("link") or it.get("url") or it.get("source")
-                    normalized.append(
-                        {"title": title, "snippet": snippet, "link": link}
-                    )
-                return refine_and_categorize(normalized)
-
-        elif isinstance(data, list):
-            # A list of items: normalize directly
-            normalized = []
-            for it in data:
-                if not isinstance(it, dict):
-                    normalized.append({"title": None, "snippet": str(it), "link": None})
-                    continue
-                title = it.get("title") or it.get("heading") or it.get("name")
-                snippet = (
-                    it.get("snippet")
-                    or it.get("summary")
-                    or it.get("text")
-                    or it.get("answer")
-                )
-                link = it.get("link") or it.get("url") or it.get("source")
-                normalized.append({"title": title, "snippet": snippet, "link": link})
-            return refine_and_categorize(normalized)
-
-        # If we didn't get a structured list, use the extracted text as a single item
-        if not text:
-            text = json.dumps(data)
-
-        item = {"title": query, "snippet": text, "link": None}
-        return refine_and_categorize([item])
-    except Exception as e:
-        return {"error": f"Perplexity request failed: {e}"}
+    """Perplexity provider was removed; this function is deprecated."""
+    return {"error": "Perplexity provider removed from application."}
 
 
 def search_events(query):
     """
-    Unified search entrypoint. Prefer Perplexity when configured, then
-    fall back to Google Custom Search if available. Enforces a monthly
-    Google request quota defined by `GOOGLE_MAX_REQUESTS_PER_MONTH`.
+    Unified search entrypoint. Uses Google Custom Search if configured.
+    Enforces a monthly Google request quota defined by
+    `GOOGLE_MAX_REQUESTS_PER_MONTH`.
     """
     provider = os.getenv("LLM_PROVIDER", "").lower()
 
@@ -310,36 +182,12 @@ def search_events(query):
 
             return refined
         except HttpError as e:
-            # If Google returns a 403 (accessNotConfigured / disabled),
-            # attempt Perplexity if it is configured.
-            try_perplexity = (
-                getattr(e, "resp", None) is not None
-                and getattr(e.resp, "status", None) == 403
-            )
-            if (
-                try_perplexity
-                and os.getenv("PERPLEXITY_API_KEY")
-                and os.getenv("PERPLEXITY_API_URL")
-            ):
-                p = search_events_perplexity(query)
-                if not (isinstance(p, dict) and p.get("error")):
-                    return p
+            # Google returned an error; report it (Perplexity fallback removed).
             return {"error": str(e)}
         except Exception as e:
-            # Other errors: try Perplexity as a fallback if available
-            if os.getenv("PERPLEXITY_API_KEY") and os.getenv("PERPLEXITY_API_URL"):
-                return search_events_perplexity(query)
             return {"error": str(e)}
 
-    # If explicitly asked for Perplexity, try it first and fall back to Google
-    if provider == "perplexity":
-        if os.getenv("PERPLEXITY_API_KEY") and os.getenv("PERPLEXITY_API_URL"):
-            p = search_events_perplexity(query)
-            if not (isinstance(p, dict) and p.get("error")):
-                return p
-        # If Perplexity not configured or failed, fall through to Google
-
-    # Default: prefer Google if configured, otherwise try Perplexity
+    # Default: prefer Google if configured
     api_key = os.getenv("GOOGLE_API_KEY")
     search_engine_id = os.getenv("CUSTOM_SEARCH_ENGINE_ID")
     if api_key and search_engine_id:
@@ -360,31 +208,11 @@ def search_events(query):
                 pass
             return refine_and_categorize(items)
         except HttpError as e:
-            try_perplexity = (
-                getattr(e, "resp", None) is not None
-                and getattr(e.resp, "status", None) == 403
-            )
-            if (
-                try_perplexity
-                and os.getenv("PERPLEXITY_API_KEY")
-                and os.getenv("PERPLEXITY_API_URL")
-            ):
-                p = search_events_perplexity(query)
-                if not (isinstance(p, dict) and p.get("error")):
-                    return p
-            if os.getenv("PERPLEXITY_API_KEY") and os.getenv("PERPLEXITY_API_URL"):
-                return search_events_perplexity(query)
             return {"error": str(e)}
         except Exception as e:
-            if os.getenv("PERPLEXITY_API_KEY") and os.getenv("PERPLEXITY_API_URL"):
-                return search_events_perplexity(query)
             return {"error": str(e)}
 
-    # Try Perplexity if Google not available
-    if os.getenv("PERPLEXITY_API_KEY") and os.getenv("PERPLEXITY_API_URL"):
-        return search_events_perplexity(query)
-
-    return {"error": "No search provider configured (Google or Perplexity)."}
+    return {"error": "No search provider configured (Google)."}
 
 
 CATEGORY_KEYWORDS = {

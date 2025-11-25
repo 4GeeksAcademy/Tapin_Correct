@@ -26,8 +26,7 @@ echo "📦 Starting Backend (Flask)..."
 cd "$SCRIPT_DIR/src/backend"
 
 PYTHONPATH="$SCRIPT_DIR/src/backend" \
-LLM_PROVIDER=perplexity \
-PERPLEXITY_API_KEY="REDACTED_PERPLEXITY" \
+# LLM provider is configurable via environment: set LLM_PROVIDER if needed
 pipenv run python app.py > backend.log 2>&1 &
 
 BACKEND_PID=$!
@@ -70,7 +69,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 echo "🌐 Frontend:    http://localhost:3000"
 echo "🔧 Backend API: http://localhost:5000"
-echo "🤖 LLM:         Perplexity (sonar)"
+echo "🤖 LLM:         configured provider (check LLM_PROVIDER env variable)"
 echo ""
 echo "Press Ctrl+C to stop both servers"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

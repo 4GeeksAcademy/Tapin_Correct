@@ -34,13 +34,14 @@ class PersonalizationEngine:
             user_model: User model class
             event_model: Event model class
             interaction_model: UserEventInteraction model class
-            llm_provider: LLM provider (perplexity, ollama, gemini)
+            llm_provider: LLM provider (ollama, gemini, mock)
         """
         self.db = db
         self.User = user_model
         self.Event = event_model
         self.Interaction = interaction_model
-        self.llm = HybridLLM(provider=llm_provider or "perplexity")
+        # Default provider changed to 'gemini' (Perplexity removed)
+        self.llm = HybridLLM(provider=llm_provider or "gemini")
 
     def calculate_user_taste_profile(self, user_id: int) -> Dict:
         """

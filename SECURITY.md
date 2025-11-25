@@ -69,8 +69,7 @@ MAIL_PASSWORD=your_email_password
 # Ticketmaster (Optional)
 TICKETMASTER_API_KEY=your_ticketmaster_key
 
-# Perplexity (Optional)
-PERPLEXITY_API_KEY=your_perplexity_key
+# Perplexity provider removed from this project; do not set PERPLEXITY_API_KEY
 ```
 
 ### Git Security
@@ -107,7 +106,7 @@ grep -r "AIzaSy" . --include="*.py" --include="*.js" --include="*.md"
 
 # Search for other secrets
 grep -r "sk-" . --include="*.py" --include="*.js"  # OpenAI keys
-grep -r "pplx-" . --include="*.py" --include="*.js"  # Perplexity keys
+# Perplexity probe removed
 ```
 
 ### If a Key is Exposed

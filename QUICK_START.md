@@ -7,7 +7,8 @@
 ```
 
 This starts both:
-- **Backend** (Flask + Perplexity AI): http://localhost:5000
+
+- **Backend** (Flask + configured LLM provider): http://localhost:5000
 - **Frontend** (React + Vite): http://localhost:3000
 
 Press `Ctrl+C` to stop both servers.
@@ -26,21 +27,22 @@ Forcefully stops all running servers.
 ./test-app.sh
 ```
 
-Runs the complete test suite with Perplexity AI (32 tests).
+Runs the complete test suite (LLM provider-dependent) (32 tests).
 
 ## 📝 Manual Commands
 
 ### Backend Only
+
 ```bash
 cd src/backend
 
 PYTHONPATH=$(pwd) \
-LLM_PROVIDER=perplexity \
-PERPLEXITY_API_KEY="REDACTED_PERPLEXITY" \
+# LLM_PROVIDER is configurable; set in your environment if needed
 pipenv run python app.py
 ```
 
 ### Frontend Only
+
 ```bash
 cd src/front
 npm install  # First time only
@@ -50,12 +52,14 @@ npm run dev
 ## 🔧 Key API Endpoints
 
 ### Public
+
 - `GET /api/health` - Health check
 - `GET /api/categories` - Event categories
 - `POST /api/register` - Register user
 - `POST /api/login` - Login
 
 ### Authenticated (requires JWT token)
+
 - `GET /api/me` - Current user info
 - `POST /api/discover-events` - AI-powered event discovery
 - `POST /api/discover-tonight` - Tonight's events
@@ -65,6 +69,7 @@ npm run dev
 ## 🎯 Testing the AI Features
 
 ### 1. Register/Login
+
 ```bash
 curl -X POST http://localhost:5000/api/register \
   -H "Content-Type: application/json" \
@@ -76,6 +81,7 @@ curl -X POST http://localhost:5000/api/login \
 ```
 
 ### 2. Discover Events (with AI)
+
 ```bash
 curl -X POST http://localhost:5000/api/discover-events \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -88,6 +94,7 @@ curl -X POST http://localhost:5000/api/discover-events \
 ```
 
 ### 3. Get Tonight's Events
+
 ```bash
 curl -X POST http://localhost:5000/api/discover-tonight \
   -H "Authorization: Bearer YOUR_TOKEN" \
@@ -101,7 +108,8 @@ curl -X POST http://localhost:5000/api/discover-tonight \
 
 ## 📊 Test Results
 
-All tests passing with Perplexity AI:
+All tests passing (LLM provider-dependent):
+
 - ✅ API Tests (3/3)
 - ✅ Auth Tests (2/2)
 - ✅ Listings Tests (3/3)
@@ -110,7 +118,8 @@ All tests passing with Perplexity AI:
 
 ## 🤖 AI Features
 
-The application uses **Perplexity AI (sonar model)** for:
+The application uses a configured LLM provider for:
+
 - Event discovery and recommendations
 - Personalized event suggestions
 - Surprise event generation
@@ -121,12 +130,14 @@ The application uses **Perplexity AI (sonar model)** for:
 ## 🔍 Troubleshooting
 
 ### Backend won't start
+
 ```bash
 cd src/backend
 pipenv install  # Reinstall dependencies
 ```
 
 ### Frontend won't start
+
 ```bash
 cd src/front
 rm -rf node_modules package-lock.json
@@ -134,12 +145,14 @@ npm install
 ```
 
 ### Check if ports are in use
+
 ```bash
 lsof -i :5000  # Backend
 lsof -i :3000  # Frontend
 ```
 
 ### View logs
+
 ```bash
 tail -f src/backend/backend.log
 tail -f src/front/frontend.log
@@ -154,7 +167,7 @@ Tapin_Correct/
 ├── test-app.sh           # Run test suite
 ├── QUICK_START.md        # This file
 └── src/
-    ├── backend/          # Flask API + Perplexity AI
+    ├── backend/          # Flask API + LLM-powered features
     │   ├── app.py
     │   ├── tests/
     │   └── event_discovery/

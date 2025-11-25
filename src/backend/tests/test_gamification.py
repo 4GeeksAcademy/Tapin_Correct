@@ -11,7 +11,7 @@ def client():
     """Create test client with in-memory database."""
     app.config["TESTING"] = True
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///:memory:"
-    app.config["JWT_SECRET_KEY"] = "test-secret"
+    app.config["JWT_SECRET_KEY"] = "test-secret"  # pragma: allowlist secret
 
     with app.test_client() as client:
         with app.app_context():
@@ -28,14 +28,14 @@ def volunteer_auth(client):
         "/register",
         json={
             "email": "volunteer@test.com",
-            "password": "password123",
+            "password": "password123",  # pragma: allowlist secret
             "role": "volunteer",
         },
     )
 
     response = client.post(
         "/login", json={"email": "volunteer@test.com", "password": "password123"}
-    )
+    )  # pragma: allowlist secret
 
     token = response.json["access_token"]
     return {"Authorization": f"Bearer {token}"}
@@ -48,7 +48,7 @@ def organization_auth(client):
         "/register",
         json={
             "email": "org@test.com",
-            "password": "password123",
+            "password": "password123",  # pragma: allowlist secret
             "role": "organization",
             "organization_name": "Test Org",
         },
@@ -56,7 +56,7 @@ def organization_auth(client):
 
     response = client.post(
         "/login", json={"email": "org@test.com", "password": "password123"}
-    )
+    )  # pragma: allowlist secret
 
     token = response.json["access_token"]
     return {"Authorization": f"Bearer {token}"}

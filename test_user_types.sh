@@ -13,7 +13,7 @@ VOLUNTEER_RESPONSE=$(curl -s -X POST "$API_URL/register" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test-volunteer@example.com",
-    "password": "password123",
+                                        "password": "<REDACTED_PASSWORD>",
     "user_type": "volunteer"
   }')
 
@@ -28,7 +28,7 @@ ORG_RESPONSE=$(curl -s -X POST "$API_URL/register" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test-org@example.com",
-    "password": "password123",
+    "password": "<REDACTED_PASSWORD>",
     "user_type": "organization"
   }')
 
@@ -43,7 +43,7 @@ VOLUNTEER_LOGIN=$(curl -s -X POST "$API_URL/login" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test-volunteer@example.com",
-    "password": "password123"
+                                        "password": "<REDACTED_PASSWORD>"
   }')
 
 echo "Response: $VOLUNTEER_LOGIN" | jq .
@@ -57,7 +57,7 @@ ORG_LOGIN=$(curl -s -X POST "$API_URL/login" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test-org@example.com",
-    "password": "password123"
+    "password": "<REDACTED_PASSWORD>"
   }')
 
 echo "Response: $ORG_LOGIN" | jq .

@@ -46,27 +46,7 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 
 ---
 
-### 2. Perplexity AI (Alternative)
-
-**Best for:** Real-time web data, alternative to Gemini
-
-**Setup:**
-
-```bash
-# In .env file
-LLM_PROVIDER=perplexity
-PERPLEXITY_API_KEY=your-api-key-here
-PERPLEXITY_MODEL=sonar
-```
-
-**Get API Key:**
-
-1. Visit: https://www.perplexity.ai/settings/api
-2. Create account
-3. Generate API key
-4. Copy and paste into .env file
-
----
+<!-- Perplexity provider has been removed from this project. -->
 
 ### 3. Ollama (Local Development)
 
@@ -155,14 +135,7 @@ GEMINI_MODEL=gemini-2.5-flash-lite
 
 ### Alternative Production
 
-```bash
-LLM_PROVIDER=perplexity
-# NOTE: do NOT commit real API keys. Set this locally or in CI secrets.
-PERPLEXITY_API_KEY=REDACTED_PERPLEXITY  # revoke and rotate if this was ever committed
-PERPLEXITY_MODEL=sonar
-```
-
----
+Perplexity options were removed. Use `gemini` or `ollama` as alternatives.
 
 ## How to Switch Providers
 
@@ -176,7 +149,7 @@ PERPLEXITY_MODEL=sonar
 2. **Change LLM_PROVIDER:**
 
    ```bash
-   LLM_PROVIDER=gemini  # or perplexity, ollama, mock
+   LLM_PROVIDER=gemini  # or ollama, mock
    ```
 
 3. **Add API key (if needed):**
@@ -240,12 +213,12 @@ curl "http://localhost:5000/api/events/discover-tonight?location=Austin,TX&limit
 
 ## Cost Estimates
 
-| Provider   | Free Tier    | Production Cost    |
-| ---------- | ------------ | ------------------ |
-| Gemini     | 60 req/min   | ~$150/month        |
-| Perplexity | 100 requests | ~$200/month        |
-| Ollama     | Unlimited    | $0 (hardware only) |
-| Mock       | Unlimited    | $0 (no AI)         |
+| Provider   | Free Tier  | Production Cost    |
+| ---------- | ---------- | ------------------ |
+| Gemini     | 60 req/min | ~$150/month        |
+| Perplexity | removed    | N/A                |
+| Ollama     | Unlimited  | $0 (hardware only) |
+| Mock       | Unlimited  | $0 (no AI)         |
 
 ---
 

@@ -71,14 +71,7 @@ class HybridLLM:
                     self._llm = Ollama(model=model_name)
                     return
 
-            if self.provider == "perplexity":
-                api_key = os.environ.get("PERPLEXITY_API_KEY")
-                if api_key:
-                    # Use direct HTTP API for Perplexity
-                    logger.info(
-                        f"Using Perplexity HTTP API with model: {os.environ.get('PERPLEXITY_MODEL', 'sonar')}"
-                    )
-                    return
+            # Perplexity provider removed: prefer other providers (ollama/gemini)
 
             if self.provider == "gemini" and ChatGoogleGenerativeAI is not None:
                 if (
@@ -149,52 +142,7 @@ class HybridLLM:
 
         return await asyncio.to_thread(_sync_call)
 
-    async def _perplexity_http_generate(self, prompt: str) -> Optional[str]:
-        """Direct HTTP API call to Perplexity (OpenAI-compatible)."""
-
-        def _sync_call():
-            api_key = os.environ.get("PERPLEXITY_API_KEY")
-            if not api_key:
-                return None
-
-            # Default to sonar model (latest Perplexity model)
-            model = os.environ.get("PERPLEXITY_MODEL", "sonar")
-            payload = json.dumps(
-                {
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                }
-            ).encode("utf-8")
-
-            req = urllib.request.Request(
-                "https://api.perplexity.ai/chat/completions",
-                data=payload,
-                headers={
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {api_key}",
-                },
-                method="POST",
-            )
-            try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
-                    data = resp.read().decode("utf-8")
-                    parsed = json.loads(data)
-                    # OpenAI-compatible response format
-                    if "choices" in parsed and parsed["choices"]:
-                        first = parsed["choices"][0]
-                        if isinstance(first, dict):
-                            # Check message.content (chat completion format)
-                            if "message" in first and "content" in first["message"]:
-                                return first["message"]["content"]
-                            # Check text (completion format)
-                            if "text" in first:
-                                return first["text"]
-                    return json.dumps(parsed)
-            except Exception as e:
-                logger.info(f"Perplexity HTTP error: {e}")
-                return None
-
-        return await asyncio.to_thread(_sync_call)
+    # Perplexity integration removed.
 
     async def ainvoke(self, prompt: str):
         class Resp:
@@ -240,11 +188,7 @@ class HybridLLM:
                 if text is not None:
                     return Resp(text)
 
-        # Try Perplexity HTTP API if provider is perplexity
-        if self.provider == "perplexity" and os.environ.get("PERPLEXITY_API_KEY"):
-            text = await self._perplexity_http_generate(prompt)
-            if text is not None:
-                return Resp(text)
+        # Perplexity provider removed — fall through to other providers or mock.
 
         mock = json.dumps(
             [

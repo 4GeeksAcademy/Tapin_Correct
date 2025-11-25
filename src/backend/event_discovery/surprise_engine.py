@@ -43,7 +43,8 @@ class SurpriseEngine:
     ):
         self.db = db
         self.User = user_model
-        self.llm = HybridLLM(provider=llm_provider or "perplexity")
+        # Default provider changed to 'gemini' (Perplexity removed)
+        self.llm = HybridLLM(provider=llm_provider or "gemini")
         self.Event = event_model
         self.Interaction = interaction_model
 

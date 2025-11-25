@@ -1,9 +1,10 @@
 from auth import token_for
+from auth import token_for
 
 
 def test_register_and_login(client):
     # register
-    creds = {"email": "a1@example.com", "password": "pw"}
+    creds = {"email": "a1@example.com", "password": "pw"}  # pragma: allowlist secret
     resp = client.post("/register", json=creds)
     assert resp.status_code == 201
     data = resp.get_json()
@@ -29,7 +30,7 @@ def test_register_volunteer(client):
     """Test registering as a volunteer."""
     creds = {
         "email": "volunteer@example.com",
-        "password": "pw",
+        "password": "pw",  # pragma: allowlist secret
         "user_type": "volunteer",
     }
     resp = client.post("/register", json=creds)
@@ -46,7 +47,7 @@ def test_register_organization(client):
     """Test registering as an organization."""
     creds = {
         "email": "org@example.com",
-        "password": "pw",
+        "password": "pw",  # pragma: allowlist secret
         "user_type": "organization",
         "organization_name": "Test Org",
     }
@@ -63,7 +64,10 @@ def test_register_organization(client):
 
 def test_register_defaults_to_volunteer(client):
     """Test that registration without user_type defaults to volunteer."""
-    creds = {"email": "default@example.com", "password": "pw"}
+    creds = {
+        "email": "default@example.com",
+        "password": "pw",
+    }  # pragma: allowlist secret
     resp = client.post("/register", json=creds)
     assert resp.status_code == 201
     data = resp.get_json()
@@ -86,7 +90,7 @@ def test_login_returns_user_type(client):
     # Register an organization
     creds = {
         "email": "org2@example.com",
-        "password": "pw",
+        "password": "pw",  # pragma: allowlist secret
         "user_type": "organization",
         "organization_name": "Test Org 2",
     }

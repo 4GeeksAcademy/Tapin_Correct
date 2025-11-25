@@ -12,7 +12,7 @@ echo ""
 
 PYTHONPATH="$SCRIPT_DIR/src/backend" \
 LLM_PROVIDER=perplexity \
-PERPLEXITY_API_KEY="REDACTED_PERPLEXITY" \
+PERPLEXITY_API_KEY="REDACTED_PERPLEXITY"  # pragma: allowlist secret \
 pipenv run pytest tests/test_event_discovery_api.py tests/test_api.py tests/test_auth.py tests/test_listings.py -v --tb=short
 
 echo ""
