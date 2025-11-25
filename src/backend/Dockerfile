@@ -26,6 +26,9 @@ RUN chmod +x /app/docker-entrypoint.sh
 # Set PYTHONPATH so 'backend' module is importable
 ENV PYTHONPATH=/app:/app/backend
 
+# Create data directory for SQLite database
+RUN mkdir -p /app/data && chmod 777 /app/data
+
 # Expose port
 EXPOSE 5000
 
