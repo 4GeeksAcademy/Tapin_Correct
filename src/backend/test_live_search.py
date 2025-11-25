@@ -27,7 +27,8 @@ if isinstance(results, dict) and "error" in results:
     print("1. Ensure GOOGLE_API_KEY is set in .env")
     print("2. Ensure CUSTOM_SEARCH_ENGINE_ID is set in .env")
     print("3. Enable Custom Search API in Google Cloud Console")
-    print("4. Or set LLM_PROVIDER=perplexity to use Perplexity instead")
+    # Perplexity option removed; set LLM_PROVIDER to 'gemini' or 'ollama' if needed
+    print("4. Or set LLM_PROVIDER to 'gemini' or 'ollama' to use other providers")
 elif isinstance(results, list):
     print(f"Found {len(results)} results:\n")
     for i, result in enumerate(results[:5], 1):
