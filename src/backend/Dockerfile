@@ -5,18 +5,26 @@ FROM python:3.10-slim
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 
-# Set work directory
+# Working directory
 WORKDIR /app
 
-# Install dependencies
-COPY backend/requirements.txt /app/requirements.txt
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Copy backend requirements and install
+COPY src/backend/requirements.txt /app/requirements.txt
+RUN pip install --upgrade pip setuptools wheel && \
+	pip install -r requirements.txt && \
+	pip install gunicorn
 
-# Copy project
-COPY backend /app
+# Copy backend source
+COPY src/backend /app
+# Copy wsgi entrypoint from repo root `src/wsgi.py` so gunicorn can import it
+COPY src/wsgi.py /app/wsgi.py
 
-# Expose port (Flask default)
+# Copy entrypoint script
+COPY src/backend/docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Expose port
 EXPOSE 5000
 
-# Command to run the app
-CMD ["python", "app.py"]
+# Entrypoint to run migrations/seed and start gunicorn
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

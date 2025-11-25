@@ -166,7 +166,7 @@ export default function AuthForm({ onLogin }) {
           {error && <p className="error" style={{ marginBottom: 'var(--space-3)' }}>{error}</p>}
 
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? '...' : mode === 'login' ? 'Login' : 'Register'}
+            {mode === 'login' ? (loading ? 'Login...' : 'Login') : loading ? 'Register...' : 'Register'}
           </button>
 
           {mode === 'login' && (

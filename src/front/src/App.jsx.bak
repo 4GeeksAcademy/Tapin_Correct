@@ -9,6 +9,7 @@ import CreateListingForm from './components/CreateListingForm';
 import DashboardLanding from './pages/DashboardLanding';
 import MapView from './components/MapView';
 import 'leaflet/dist/leaflet.css';
+import MapView from './components/MapView';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
@@ -31,7 +32,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [viewMode, setViewMode] = useState('list');
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedMapLocation, setSelectedMapLocation] = useState(null);
 
 
   async function fetchListings(filter) {
@@ -157,7 +157,7 @@ export default function App() {
       </div>
 
       <main>
-        {}
+        { }
         {!loading && !error && listings.length > 0 && (
           <div style={{ marginBottom: '20px', textAlign: 'center' }}>
             <button
@@ -199,20 +199,30 @@ export default function App() {
           <section>
             {listings.length === 0 ? (
               <EmptyState />
+            ) : viewMode === 'list' ? (
+              <ul className="listings">
+                {listings.map((l) => (
+                  <li key={l.id} className="listing-item">
+                    <ListingCard listing={l} onSelect={handleSelect} />
+                  </li>
+                ))}
+              </ul>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20 }}>
-                <div className="listings-grid">
-                  {listings.map((l) => (
-                    <ListingCard key={l.id} listing={l} onSelect={handleSelect} />
-                  ))}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20 }}>
+                <div>
+                  <LocationSelector
+                    externalLocation={userLocation}
+                    onLocationSelected={(loc) => setUserLocation(loc)}
+                  />
                 </div>
-                <div className="map-view-container">
+                <div>
                   <MapView
                     listings={listings}
                     onListingClick={handleSelect}
                     userLocation={userLocation}
-                    selectedLocation={selectedMapLocation}
-                    onMapLocationSelect={setSelectedMapLocation}
+                    selectedLocation={userLocation}
+                    onMapLocationSelect={(loc) => setUserLocation(loc)}
                   />
                 </div>
               </div>

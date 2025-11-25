@@ -1,225 +1,113 @@
-# WebApp boilerplate with React JS and Flask API
+# Tapin Marketplace Platform
 
-Build web applications using React.js for the front end and python/flask for your backend API.
+Tapin is a full-stack marketplace application built with a React.js frontend and a Python/Flask backend. It provides a robust platform for users to browse, create, and manage listings in a modern, interactive interface.
 
-- Documentation can be found here: https://4geeks.com/docs/start/react-flask-template
-- Here is a video on [how to use this template](https://www.loom.com/share/f37c6838b3f1496c95111e515e83dd9b)
-- Integrated with Pipenv for package managing.
-- Fast deployment to Render [in just a few steps here](https://4geeks.com/docs/start/deploy-to-render-com).
-- Use of .env file.
-- SQLAlchemy integration for database abstraction.
+## Features
 
-## Tapin project layout (migrated from `Tapin_`)
+### Backend (Flask API)
 
-- **Backend**: `src/backend` contains the Tapin Flask API (users, listings, saved searches, email flows). Run it directly with `python src/backend/app.py` or configure your WSGI server to import `backend.app`.
-- **Frontend**: `src/front` is the Vite/React Leaflet SPA copied from `Tapin_/frontend`. `npm` commands live at the repo root and point to this folder through `vite.config.js`.
-- **Build output**: `npm run build` writes to the root `dist/` folder. `src/app.py` serves those files while re-exporting the Flask backend.
-- **Dependencies**: use `python -m venv .venv && pip install -r src/backend/requirements.txt` for the API and `npm install` for the SPA. The top-level `requirements.txt` simply references the backend list.
-- **Environment**: copy `.env.example` to `.env` and fill the variables required by `src/backend/app.py` (database URL, JWT secrets, SMTP settings, etc.). The frontend expects `VITE_BACKEND_URL` to point at the running API.
+- **User Authentication:** Secure user registration, login, and password reset functionality using JWT for protected endpoints.
+- **Listings Management:** A comprehensive set of API endpoints to create, read, update, and delete listings.
+- **Database Integration:** Uses SQLAlchemy for database abstraction, with support for SQLite in development and PostgreSQL or MySQL in production.
+- **Database Migrations:** Alembic is used for managing database schema changes.
+- **Search and Filtering:** The listings endpoint supports query-based searching and location filtering.
 
-## 🎉 AI-Powered Event Discovery System
+### Frontend (React SPA)
 
-Tapin now features a comprehensive **AI-powered event discovery platform** that finds local events happening tonight and volunteer opportunities across your city!
+- **Interactive Listings:** A single-page application for a seamless user experience in browsing and managing listings.
+- **Mapping Integration:** (Coming Soon) Leaflet integration for displaying listings on a map.
+- **Component-Based:** Built with modern React components for easy maintenance and extensibility.
 
-### Features
+## Tech Stack
 
-**🤖 AI-Powered Search**
-- Natural language search powered by LangChain
-- Hybrid LLM architecture (Gemini → Ollama → Perplexity → Mock fallback)
-- Smart categorization and content extraction
+- **Frontend:** React.js, Vite
+- **Backend:** Python, Flask, SQLAlchemy, Alembic
+- **Database:** SQLite (dev), PostgreSQL/MySQL (prod)
+- **Testing:** Pytest (backend), Playwright (frontend E2E)
 
-**🎭 Comprehensive Event Categories (22 total)**
-- **Entertainment & Culture**: Music & Concerts, Comedy, Arts & Theater, Film & Media, Books & Literature
-- **Food & Drink**: Food & Dining, Wine & Beer
-- **Active & Sports**: Sports, Fitness, Outdoor
-- **Social & Professional**: Nightlife, Networking, Tech & Innovation
-- **Volunteer & Social Impact**: Volunteer, Hunger Relief, Animal Welfare, Environment, Education, Seniors
-- **Family & Community**: Family, Community, Markets & Fairs
+## Getting Started
 
-**📍 Multi-Source Discovery**
-- Eventbrite events
-- Meetup groups
-- Facebook local events (public pages only, compliance-focused)
-- City event calendars
-- Volunteer opportunities from nonprofits
+### Prerequisites
 
-**🎨 Modern UI**
-- Beautiful gradient design with icons
-- Image galleries with carousel navigation
-- Category-coded color borders
-- Mobile-first responsive design
-- Real-time filtering
+- Python 3.10+
+- Node.js 20+
+- A database engine (SQLite is used by default for local development)
 
-### New API Endpoints
+### Installation and Setup
 
-```bash
-# Get all event categories with metadata
-GET /api/categories
+1. **Clone the repository:**
 
-# Discover tonight's local events
-POST /api/local-events/tonight
-{
-  "location": "Dallas, TX",
-  "limit": 20
-}
-
-# Discover volunteer opportunities
-POST /api/discover-events
-{
-  "location": "Dallas, TX"
-}
-```
-
-### Event Discovery Architecture
-
-**Backend Components:**
-- `event_discovery/local_events_scraper.py` - Scrapes local events from multiple sources
-- `event_discovery/facebook_scraper.py` - Nonprofit volunteer events from Facebook
-- `event_discovery/event_categories.py` - Unified category system
-- `event_discovery/cache_manager.py` - Geohash-based caching and async coordination
-- `event_discovery/llm_impl.py` - Hybrid LLM with multiple provider support
-
-**Frontend Components:**
-- `pages/EventDiscovery.jsx` - Main event discovery page
-- `components/EventCard.jsx` - Event card with image gallery
-- `components/CategoryFilter.jsx` - Dynamic category filtering
-
-**Database Models:**
-- `Event` - Cached events with geohash indexing
-- `EventImage` - Normalized image gallery support
-
-### Configuration
-
-Set these environment variables for full functionality:
-
-```bash
-# LLM Providers (optional - falls back to mock if not set)
-GEMINI_API_KEY=your_gemini_key
-PERPLEXITY_API_KEY=your_perplexity_key
-
-# LLM Provider Selection (default: mock for testing)
-LLM_PROVIDER=mock  # or 'gemini', 'ollama', 'perplexity'
-```
-
-### Quick Start - Event Discovery
-
-1. **Start the backend** (with LLM in mock mode for testing):
    ```bash
-   cd src/backend
-   PYTHONPATH=../../src LLM_PROVIDER=mock python3 app.py
+   git clone https://github.com/4GeeksAcademy/Tapin_Correct.git
+   cd Tapin_Correct
    ```
 
-2. **Test the API**:
+2. **Set up the backend:**
+
    ```bash
-   # Register a user
-   curl -X POST http://127.0.0.1:5000/register \
-     -H "Content-Type: application/json" \
-     -d '{"email":"test@example.com","password":"test123"}'
-
-   # Get the token from response, then discover tonight's events
-   curl -X POST http://127.0.0.1:5000/api/local-events/tonight \
-     -H "Authorization: Bearer YOUR_TOKEN" \
-     -H "Content-Type: application/json" \
-     -d '{"location": "Dallas, TX", "limit": 10}'
-   ```
-
-3. **Frontend integration**: The `EventDiscovery` component automatically fetches and displays events with category filtering and AI search.
-
-### Testing
-
-Run the included test script:
-```bash
-chmod +x /tmp/test_tonight_events.sh
-/tmp/test_tonight_events.sh
-```
-
-Expected output:
-- ✓ Events discovered: 7+
-- ✓ Multiple categories (Music, Comedy, Food, etc.)
-- ✓ All events have images
-- ✓ Events sorted by start time
-
-### 1) Installation:
-
-> If you use Github Codespaces (recommended) or Gitpod this template will already come with Python, Node and the Posgres Database installed. If you are working locally make sure to install Python 3.10, Node
-
-It is recommended to install the backend first. Make sure you have Python 3.10+, Node 20, and whichever database engine you plan to use (SQLite works out-of-the-box for local dev).
-
-### Backend (src/backend)
-
-1. Create your virtual environment and install dependencies:
-
-   ```powershell
    cd src/backend
-   python -m venv .venv
-   .venv\Scripts\activate
+   python3 -m venv .venv
+   source .venv/bin/activate
    pip install -r requirements.txt
+   cd ../.. # Return to the root directory
    ```
 
-2. Back at the repository root copy the environment template:
+3. **Set up the frontend:**
 
-   ```powershell
-   cd ../..  # from src/backend back to the repo root
-   copy .env.example .env  # or use cp on mac/linux
-   ```
-
-   Set `SQLALCHEMY_DATABASE_URI`, `SECRET_KEY`, `JWT_SECRET_KEY`, email SMTP creds, etc. as required by `src/backend/app.py`.
-
-3. Apply migrations / seed data if needed. The Tapin backend ships with Alembic scripts and helpers such as `manage.py`, `migrate_db.py`, and `seed_data.py`. Example:
-
-   ```powershell
-   flask --app backend.app db upgrade      # apply migrations
-   python backend/seed_data.py             # optional seed data
-   ```
-
-4. Run the API:
-
-   ```powershell
-   python backend/app.py
-   ```
-
-   The service defaults to SQLite at `src/backend/data.db` but will honor any `SQLALCHEMY_DATABASE_URI` you provide.
-
-### Front-End (src/front via root npm scripts)
-
-> **Where do npm commands live?**
-> `package.json` sits at the repository root, so always run `npm install`, `npm run dev`, etc. from the root folder (`.../Tapin_Correct`). Those scripts automatically point to `src/front` via `vite.config.js`.
-
-1. From the repo root install the Vite dependencies and configure the API URL:
-
-   ```powershell
-   cd C:\Users\BOMAU\OneDrive\Desktop\4geeks\Project\adjustments\Tapin_Correct
+   ```bash
    npm install
-   echo VITE_BACKEND_URL=http://localhost:5000 >> .env   # or edit existing .env
    ```
 
-2. Run the dev server and tests:
+4. **Configure environment variables:**
+   - Copy the `.env.example` file to `.env` in the root directory.
+   - Fill in the required variables, such as `SECRET_KEY`, `JWT_SECRET_KEY`, and database connection details.
+   - For the frontend to connect to the backend, add the following to your `.env` file:
+     ```
+     VITE_BACKEND_URL=http://localhost:5000
+     ```
 
-   ```powershell
+5. **Initialize the database:**
+
+   ```bash
+   cd src/backend
+   source .venv/bin/activate
+   python manage.py upgrade
+   python seed_sample_data.py # Optional: to seed the database with sample data
+   cd ../..
+   ```
+
+### Running the Application
+
+1. **Start the backend server:**
+
+   ```bash
+   cd src/backend
+   source .venv/bin/activate
+   python app.py
+   ```
+
+   The Flask API will be running at `http://127.0.0.1:5000`.
+
+2. **Start the frontend development server:**
+
+   ```bash
    npm run dev
-   npm run test
    ```
 
-3. Build for production (output goes to `/dist`, which Flask serves automatically):
+   The React application will be available at `http://localhost:5173` (or the next available port).
 
-   ```powershell
-   npm run build
-   ```
+### Running Tests
 
-### Start everything locally
+- **Backend:**
 
-1. Back end: `cd src/backend && .\.venv\Scripts\activate && python app.py` (or `flask --app backend.app run`).
-   - Default SQLite DB lives at `src/backend/data.db`. If you override `SQLALCHEMY_DATABASE_URI`, make sure it resolves from the directory you launch the server in.
-2. Front end: from the repo root run `npm run dev` and open the URL Vite prints (usually `http://localhost:5173`).
-3. Ensure `.env` has `VITE_BACKEND_URL=http://localhost:5000` (or whatever host/port Flask uses) so the SPA can reach the API.
-4. For production-style verification run `npm run build` and then hit the Flask root (`http://localhost:5000/`); it serves the files from `dist/`.
+  ```bash
+  cd src/backend
+  source .venv/bin/activate
+  pytest tests/ -v
+  ```
 
-## Publish your website!
+- **Frontend:**
 
-This boilerplate it's 100% read to deploy with Render.com and Heroku in a matter of minutes. Please read the [official documentation about it](https://4geeks.com/docs/start/deploy-to-render-com).
-
-### Contributors
-
-This template was built as part of the 4Geeks Academy [Coding Bootcamp](https://4geeksacademy.com/us/coding-bootcamp) by [Alejandro Sanchez](https://twitter.com/alesanchezr) and many other contributors. Find out more about our [Full Stack Developer Course](https://4geeksacademy.com/us/coding-bootcamps/part-time-full-stack-developer), and [Data Science Bootcamp](https://4geeksacademy.com/us/coding-bootcamps/datascience-machine-learning).
-
-You can find other templates and resources like this at the [school github page](https://github.com/4geeksacademy/).
+  ```bash
+  npm run test
+  ```

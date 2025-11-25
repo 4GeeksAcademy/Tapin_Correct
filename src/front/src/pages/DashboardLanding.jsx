@@ -2,15 +2,21 @@ import React, { useState } from 'react';
 import logoTransparent from '@/assets/brand/logo-transparent.svg';
 import AuthForm from '../components/AuthForm';
 
-export default function DashboardLanding({ onLogin, onEnter }) {
+export default function DashboardLanding({ onLogin, onEnter, user }) {
   const [showAuth, setShowAuth] = useState(false);
 
   if (showAuth) {
     return (
       <div className="landing-root">
         <div className="landing-hero" style={{ maxWidth: '500px' }}>
-          <img src={logoTransparent} alt="Tapin logo" className="landing-logo" />
-          <h2 style={{ marginBottom: '24px', color: '#333' }}>Welcome to TapIn</h2>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
+            <img
+              src={logoTransparent}
+              alt="Tapin logo"
+              className="landing-logo"
+              style={{ width: 220, height: 220, objectFit: 'contain' }}
+            />
+          </div>
 
           <AuthForm
             onLogin={(data) => {
