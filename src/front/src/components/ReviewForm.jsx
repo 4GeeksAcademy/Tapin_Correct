@@ -7,6 +7,34 @@ export default function ReviewForm({ listing, token, onClose, onReviewAdded }) {
   const [error, setError] = useState(null);
   const [hoveredRating, setHoveredRating] = useState(0);
 
+  // Get panda feedback based on rating
+  const getPandaFeedback = (rating) => {
+    if (rating <= 2) {
+      return {
+        emoji: '😢🐼',
+        message: "We're sorry this experience didn't meet expectations. Your feedback helps us improve!",
+        color: '#FF9D42',  // Orange - attention needed
+        bgColor: '#FFF3E0'
+      };
+    } else if (rating === 3) {
+      return {
+        emoji: '🐼',
+        message: "Thank you for your honest feedback. We appreciate your thoughts!",
+        color: '#17B8A3',  // Teal - neutral
+        bgColor: '#E0F7F4'
+      };
+    } else {
+      return {
+        emoji: '🐼✨',
+        message: "Thank you for your positive feedback! Together we build stronger communities.",
+        color: '#10b981',  // Green - success
+        bgColor: '#ECFDF5'
+      };
+    }
+  };
+
+  const pandaFeedback = getPandaFeedback(hoveredRating || rating);
+
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -106,6 +134,31 @@ export default function ReviewForm({ listing, token, onClose, onReviewAdded }) {
               <p style={{ marginTop: '8px', color: '#666', fontSize: '14px' }}>
                 {rating} star{rating !== 1 ? 's' : ''}
               </p>
+
+              {/* Panda Feedback based on rating */}
+              <div style={{
+                marginTop: '16px',
+                padding: '16px',
+                backgroundColor: pandaFeedback.bgColor,
+                borderRadius: '12px',
+                borderLeft: `4px solid ${pandaFeedback.color}`,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                transition: 'all 0.3s ease'
+              }}>
+                <div style={{ fontSize: '2rem', flexShrink: 0 }}>
+                  {pandaFeedback.emoji}
+                </div>
+                <p style={{
+                  margin: 0,
+                  color: '#2F3E46',
+                  fontSize: '14px',
+                  lineHeight: '1.5'
+                }}>
+                  {pandaFeedback.message}
+                </p>
+              </div>
             </div>
 
             <div>
