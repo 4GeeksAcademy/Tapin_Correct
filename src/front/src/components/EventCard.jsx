@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getCategoryByName, getCategoryColor } from '../config/categories';
 
 /**
  * Modern event card component with image gallery
@@ -27,24 +28,9 @@ export default function EventCard({ event, onClick }) {
     });
   };
 
-  // Category colors
-  const categoryColors = {
-    'Music & Concerts': '#673AB7',
-    'Comedy': '#FF5722',
-    'Arts & Theater': '#E91E63',
-    'Food & Dining': '#FF9800',
-    'Sports': '#4CAF50',
-    'Fitness': '#8BC34A',
-    'Tech & Innovation': '#00BCD4',
-    'Nightlife': '#673AB7',
-    'Volunteer': '#4CAF50',
-    'Hunger Relief': '#4CAF50',
-    'Animal Welfare': '#FF9800',
-    'Environment': '#2196F3',
-    'Education': '#9C27B0',
-  };
-
-  const categoryColor = categoryColors[event.category] || '#607D8B';
+  // Get category color from unified system
+  const category = getCategoryByName(event.category);
+  const categoryColor = category.color;
 
   return (
     <div

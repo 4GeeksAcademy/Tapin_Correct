@@ -1,0 +1,95 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e6]:
+      - img "Tapin logo" [ref=e7]
+      - generic [ref=e8]:
+        - heading "Tapin" [level=1] [ref=e9]
+        - paragraph [ref=e10]: Community Connections
+    - textbox "Search volunteer opportunities, services, or location" [ref=e12]
+  - generic [ref=e13]:
+    - generic [ref=e14]:
+      - img "Tapin logo" [ref=e15]
+      - heading "TapIn — connect your community" [level=1] [ref=e16]
+      - paragraph [ref=e17]: Find volunteer opportunities to give back, or discover local services from small businesses and professionals. One platform to strengthen your community.
+      - generic [ref=e18]:
+        - button "Get Started" [ref=e19] [cursor=pointer]
+        - button "Log In" [ref=e20] [cursor=pointer]
+      - list [ref=e21]:
+        - listitem [ref=e22]: "🤝 Volunteer opportunities: Find meaningful ways to give back"
+        - listitem [ref=e23]: "💼 Local services: Discover small businesses and professionals"
+        - listitem [ref=e24]: "📍 Map view: Browse opportunities by location"
+      - generic [ref=e25]: Free to use • School Project
+    - generic [ref=e26]:
+      - heading "Welcome to your dashboard" [level=2] [ref=e27]
+      - paragraph [ref=e28]: Welcome to your dashboard. Here you can see your volunteer history, manage your profile, and find new opportunities.
+      - generic [ref=e29]:
+        - heading "Select Your Values" [level=2] [ref=e30]
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - checkbox "Animal Welfare" [ref=e33]
+            - text: Animal Welfare
+          - generic [ref=e34]:
+            - checkbox "Arts & Culture" [ref=e35]
+            - text: Arts & Culture
+          - generic [ref=e36]:
+            - checkbox "Children & Youth" [ref=e37]
+            - text: Children & Youth
+          - generic [ref=e38]:
+            - checkbox "Community Development" [ref=e39]
+            - text: Community Development
+          - generic [ref=e40]:
+            - checkbox "Disaster Relief" [ref=e41]
+            - text: Disaster Relief
+          - generic [ref=e42]:
+            - checkbox "Education & Literacy" [ref=e43]
+            - text: Education & Literacy
+          - generic [ref=e44]:
+            - checkbox "Environment" [ref=e45]
+            - text: Environment
+          - generic [ref=e46]:
+            - checkbox "Health & Medicine" [ref=e47]
+            - text: Health & Medicine
+          - generic [ref=e48]:
+            - checkbox "Human Rights" [ref=e49]
+            - text: Human Rights
+          - generic [ref=e50]:
+            - checkbox "Seniors" [ref=e51]
+            - text: Seniors
+          - generic [ref=e52]:
+            - checkbox "Social Services" [ref=e53]
+            - text: Social Services
+          - generic [ref=e54]:
+            - checkbox "Sports & Recreation" [ref=e55]
+            - text: Sports & Recreation
+          - generic [ref=e56]:
+            - checkbox "Technology" [ref=e57]
+            - text: Technology
+          - generic [ref=e58]:
+            - checkbox "Women's Issues" [ref=e59]
+            - text: Women's Issues
+        - button "Save" [ref=e60] [cursor=pointer]
+      - generic [ref=e61]:
+        - heading "Search for External Volunteer Opportunities" [level=2] [ref=e62]
+        - generic [ref=e63]:
+          - textbox "e.g., 'animal shelter in Los Angeles'" [ref=e64]
+          - combobox [ref=e65]:
+            - option "All" [selected]
+            - option "Animal Welfare"
+            - option "Arts & Culture"
+            - option "Children & Youth"
+            - option "Community Development"
+            - option "Disaster Relief"
+            - option "Education & Literacy"
+            - option "Environment"
+            - option "Health & Medicine"
+            - option "Human Rights"
+            - option "Seniors"
+            - option "Social Services"
+            - option "Sports & Recreation"
+            - option "Technology"
+            - option "Women's Issues"
+          - button "Search" [ref=e66] [cursor=pointer]
+```

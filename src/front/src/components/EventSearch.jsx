@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import LocationDropdown from './LocationDropdown';
+import Filters from './Filters';
+import { filterByCategory } from '../config/categories';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
 
@@ -11,6 +13,9 @@ export default function EventSearch({ onEventsLoaded }) {
   const [events, setEvents] = useState([]);
   const [searched, setSearched] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
+  const [includeWebSearch, setIncludeWebSearch] = useState(true); // NEW: Web search toggle
+  const [searchStats, setSearchStats] = useState({ database: 0, web: 0 }); // NEW: Track sources
+  const [selectedCategory, setSelectedCategory] = useState('All'); // Category filter
 
   // Auto-detect location on mount
   useEffect(() => {
@@ -64,29 +69,74 @@ export default function EventSearch({ onEventsLoaded }) {
 
       // Build location string
       const location = `${cityName}, ${stateCode}`;
+      let allEvents = [];
+      let dbCount = 0;
+      let webCount = 0;
 
-      const res = await fetch(`${API_URL}/api/events/search`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          location: location,
-          limit: 50
-        })
-      });
+      // Always search database first
+      try {
+        const res = await fetch(`${API_URL}/api/events/search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            location: location,
+            limit: 50
+          })
+        });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+        if (res.ok) {
+          const data = await res.json();
+          const dbEvents = (data.events || []).map(e => ({ ...e, sourceType: 'database' }));
+          allEvents = [...dbEvents];
+          dbCount = dbEvents.length;
+        }
+      } catch (dbErr) {
+        console.error('Database search error:', dbErr);
       }
 
-      const data = await res.json();
-      setEvents(data.events || []);
+      // Also search web if toggle is enabled
+      if (includeWebSearch) {
+        try {
+          const webQuery = `volunteer opportunities ${cityName} ${stateCode}`;
+          const webRes = await fetch(`${API_URL}/api/web-search`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              query: webQuery,
+              location: { city: cityName, state: stateCode }
+            })
+          });
+
+          if (webRes.ok) {
+            const webData = await webRes.json();
+            const webEvents = (webData.events || []).map(e => ({
+              ...e,
+              sourceType: 'web'
+            }));
+            allEvents = [...allEvents, ...webEvents];
+            webCount = webEvents.length;
+          }
+        } catch (webErr) {
+          console.error('Web search error:', webErr);
+          // Don't fail if web search fails - we still have database results
+        }
+      }
+
+      setEvents(allEvents);
+      setSearchStats({ database: dbCount, web: webCount });
 
       if (onEventsLoaded) {
-        onEventsLoaded(data.events || []);
+        onEventsLoaded(allEvents);
+      }
+
+      if (allEvents.length === 0) {
+        setError('No events found in this location. Try a different city or enable web search.');
       }
     } catch (err) {
       setError(err.message);
@@ -132,6 +182,66 @@ export default function EventSearch({ onEventsLoaded }) {
       >
         Discover Volunteer Events
       </h2>
+
+      {/* Web Search Toggle */}
+      <div style={{
+        marginBottom: '20px',
+        padding: '16px',
+        background: 'linear-gradient(135deg, #667eea15 0%, #764ba215 100%)',
+        borderRadius: '10px',
+        border: '2px solid #e5e7eb'
+      }}>
+        <label style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          cursor: 'pointer',
+          userSelect: 'none'
+        }}>
+          <input
+            type="checkbox"
+            checked={includeWebSearch}
+            onChange={(e) => setIncludeWebSearch(e.target.checked)}
+            style={{
+              width: '20px',
+              height: '20px',
+              cursor: 'pointer'
+            }}
+          />
+          <div>
+            <div style={{
+              fontWeight: '600',
+              color: '#333',
+              fontSize: '15px'
+            }}>
+              🌐 Include Web Search
+            </div>
+            <div style={{
+              fontSize: '13px',
+              color: '#666',
+              marginTop: '2px'
+            }}>
+              Search the entire web for more volunteer opportunities (powered by Google)
+            </div>
+          </div>
+        </label>
+      </div>
+
+      {/* Category Filters */}
+      {events.length > 0 && (
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{
+            display: 'block',
+            marginBottom: '12px',
+            fontWeight: '600',
+            color: '#555',
+            fontSize: '15px'
+          }}>
+            Filter by Category
+          </label>
+          <Filters active={selectedCategory} onChange={setSelectedCategory} />
+        </div>
+      )}
 
       <div
         style={{
@@ -223,26 +333,33 @@ export default function EventSearch({ onEventsLoaded }) {
         </div>
       )}
 
-      {events.length > 0 && (
-        <div>
-          <h3
-            style={{
-              margin: '0 0 16px 0',
-              fontSize: '18px',
-              color: '#444',
-            }}
-          >
-            Found {events.length} Event{events.length !== 1 ? 's' : ''}
-          </h3>
+      {events.length > 0 && (() => {
+        // Apply category filter
+        const filteredEvents = filterByCategory(events, selectedCategory);
 
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-              gap: '16px',
-            }}
-          >
-            {events.map((event) => (
+        return (
+          <div>
+            <h3
+              style={{
+                margin: '0 0 16px 0',
+                fontSize: '18px',
+                color: '#444',
+              }}
+            >
+              {selectedCategory === 'All'
+                ? `Found ${events.length} Event${events.length !== 1 ? 's' : ''}`
+                : `Showing ${filteredEvents.length} of ${events.length} Event${filteredEvents.length !== 1 ? 's' : ''}`
+              }
+            </h3>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gap: '16px',
+              }}
+            >
+              {filteredEvents.map((event) => (
               <div
                 key={event.id}
                 style={{
@@ -405,10 +522,11 @@ export default function EventSearch({ onEventsLoaded }) {
                   </a>
                 )}
               </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

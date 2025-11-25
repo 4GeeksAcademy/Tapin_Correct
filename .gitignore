@@ -93,3 +93,4 @@ instance/
 
 # local env file (should not be committed)
 .env
+src/front/playwright-report/

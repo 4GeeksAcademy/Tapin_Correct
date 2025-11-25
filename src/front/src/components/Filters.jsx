@@ -1,18 +1,21 @@
 import React from 'react';
-
-const chips = ['All', 'Community', 'Environment', 'Education', 'Health', 'Animals'];
+import { CATEGORIES } from '../config/categories';
 
 export default function Filters({ active, onChange }) {
   return (
     <div className="filters">
       <div className="chips">
-        {chips.map((c) => (
+        {CATEGORIES.map((category) => (
           <button
-            key={c}
-            className={`chip ${active === c ? 'active' : ''}`}
-            onClick={() => onChange && onChange(c)}
+            key={category.id}
+            className={`chip ${active === category.name ? 'active' : ''}`}
+            onClick={() => onChange && onChange(category.name)}
+            style={{
+              borderColor: active === category.name ? category.color : undefined,
+              backgroundColor: active === category.name ? category.color : undefined,
+            }}
           >
-            {c}
+            {category.icon} {category.name}
           </button>
         ))}
       </div>

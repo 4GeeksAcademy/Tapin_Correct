@@ -11,7 +11,6 @@ try:
 except Exception:
     genai = None
 from dotenv import load_dotenv
-from categories import CATEGORIES
 
 load_dotenv()
 
@@ -671,3 +670,322 @@ def refine_and_categorize(items):
         )
 
     return refined_results
+
+
+def create_events_from_search_results(results, query, location=None):
+    """
+    Convert Google Custom Search results into Event records for the database.
+
+    Args:
+        results: List of search result dictionaries from search_events()
+        query: The original search query
+        location: Optional location dict with 'city' and 'state' keys
+
+    Returns:
+        List of Event dictionaries ready to be saved to the database
+    """
+    import uuid
+    from datetime import datetime, timezone, timedelta
+
+    events = []
+
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+
+        # Skip if no title or link
+        title = result.get("title")
+        url = result.get("link")
+        if not title or not url:
+            continue
+
+        # Extract organization name from title or use title
+        organization = title.split(" - ")[0] if " - " in title else title
+        organization = (
+            organization.split(" | ")[0] if " | " in organization else organization
+        )
+
+        # Create a unique ID based on URL and title
+        event_id = str(uuid.uuid5(uuid.NAMESPACE_URL, url))
+
+        # Build the event dictionary
+        event = {
+            "id": event_id,
+            "title": title,
+            "organization": organization[:200],  # Limit to 200 chars
+            "description": result.get("snippet", ""),
+            "category": result.get("category", "Other"),
+            "url": url[:1000],  # Limit to 1000 chars
+            "source": "google_custom_search",
+            "scraped_at": datetime.now(timezone.utc),
+            "cache_expires_at": datetime.now(timezone.utc) + timedelta(days=30),
+            # Set location from search query if provided
+            "location_city": location.get("city") if location else None,
+            "location_state": location.get("state") if location else None,
+            # Contact info - these will be None initially
+            # Could be enhanced with web scraping or LLM extraction
+            "contact_email": None,
+            "contact_phone": None,
+            "contact_person": None,
+            # Optional fields
+            "date_start": None,
+            "location_address": None,
+            "location_zip": None,
+            "latitude": None,
+            "longitude": None,
+            "venue": None,
+            "price": "Free",  # Assume volunteer opportunities are free
+            "image_url": None,
+            "image_urls": None,
+        }
+
+        events.append(event)
+
+    return events
+
+
+def extract_contact_info_from_url(url):
+    """
+    Attempt to extract contact information from a URL by scraping and analyzing the page.
+
+    Args:
+        url: The URL to scrape for contact information
+
+    Returns:
+        Dict with contact_email, contact_phone, and contact_person (or None for each)
+    """
+    import re
+
+    contact_info = {
+        "contact_email": None,
+        "contact_phone": None,
+        "contact_person": None,
+    }
+
+    try:
+        # Try to fetch the page content
+        response = requests.get(
+            url,
+            timeout=10,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+            },
+        )
+        response.raise_for_status()
+        content = response.text
+
+        # Extract email addresses using regex
+        email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
+        emails = re.findall(email_pattern, content)
+        if emails:
+            # Filter out common non-contact emails
+            filtered_emails = [
+                e
+                for e in emails
+                if not any(
+                    x in e.lower()
+                    for x in ["noreply", "privacy", "support@", "info@example"]
+                )
+            ]
+            if filtered_emails:
+                contact_info["contact_email"] = filtered_emails[0]
+
+        # Extract phone numbers using regex (US format)
+        phone_pattern = (
+            r"\b(?:\+?1[-.\s]?)?\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})\b"
+        )
+        phones = re.findall(phone_pattern, content)
+        if phones:
+            # Format the phone number
+            contact_info["contact_phone"] = (
+                f"({phones[0][0]}) {phones[0][1]}-{phones[0][2]}"
+            )
+
+    except Exception as e:
+        # If scraping fails, just return None values
+        pass
+
+    return contact_info
+
+
+def enrich_events_with_contact_info(events, max_to_enrich=3):
+    """
+    Enrich event records with contact information scraped from their URLs.
+
+    Args:
+        events: List of event dictionaries
+        max_to_enrich: Maximum number of events to enrich (to avoid too many requests)
+
+    Returns:
+        List of enriched event dictionaries
+    """
+    enriched_count = 0
+
+    for event in events:
+        if enriched_count >= max_to_enrich:
+            break
+
+        url = event.get("url")
+        if not url:
+            continue
+
+        # Skip if contact info already exists
+        if event.get("contact_email") or event.get("contact_phone"):
+            continue
+
+        # Extract contact info from the URL
+        contact_info = extract_contact_info_from_url(url)
+
+        # Update the event with extracted contact info
+        if contact_info["contact_email"]:
+            event["contact_email"] = contact_info["contact_email"]
+        if contact_info["contact_phone"]:
+            event["contact_phone"] = contact_info["contact_phone"]
+        if contact_info["contact_person"]:
+            event["contact_person"] = contact_info["contact_person"]
+
+        enriched_count += 1
+
+    return events
+
+
+def extract_values_from_event(event):
+    """
+    Extract organization values from event information using LLM.
+    Returns a JSON string containing an array of value IDs.
+
+    Available values:
+    - community: Community Building
+    - environment: Environmental Sustainability
+    - education: Education & Learning
+    - health: Health & Wellness
+    - equality: Equality & Justice
+    - poverty: Poverty Alleviation
+    - youth: Youth Empowerment
+    - seniors: Elder Care
+    - animals: Animal Welfare
+    - arts: Arts & Culture
+    - innovation: Innovation & Technology
+    - disaster: Disaster Relief
+    - hunger: Hunger Relief
+    - women: Women Empowerment
+    - inclusion: Diversity & Inclusion
+    """
+    try:
+        import sys
+
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "event_discovery"))
+        from llm_impl import HybridLLM
+        import asyncio
+
+        # Build the prompt
+        prompt = f"""Analyze this volunteer opportunity/organization and identify which core values align with their work.
+
+Return ONLY value IDs as a comma-separated list (no other text).
+
+Available Values:
+- community: Community Building
+- environment: Environmental Sustainability
+- education: Education & Learning
+- health: Health & Wellness
+- equality: Equality & Justice
+- poverty: Poverty Alleviation
+- youth: Youth Empowerment
+- seniors: Elder Care
+- animals: Animal Welfare
+- arts: Arts & Culture
+- innovation: Innovation & Technology
+- disaster: Disaster Relief
+- hunger: Hunger Relief
+- women: Women Empowerment
+- inclusion: Diversity & Inclusion
+
+Organization: {event.get('organization', 'Unknown')}
+Title: {event.get('title', '')}
+Description: {event.get('description', '')}
+Category: {event.get('category', '')}
+
+Return format: value1,value2,value3 (e.g., community,youth,education)"""
+
+        # Call LLM - explicitly use Google Gemini
+        llm = HybridLLM(provider="gemini")
+
+        # Run async function in sync context
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            response = loop.run_until_complete(llm.ainvoke(prompt))
+            result_text = response.content.strip()
+
+            # Parse comma-separated values
+            value_ids = [v.strip() for v in result_text.split(",") if v.strip()]
+
+            # Validate value IDs against known values
+            valid_values = {
+                "community",
+                "environment",
+                "education",
+                "health",
+                "equality",
+                "poverty",
+                "youth",
+                "seniors",
+                "animals",
+                "arts",
+                "innovation",
+                "disaster",
+                "hunger",
+                "women",
+                "inclusion",
+            }
+            filtered_values = [v for v in value_ids if v in valid_values]
+
+            return json.dumps(filtered_values) if filtered_values else None
+        finally:
+            loop.close()
+
+    except Exception as e:
+        print(f"Error extracting values: {e}")
+        # Fallback: map category to default values
+        category = event.get("category", "")
+        category_to_values = {
+            "Community": ["community"],
+            "Environment": ["environment"],
+            "Education": ["education"],
+            "Health": ["health"],
+            "Animals": ["animals"],
+            "Children & Youth": ["youth"],
+            "Seniors": ["seniors"],
+            "Arts & Culture": ["arts"],
+            "Disaster Relief": ["disaster"],
+            "Human Rights": ["equality"],
+            "Social Services": ["poverty"],
+            "Technology": ["innovation"],
+            "Women's Issues": ["women"],
+        }
+        values = category_to_values.get(category, [])
+        return json.dumps(values) if values else None
+
+
+def enrich_events_with_values(events, max_to_enrich=5):
+    """
+    Enrich events with values using LLM extraction.
+    Only enriches up to max_to_enrich events to avoid excessive LLM calls.
+    """
+    enriched_count = 0
+
+    for event in events:
+        if enriched_count >= max_to_enrich:
+            break
+
+        # Skip if values already exist
+        if event.get("values"):
+            continue
+
+        # Extract values
+        values_json = extract_values_from_event(event)
+        if values_json:
+            event["values"] = values_json
+            enriched_count += 1
+
+    return events

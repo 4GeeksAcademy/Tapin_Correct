@@ -29,10 +29,14 @@ pipenv run python test_live_search.py
 
 ## Environment Configuration
 
-Your `.env` file is configured with:
-- **GOOGLE_API_KEY**: `AIzaSyCBioWdfsoySHMApqtODg89ARRVhkZ5B5s`
-- **CUSTOM_SEARCH_ENGINE_ID**: `f1aaf5481229a485d`
-- **LLM_PROVIDER**: `google`
+Your `.env` file should contain:
+```bash
+GOOGLE_API_KEY=your_google_api_key_here
+CUSTOM_SEARCH_ENGINE_ID=your_search_engine_id_here
+LLM_PROVIDER=google
+```
+
+**IMPORTANT:** Never commit actual API keys to version control. Always use environment variables.
 
 ## How the Categorization Works
 

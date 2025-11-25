@@ -11,6 +11,12 @@ import logging
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 import smtplib
 from email.message import EmailMessage
+from google_search import (
+    search_events,
+    create_events_from_search_results,
+    enrich_events_with_contact_info,
+    enrich_events_with_values,
+)
 
 # Configure logging
 logging.basicConfig(
@@ -156,11 +162,23 @@ class Listing(db.Model):
     longitude = db.Column(db.Float, nullable=True)
     # Community, Environment, Education, Health, Animals
     category = db.Column(db.String(100), nullable=True)
+    # Organization values (JSON array of value strings)
+    values = db.Column(db.Text, nullable=True)
     image_url = db.Column(db.String(500), nullable=True)
     owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        import json
+
+        # Parse values JSON if present
+        values_list = []
+        if self.values:
+            try:
+                values_list = json.loads(self.values)
+            except:
+                values_list = []
+
         return {
             "id": self.id,
             "title": self.title,
@@ -169,6 +187,7 @@ class Listing(db.Model):
             "latitude": self.latitude,
             "longitude": self.longitude,
             "category": self.category,
+            "values": values_list,
             "image_url": self.image_url,
             "owner_id": self.owner_id,
             "created_at": (self.created_at.isoformat() if self.created_at else None),
@@ -256,6 +275,8 @@ class Event(db.Model):
     geohash_4 = db.Column(db.String(8))
     geohash_6 = db.Column(db.String(12), index=True)
     category = db.Column(db.String(100))
+    # Event/organization values (JSON array of value strings)
+    values = db.Column(db.Text, nullable=True)
     url = db.Column(db.String(1000), unique=False)
     source = db.Column(db.String(200))
     venue = db.Column(db.String(200), nullable=True)  # Event venue name
@@ -271,6 +292,8 @@ class Event(db.Model):
     image_urls = db.Column(db.Text, nullable=True)
 
     def to_dict(self):
+        import json
+
         # Include normalized images if available
         images_list = []
         if hasattr(self, "images") and self.images:
@@ -278,6 +301,14 @@ class Event(db.Model):
                 {"url": img.url, "caption": img.caption, "position": img.position}
                 for img in sorted(self.images, key=lambda x: x.position)
             ]
+
+        # Parse values JSON if present
+        values_list = []
+        if self.values:
+            try:
+                values_list = json.loads(self.values)
+            except:
+                values_list = []
 
         return {
             "id": self.id,
@@ -292,6 +323,7 @@ class Event(db.Model):
             "latitude": self.latitude,
             "longitude": self.longitude,
             "category": self.category,
+            "values": values_list,
             "url": self.url,
             "source": self.source,
             "venue": self.venue,
@@ -1136,6 +1168,87 @@ def search_events_simple():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/web-search", methods=["POST"])
+@jwt_required()
+def web_search():
+    """Search for volunteer opportunities using Google Custom Search API.
+
+    Saves results as Event records in the database and returns them with contact info.
+    """
+    try:
+        data = request.get_json() or {}
+        query = data.get("query")
+        location = data.get("location")  # Optional: {city: "...", state: "..."}
+
+        if not query:
+            return jsonify({"error": "query parameter required"}), 400
+
+        logger.info(f"Web search request: {query}")
+
+        # Call the Google Custom Search API
+        results = search_events(query)
+
+        # Check for errors
+        if isinstance(results, dict) and "error" in results:
+            logger.error(f"Web search error: {results['error']}")
+            return jsonify({"error": results["error"]}), 500
+
+        logger.info(
+            f"Web search returned {len(results) if isinstance(results, list) else 0} results"
+        )
+
+        # Convert search results to Event records
+        event_dicts = create_events_from_search_results(results, query, location)
+
+        # Enrich events with contact information (limit to first 3 to avoid too many requests)
+        event_dicts = enrich_events_with_contact_info(event_dicts, max_to_enrich=3)
+
+        # Enrich events with values using Google Gemini LLM (limit to first 5)
+        event_dicts = enrich_events_with_values(event_dicts, max_to_enrich=5)
+
+        # Save events to database (using merge to avoid duplicates)
+        saved_events = []
+        for event_dict in event_dicts:
+            # Check if event already exists
+            existing_event = Event.query.get(event_dict["id"])
+
+            if existing_event:
+                # Update existing event
+                for key, value in event_dict.items():
+                    if key != "id":  # Don't update the ID
+                        setattr(existing_event, key, value)
+                saved_events.append(existing_event.to_dict())
+            else:
+                # Create new event
+                event = Event(**event_dict)
+                db.session.add(event)
+                saved_events.append(event_dict)
+
+        db.session.commit()
+        logger.info(f"Saved {len(saved_events)} events to database")
+
+        return (
+            jsonify(
+                {
+                    "events": saved_events,
+                    "query": query,
+                    "count": len(saved_events),
+                    "source": "google_custom_search",
+                    "message": f"Found and saved {len(saved_events)} volunteer opportunities",
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Web search exception: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/local-events/tonight", methods=["POST"])
 @jwt_required()
 def discover_tonight():
@@ -1322,6 +1435,33 @@ def get_personalized_events():
         finally:
             loop.close()
 
+        # Also get Google Custom Search volunteer opportunities
+        web_events = []
+        try:
+            web_query = f"volunteer opportunities {city} {state}"
+            search_results = search_events(web_query)
+
+            if isinstance(search_results, list) and len(search_results) > 0:
+                event_dicts = create_events_from_search_results(
+                    search_results, web_query, location={"city": city, "state": state}
+                )
+                # Enrich with values for better personalization
+                event_dicts = enrich_events_with_values(event_dicts, max_to_enrich=5)
+                web_events = event_dicts
+                logger.info(
+                    f"Personalized feed: added {len(web_events)} web search results"
+                )
+        except Exception as web_error:
+            logger.info(
+                f"Web search error in personalized feed (non-fatal): {web_error}"
+            )
+
+        # Combine database events with web events before personalization
+        all_events = events + web_events
+        logger.info(
+            f"Personalized: {len(events)} database + {len(web_events)} web = {len(all_events)} total"
+        )
+
         # Personalize the feed with AI
         from backend.event_discovery.personalization import PersonalizationEngine
 
@@ -1338,7 +1478,7 @@ def get_personalized_events():
             try:
                 personalized = loop2.run_until_complete(
                     engine.get_ai_personalized_recommendations(
-                        uid_int, events, limit=limit
+                        uid_int, all_events, limit=limit
                     )
                 )
             finally:
@@ -1447,8 +1587,41 @@ def surprise_me():
         except Exception as tm_error:
             print(f"Ticketmaster API error (non-fatal): {tm_error}")
 
-        # Combine both event sources
-        all_events = volunteer_events + ticketmaster_events
+        # Fetch Google Custom Search volunteer opportunities
+        web_events = []
+        try:
+            # Build mood-specific search query
+            mood_keywords = {
+                "energetic": "active sports fitness",
+                "chill": "relaxing peaceful",
+                "creative": "arts crafts creative",
+                "social": "community social gathering",
+                "romantic": "couples romantic",
+                "adventurous": "adventure outdoor exciting",
+            }
+            keyword = mood_keywords.get(mood, "")
+            web_query = f"volunteer opportunities {keyword} {city} {state}"
+
+            # Search and convert to events
+            search_results = search_events(web_query)
+            if isinstance(search_results, list) and len(search_results) > 0:
+                event_dicts = create_events_from_search_results(
+                    search_results, web_query, location={"city": city, "state": state}
+                )
+                # Enrich with values (small batch for surprise feature)
+                event_dicts = enrich_events_with_values(event_dicts, max_to_enrich=3)
+
+                # Convert to Event objects format that SurpriseEngine expects
+                for event_dict in event_dicts:
+                    web_events.append(event_dict)
+        except Exception as web_error:
+            logger.info(f"Web search error (non-fatal): {web_error}")
+
+        # Combine all three event sources
+        all_events = volunteer_events + ticketmaster_events + web_events
+        logger.info(
+            f"Surprise Me: {len(volunteer_events)} volunteer + {len(ticketmaster_events)} ticketmaster + {len(web_events)} web = {len(all_events)} total"
+        )
 
         # Generate AI-powered surprise event
         from backend.event_discovery.surprise_engine import SurpriseEngine
@@ -1647,6 +1820,64 @@ def get_achievements():
             ),
             200,
         )
+
+
+from flask import Blueprint
+
+admin_bp = Blueprint("admin", __name__)
+
+ADMIN_EMAILS = set(
+    [
+        "your@email.com",  # Replace with your email
+        "dev1@email.com",  # Add your dev team emails
+    ]
+)
+PENDING_ADMINS = set()
+
+
+@app.route("/admin/login", methods=["POST"])
+def admin_login():
+    data = request.get_json() or {}
+    email = data.get("email")
+    password = data.get("password")
+    user = User.query.filter_by(email=email).first()
+    if not user or not check_password_hash(user.password_hash, password):
+        return jsonify({"error": "Invalid credentials"}), 401
+    if email not in ADMIN_EMAILS:
+        PENDING_ADMINS.add(email)
+        # Optionally notify existing admins here
+        return jsonify({"error": "Admin access pending manual approval"}), 403
+    token = token_for(user.id)
+    return jsonify({"access_token": token, "user": user.to_dict()})
+
+
+@app.route("/admin/pending", methods=["GET"])
+@jwt_required()
+def get_pending_admins():
+    uid = get_jwt_identity()
+    user = User.query.get(uid)
+    if not user or user.email not in ADMIN_EMAILS:
+        return jsonify({"error": "Not authorized"}), 403
+    return jsonify({"pending_admins": list(PENDING_ADMINS)})
+
+
+@app.route("/admin/approve", methods=["POST"])
+@jwt_required()
+def approve_admin():
+    uid = get_jwt_identity()
+    user = User.query.get(uid)
+    if not user or user.email not in ADMIN_EMAILS:
+        return jsonify({"error": "Not authorized"}), 403
+    data = request.get_json() or {}
+    email = data.get("email")
+    if email in PENDING_ADMINS:
+        ADMIN_EMAILS.add(email)
+        PENDING_ADMINS.remove(email)
+        return jsonify({"approved": email})
+    return jsonify({"error": "Email not pending"}), 400
+
+
+app.register_blueprint(admin_bp, url_prefix="/admin")
 
 
 if __name__ == "__main__":

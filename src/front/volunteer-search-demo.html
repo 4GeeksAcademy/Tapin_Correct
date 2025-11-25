@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volunteer Search Demo - Tapin</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .demo-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .demo-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .demo-header h1 {
+            margin: 0 0 0.5rem 0;
+            font-size: 2.5rem;
+        }
+
+        .demo-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        #root {
+            padding: 2rem;
+        }
+
+        .integration-guide {
+            background: #f3f4f6;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+
+        .integration-guide h3 {
+            margin-top: 0;
+            color: #1f2937;
+        }
+
+        .integration-guide pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+        }
+
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .feature-item {
+            background: #dbeafe;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+        }
+
+        .feature-item strong {
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>🔍 Volunteer Search - Live Demo</h1>
+            <p>AI-powered volunteer opportunity discovery with Google Custom Search</p>
+        </div>
+
+        <div style="padding: 2rem;">
+            <div class="integration-guide">
+                <h3>✨ Features</h3>
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <strong>🌐 Web Search</strong><br>
+                        Search entire web for volunteer opportunities
+                    </div>
+                    <div class="feature-item">
+                        <strong>🏷️ Smart Categories</strong><br>
+                        Auto-categorized results (Animal Welfare, Education, etc.)
+                    </div>
+                    <div class="feature-item">
+                        <strong>📞 Contact Info</strong><br>
+                        Automatically extracted emails & phone numbers
+                    </div>
+                    <div class="feature-item">
+                        <strong>💾 Auto-Save</strong><br>
+                        Organizations saved to database automatically
+                    </div>
+                </div>
+
+                <h3>🚀 How to Integrate</h3>
+                <p>To add this to your main app, import the component:</p>
+                <pre>import VolunteerSearch from './components/VolunteerSearch';
+
+// Then use it in your JSX:
+&lt;VolunteerSearch /&gt;</pre>
+
+                <p><strong>Note:</strong> You must be logged in to use the search feature.</p>
+            </div>
+
+            <div id="root"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import React from 'https://esm.sh/react@18';
+        import ReactDOM from 'https://esm.sh/react-dom@18';
+
+        // For demo purposes - you'll use your actual component
+        function DemoMessage() {
+            return React.createElement('div', {
+                style: {
+                    textAlign: 'center',
+                    padding: '3rem',
+                    background: '#fef3c7',
+                    borderRadius: '8px',
+                    border: '2px dashed #f59e0b'
+                }
+            }, [
+                React.createElement('h2', { key: 'title', style: { color: '#92400e' } }, '📦 Component Created!'),
+                React.createElement('p', { key: 'desc', style: { color: '#78350f', fontSize: '1.1rem' } },
+                    'The VolunteerSearch component is ready at:'),
+                React.createElement('code', { key: 'path', style: {
+                    background: 'white',
+                    padding: '0.5rem 1rem',
+                    borderRadius: '4px',
+                    display: 'inline-block',
+                    margin: '1rem 0',
+                    color: '#1f2937'
+                } },
+                    'src/front/src/components/VolunteerSearch.jsx'),
+                React.createElement('p', { key: 'next', style: { color: '#78350f', marginTop: '1.5rem' } },
+                    'Start your React dev server to see it in action!')
+            ]);
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(
+            React.createElement(DemoMessage)
+        );
+    </script>
+</body>
+</html>
