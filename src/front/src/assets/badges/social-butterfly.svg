@@ -1,0 +1,29 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="badgeGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF9D42"/>
+      <stop offset="100%" stop-color="#FF8520"/>
+    </linearGradient>
+    <filter id="glow3">
+      <feGaussianBlur stdDeviation="2"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="60" cy="60" r="55" fill="url(#badgeGrad3)" opacity="0.1"/>
+  <circle cx="60" cy="60" r="50" fill="url(#badgeGrad3)" filter="url(#glow3)"/>
+  <circle cx="60" cy="60" r="42" fill="white" opacity="0.95"/>
+
+  <!-- Butterfly -->
+  <ellipse cx="48" cy="50" rx="12" ry="16" fill="url(#badgeGrad3)" opacity="0.8"/>
+  <ellipse cx="72" cy="50" rx="12" ry="16" fill="url(#badgeGrad3)" opacity="0.8"/>
+  <ellipse cx="48" cy="70" rx="10" ry="14" fill="url(#badgeGrad3)" opacity="0.6"/>
+  <ellipse cx="72" cy="70" rx="10" ry="14" fill="url(#badgeGrad3)" opacity="0.6"/>
+  <rect x="59" y="45" width="2" height="30" fill="#FF8520" rx="1"/>
+  <circle cx="60" cy="44" r="3" fill="#FF8520"/>
+
+  <path d="M 60 100 L 52 115 L 60 110 L 68 115 Z" fill="#FFD700"/>
+</svg>

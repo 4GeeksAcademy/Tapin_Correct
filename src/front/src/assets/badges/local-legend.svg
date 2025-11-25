@@ -1,0 +1,25 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="badgeGrad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <filter id="glow4">
+      <feGaussianBlur stdDeviation="2"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <circle cx="60" cy="60" r="55" fill="url(#badgeGrad4)" opacity="0.1"/>
+  <circle cx="60" cy="60" r="50" fill="url(#badgeGrad4)" filter="url(#glow4)"/>
+  <circle cx="60" cy="60" r="42" fill="white" opacity="0.95"/>
+
+  <!-- Star -->
+  <polygon points="60,35 64,50 79,50 67,59 71,74 60,65 49,74 53,59 41,50 56,50" fill="url(#badgeGrad4)"/>
+  <polygon points="60,40 62,48 70,48 64,53 66,61 60,56 54,61 56,53 50,48 58,48" fill="#FFD700"/>
+
+  <path d="M 60 100 L 52 115 L 60 110 L 68 115 Z" fill="#FFD700"/>
+</svg>

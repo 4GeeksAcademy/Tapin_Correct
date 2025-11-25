@@ -1,0 +1,9 @@
+<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Organization building icon matching brand style -->
+  <!-- Building outline -->
+  <path d="M8 44V14L24 6L40 14V44H8Z" stroke="#2F3E46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Door -->
+  <rect x="18" y="32" width="12" height="12" fill="#2F3E46"/>
+  <!-- Roof peak -->
+  <path d="M4 16L24 6L44 16" stroke="#2F3E46" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

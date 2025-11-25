@@ -1,0 +1,30 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="badgeGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#17B8A3"/>
+      <stop offset="100%" stop-color="#0E9F8E"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer ring -->
+  <circle cx="60" cy="60" r="55" fill="url(#badgeGrad1)" opacity="0.1"/>
+  <circle cx="60" cy="60" r="50" fill="url(#badgeGrad1)" filter="url(#glow)"/>
+
+  <!-- Inner circle -->
+  <circle cx="60" cy="60" r="42" fill="white" opacity="0.95"/>
+
+  <!-- Target icon -->
+  <circle cx="60" cy="60" r="28" fill="none" stroke="url(#badgeGrad1)" stroke-width="3"/>
+  <circle cx="60" cy="60" r="18" fill="none" stroke="url(#badgeGrad1)" stroke-width="2.5"/>
+  <circle cx="60" cy="60" r="8" fill="url(#badgeGrad1)"/>
+
+  <!-- Ribbon -->
+  <path d="M 60 100 L 52 115 L 60 110 L 68 115 Z" fill="#FFD700"/>
+</svg>

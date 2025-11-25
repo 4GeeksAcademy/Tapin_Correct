@@ -1,0 +1,33 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Default/Neutral Panda Pose -->
+
+  <!-- Left ear -->
+  <circle cx="65" cy="65" r="22" fill="#2F3E46"/>
+
+  <!-- Right ear -->
+  <circle cx="135" cy="65" r="22" fill="#2F3E46"/>
+
+  <!-- Head -->
+  <circle cx="100" cy="100" r="55" fill="white" stroke="#2F3E46" stroke-width="4"/>
+
+  <!-- Left eye patch -->
+  <ellipse cx="80" cy="90" rx="15" ry="20" fill="#2F3E46"/>
+  <circle cx="80" cy="88" r="6" fill="white"/>
+
+  <!-- Right eye patch -->
+  <ellipse cx="120" cy="90" rx="15" ry="20" fill="#2F3E46"/>
+  <circle cx="120" cy="88" r="6" fill="white"/>
+
+  <!-- Nose -->
+  <ellipse cx="100" cy="105" rx="4" ry="3" fill="#2F3E46"/>
+
+  <!-- Mouth - smile -->
+  <path d="M 90 115 Q 100 120 110 115" stroke="#2F3E46" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Teal scarf -->
+  <ellipse cx="100" cy="145" rx="45" ry="12" fill="#17B8A3"/>
+  <rect x="95" y="145" width="15" height="25" fill="#17B8A3" rx="3"/>
+
+  <!-- Body (simplified) -->
+  <ellipse cx="100" cy="170" rx="35" ry="20" fill="#2F3E46"/>
+</svg>
