@@ -1,12 +1,29 @@
-# This file was created to run the application on heroku using gunicorn.
-# Read more about it here: https://devcenter.heroku.com/articles/python-gunicorn
+"""
+WSGI config for the backend application.
+It exposes the WSGI callable as a module-level variable named ``application``.
+For more information on this file, see
+https://docs.djangoproject.com/en/5.0/howto/deployment/wsgi/
+"""
 
+from backend.app import create_app
+import os
+
+# Create the Flask app instance
 try:
-    # Try backend module import first (Docker/production)
-    from backend.app import app as application
-except ModuleNotFoundError:
-    # Fallback to direct import (local development)
-    from app import app as application
+    application = create_app()
+except Exception as e:
+    print(f"Error creating Flask application in wsgi.py: {e}")
+    # Optionally, create a minimal fallback app for debugging
+    from flask import Flask
+
+    application = Flask("error_app")
+
+    @application.route("/")
+    def error_page():
+        return "Application failed to start. Check logs for details.", 500
+
 
 if __name__ == "__main__":
-    application.run()
+    # This block is for local development and won't be executed by Gunicorn
+    port = int(os.environ.get("PORT", 5000))
+    application.run(host="0.0.0.0", port=port, debug=True)

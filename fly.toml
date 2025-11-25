@@ -7,6 +7,9 @@ primary_region = "iad"
 [build]
   dockerfile = "src/backend/Dockerfile"
 
+[deploy]
+  release_command = "python -c \"from backend.app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()\""
+
 [env]
   PORT = "8080"
   FLASK_ENV = "production"
