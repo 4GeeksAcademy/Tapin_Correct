@@ -8,7 +8,7 @@ PORT=${PORT:-5000}
 
 echo "[entrypoint] Ensuring DB tables exist (calling SQLAlchemy create_all)"
 python - <<'PY'
-from app import app, db
+from backend.app import app, db
 with app.app_context():
     try:
         db.create_all()
