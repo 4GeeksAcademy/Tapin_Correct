@@ -4,11 +4,11 @@
 
 ### API Keys Found and Removed
 
-The following API keys were **exposed in public documentation** and have been sanitized:
+The following API keys were previously present in the repository and have been sanitized here.
 
-1. ~~`AIzaSyCBioWdfsoySHMApqtODg89ARRVhkZ5B5s`~~ - **REVOKED** (found in GOOGLE_SEARCH_SETUP.md)
-2. `AIzaSyDtOC0LYVBmxPyvK9MkN2mHMPfgzOFULzw` - Currently in use (should be rotated)
-3. `AIzaSyBXfPZLg3p_CIQv2xmEAHjVjF2MfktXqXo` - GEMINI_API_KEY (should be rotated)
+1. `REDACTED_GOOGLE_API_KEY_1` - **REDACTED** (was found in docs)
+2. `REDACTED_GOOGLE_API_KEY_2` - **REDACTED** (rotate if still in use)
+3. `REDACTED_GEMINI_API_KEY` - **REDACTED** (rotate if still in use)
 
 ### IMMEDIATE ACTION REQUIRED
 
@@ -27,6 +27,7 @@ The following API keys were **exposed in public documentation** and have been sa
 ### Environment Variables
 
 **✅ DO:**
+
 - Store all secrets in `.env` files
 - Add `.env` to `.gitignore`
 - Use `.env.sample` as template (without real values)
@@ -34,6 +35,7 @@ The following API keys were **exposed in public documentation** and have been sa
 - Rotate keys regularly (every 90 days)
 
 **❌ DON'T:**
+
 - Commit real API keys to git
 - Share keys in documentation
 - Hard-code keys in source code
@@ -150,12 +152,14 @@ grep -r "pplx-" . --include="*.py" --include="*.js"  # Perplexity keys
 ### Monitoring
 
 **Enable alerting:**
+
 - Set up billing alerts in Google Cloud
 - Monitor API usage daily
 - Enable Cloud Logging for API access
 - Review access logs weekly
 
 **Watch for suspicious activity:**
+
 - Unexpected API usage spikes
 - Requests from unknown IPs
 - Failed authentication attempts
@@ -188,6 +192,7 @@ If you discover a security issue:
 ## Contact
 
 For security issues, contact:
+
 - **Project Owner**: houseofobi
 - **Report vulnerabilities**: Open a private GitHub security advisory
 

@@ -49,26 +49,68 @@ except Exception:
 # Allow overriding the database URL via environment (useful for CI or
 # production)
 default_db = "sqlite:///" + os.path.join(base_dir, "data.db")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get(
-    "SQLALCHEMY_DATABASE_URI", default_db
+
+
+def _sanitize_db_uri(uri: str) -> str:
+    """Sanitize a database URI by removing unsupported driver-specific
+    query parameters that psycopg2 (and other DBAPI drivers) will reject.
+
+    Example: Supabase pooler connection strings sometimes include
+    `?pool_mode=session` which psycopg2 treats as an invalid DSN option.
+    This helper strips `pool_mode` and leaves the rest intact.
+    """
+    try:
+        from urllib.parse import urlparse, urlunparse, parse_qsl, urlencode
+
+        if not uri or "pool_mode=" not in uri:
+            return uri
+
+        parsed = urlparse(uri)
+        qs = dict(parse_qsl(parsed.query))
+        # Remove keys that are not valid libpq options
+        qs.pop("pool_mode", None)
+        # If you need to remove additional params, add them here
+        new_query = urlencode(qs)
+        sanitized = urlunparse(parsed._replace(query=new_query))
+        return sanitized
+    except Exception:
+        # If anything goes wrong, return original URI and let the caller
+        # handle the resulting errors — safer than failing during import.
+        return uri
+
+
+raw_db = os.environ.get(
+    "SQLALCHEMY_DATABASE_URI", os.environ.get("DATABASE_URL", default_db)
 )
+app.config["SQLALCHEMY_DATABASE_URI"] = _sanitize_db_uri(raw_db)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 # Supabase connection pooling configuration for transaction mode (port 6543)
 # Configure SQLAlchemy engine options; adapt connect_args by driver
 db_url = app.config["SQLALCHEMY_DATABASE_URI"]
 engine_options = {
     "pool_pre_ping": True,
-    "pool_recycle": 300,
-    "pool_size": 5,
-    "max_overflow": 10,
+    "pool_recycle": int(os.environ.get("DB_POOL_RECYCLE", 300)),
+    "pool_size": int(os.environ.get("DB_POOL_SIZE", 5)),
+    "max_overflow": int(os.environ.get("DB_MAX_OVERFLOW", 10)),
 }
 
 # Use PostgreSQL-specific connect args only when using psycopg2
 if isinstance(db_url, str) and db_url.lower().startswith("postgresql"):
-    engine_options["connect_args"] = {
-        "connect_timeout": 10,
-        "options": "-c statement_timeout=30000",
+    # For PostgreSQL, set sensible connect args. On Supabase pooler endpoints
+    # the original DATABASE_URL may include `pool_mode=session` which is
+    # removed by `_sanitize_db_uri`. We still want a small connect timeout
+    # and a statement timeout to avoid long-running DDL during startup.
+    connect_args = {
+        "connect_timeout": int(os.environ.get("DB_CONNECT_TIMEOUT", 10)),
     }
+    # Allow an override for statement timeout in milliseconds
+    stmt_timeout = int(os.environ.get("DB_STATEMENT_TIMEOUT_MS", 30000))
+    engine_options["connect_args"] = connect_args
+    # Provide server-side options via `options` (libpq) if supported
+    engine_options["pool_pre_ping"] = True
+    engine_options["pool_recycle"] = int(os.environ.get("DB_POOL_RECYCLE", 300))
+    # Use a URL-level options string only if supported by the driver
+    engine_options["execution_options"] = {"statement_timeout": stmt_timeout}
 elif isinstance(db_url, str) and db_url.lower().startswith("sqlite"):
     # SQLite does not accept the above options; leave empty or set
     # sqlite-specific options
@@ -470,8 +512,35 @@ def get_serializer():
 # Ensure database tables exist when the app starts. Using app.app_context()
 # is more robust than the before_first_request decorator which may not be
 # available in all runtime contexts.
+def _should_create_tables() -> bool:
+    """Return True when we should call `create_all()` on startup.
+
+    Behavior:
+    - If `RUN_MIGRATIONS_ON_START=true` in env -> create tables.
+    - If using SQLite (local dev) -> create tables by default.
+    - Otherwise (production Postgres) do not auto-create tables unless
+      explicitly requested.
+    """
+    env_flag = os.environ.get("RUN_MIGRATIONS_ON_START", "false").lower()
+    if env_flag in ("1", "true", "yes"):
+        return True
+    # Auto-create for sqlite databases (local dev convenience)
+    db_uri = app.config.get("SQLALCHEMY_DATABASE_URI", "") or ""
+    if db_uri.startswith("sqlite:"):
+        return True
+    return False
+
+
 with app.app_context():
-    db.create_all()
+    if _should_create_tables():
+        app.logger.info(
+            "Creating DB tables on startup (RUN_MIGRATIONS_ON_START enabled)"
+        )
+        db.create_all()
+    else:
+        app.logger.info(
+            "Skipping automatic DB create_all() on startup. Set RUN_MIGRATIONS_ON_START=true to enable."
+        )
 
 
 @app.route("/")
