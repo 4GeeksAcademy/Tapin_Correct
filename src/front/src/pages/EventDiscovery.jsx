@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import EventCard from '../components/EventCard';
 import CategoryFilter from '../components/CategoryFilter';
 import LocationDropdown from '../components/LocationDropdown';
@@ -165,66 +166,70 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
   return (
     <div className="event-discovery">
       {/* Header with Mode Selector */}
-      <div className="bg-gradient text-white py-4 mb-4" style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      }}>
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="hero-header"
+        style={{
+          background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
+          color: 'white',
+          padding: 'var(--space-8) 0',
+          marginBottom: 'var(--space-8)'
+        }}
+      >
         <div className="container">
-          <div className="d-flex justify-content-between align-items-center mb-3">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
             <div>
-              <h1 className="display-5 fw-bold mb-2">
-                <span className="me-3">🎉</span>
+              <h1 style={{ fontSize: 'var(--fs-4xl)', fontWeight: 'var(--fw-bold)', marginBottom: 'var(--space-2)' }}>
+                <span style={{ marginRight: 'var(--space-3)' }}>🎉</span>
                 Discover Events
               </h1>
-              <p className="mb-0 opacity-75">
+              <p style={{ margin: 0, opacity: 0.9 }}>
                 AI-powered event discovery with personalization
               </p>
             </div>
 
             {/* Achievements Button */}
             <button
-              className="btn btn-light btn-lg"
+              className="btn btn-secondary btn-lg"
               onClick={() => setShowAchievements(!showAchievements)}
             >
-              <i className="fas fa-trophy me-2"></i>
-              Achievements
+              <i className="fas fa-trophy"></i> Achievements
             </button>
           </div>
 
           {/* Discovery Mode Tabs */}
-          <div className="btn-group w-100 mb-3" role="group">
+          <div className="mode-tabs mb-6">
             <button
-              className={`btn ${discoveryMode === 'personalized' ? 'btn-light' : 'btn-outline-light'}`}
+              className={`mode-tab ${discoveryMode === 'personalized' ? 'active' : ''}`}
               onClick={() => setDiscoveryMode('personalized')}
             >
-              <i className="fas fa-magic me-2"></i>
-              AI Personalized
+              <i className="fas fa-magic"></i> AI Personalized
             </button>
             <button
-              className={`btn ${discoveryMode === 'swipe' ? 'btn-light' : 'btn-outline-light'}`}
+              className={`mode-tab ${discoveryMode === 'swipe' ? 'active' : ''}`}
               onClick={() => setDiscoveryMode('swipe')}
             >
-              <i className="fas fa-hand-pointer me-2"></i>
-              Swipe Mode
+              <i className="fas fa-hand-pointer"></i> Swipe Mode
             </button>
             <button
-              className={`btn ${discoveryMode === 'surprise' ? 'btn-light' : 'btn-outline-light'}`}
+              className={`mode-tab ${discoveryMode === 'surprise' ? 'active' : ''}`}
               onClick={() => setDiscoveryMode('surprise')}
             >
-              <i className="fas fa-gift me-2"></i>
-              Surprise Me
+              <i className="fas fa-gift"></i> Surprise Me
             </button>
             <button
-              className={`btn ${discoveryMode === 'browse' ? 'btn-light' : 'btn-outline-light'}`}
+              className={`mode-tab ${discoveryMode === 'browse' ? 'active' : ''}`}
               onClick={() => setDiscoveryMode('browse')}
             >
-              <i className="fas fa-th me-2"></i>
-              Browse All
+              <i className="fas fa-th"></i> Browse All
             </button>
           </div>
 
           {/* Location selector */}
-          <div className="row g-2">
-            <div className="col-md-9">
+          <div className="location-search">
+            <div style={{ flex: 1 }}>
               <LocationDropdown
                 value={locationInput}
                 onChange={setLocationInput}
@@ -239,36 +244,37 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                 countryFilter="US"
               />
             </div>
-            <div className="col-md-3">
-              <button
-                className="btn btn-light w-100"
-                onClick={discoverEvents}
-                disabled={!userLocation || loading}
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm me-2" />
-                ) : (
-                  <i className="fas fa-search me-2"></i>
-                )}
-                Discover
-              </button>
-            </div>
+            <button
+              className="btn btn-secondary"
+              onClick={discoverEvents}
+              disabled={!userLocation || loading}
+            >
+              {loading ? (
+                <span className="spinner" />
+              ) : (
+                <><i className="fas fa-search"></i> Discover</>
+              )}
+            </button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <div className="container">
         {/* Achievements Panel (Slide-out) */}
         {showAchievements && (
-          <div className="mb-4">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
             <GlassCard>
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h4 className="mb-0">
-                  <i className="fas fa-trophy me-2 text-warning"></i>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                <h4 style={{ margin: 0 }}>
+                  <i className="fas fa-trophy" style={{ marginRight: 'var(--space-2)', color: 'var(--warning)' }}></i>
                   Your Achievements
                 </h4>
                 <button
-                  className="btn btn-sm btn-outline-secondary"
+                  className="btn btn-ghost btn-sm"
                   onClick={() => setShowAchievements(false)}
                 >
                   <i className="fas fa-times"></i>
@@ -276,12 +282,16 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
               </div>
               <AchievementsPanel token={token} />
             </GlassCard>
-          </div>
+          </motion.div>
         )}
 
         {/* Surprise Me Mode */}
         {discoveryMode === 'surprise' && (
-          <div className="mb-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8"
+          >
             <SurpriseMe
               location={userLocation}
               token={token}
@@ -291,18 +301,22 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                 handleEventInteraction(event, 'view');
               }}
             />
-          </div>
+          </motion.div>
         )}
 
         {/* Swipe Mode */}
         {discoveryMode === 'swipe' && !loading && filteredEvents.length > 0 && (
-          <div className="mb-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-8"
+          >
             <GlassCard>
-              <h4 className="mb-3 text-center">
-                <i className="fas fa-hand-pointer me-2"></i>
+              <h4 className="text-center mb-4">
+                <i className="fas fa-hand-pointer" style={{ marginRight: 'var(--space-2)' }}></i>
                 Swipe Mode
               </h4>
-              <p className="text-muted text-center mb-4">
+              <p className="text-muted text-center mb-6">
                 ⬅️ Swipe left to skip • Swipe right to like ➡️ • Swipe up for super like ⬆️
               </p>
               <EventSwiper
@@ -319,46 +333,42 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                 }}
               />
             </GlassCard>
-          </div>
+          </motion.div>
         )}
 
         {/* Personalized & Browse Modes */}
         {(discoveryMode === 'personalized' || discoveryMode === 'browse') && (
           <>
             {/* AI Search Bar */}
-            <div className="card shadow-sm mb-4">
-              <div className="card-body">
-                <div className="input-group">
-                  <span className="input-group-text bg-white border-end-0">
-                    <i className="fas fa-magic text-primary"></i>
-                  </span>
-                  <input
-                    type="text"
-                    className="form-control border-start-0 border-end-0"
-                    placeholder="🤖 Search events: 'live music', 'food', 'outdoor'..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      className="btn btn-outline-secondary"
-                      onClick={() => setSearchQuery('')}
-                    >
-                      <i className="fas fa-times"></i>
-                    </button>
-                  )}
-                </div>
-                {discoveryMode === 'personalized' && (
-                  <small className="text-muted d-block mt-2">
-                    <i className="fas fa-sparkles me-1"></i>
-                    AI-powered personalization based on your preferences
-                  </small>
+            <div className="card mb-6">
+              <div className="search-bar">
+                <i className="fas fa-magic text-primary"></i>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="🤖 Search events: 'live music', 'food', 'outdoor'..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => setSearchQuery('')}
+                  >
+                    <i className="fas fa-times"></i>
+                  </button>
                 )}
               </div>
+              {discoveryMode === 'personalized' && (
+                <small className="text-muted" style={{ display: 'block', marginTop: 'var(--space-2)' }}>
+                  <i className="fas fa-sparkles" style={{ marginRight: 'var(--space-1)' }}></i>
+                  AI-powered personalization based on your preferences
+                </small>
+              )}
             </div>
 
             {/* Category Filter */}
-            <div className="mb-4">
+            <div className="mb-6">
               <CategoryFilter
                 selectedCategory={selectedCategory}
                 onCategoryChange={setSelectedCategory}
@@ -367,20 +377,20 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
 
             {/* Results Summary */}
             {!loading && events.length > 0 && (
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="mb-0">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                <h5 style={{ margin: 0 }}>
                   {filteredEvents.length} Events Found
                   {selectedCategory !== 'All' && ` • ${selectedCategory}`}
                   {discoveryMode === 'personalized' && (
-                    <span className="badge bg-primary ms-2">AI Personalized</span>
+                    <span className="badge-primary">AI Personalized</span>
                   )}
                 </h5>
 
-                <div className="btn-group btn-group-sm">
-                  <button className="btn btn-outline-secondary active">
+                <div className="view-toggle">
+                  <button className="btn btn-ghost btn-sm active">
                     <i className="fas fa-th"></i>
                   </button>
-                  <button className="btn btn-outline-secondary">
+                  <button className="btn btn-ghost btn-sm">
                     <i className="fas fa-list"></i>
                   </button>
                 </div>
@@ -389,10 +399,8 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
 
             {/* Loading State */}
             {loading && (
-              <div className="text-center py-5">
-                <div className="spinner-border text-primary mb-3" role="status">
-                  <span className="visually-hidden">Loading...</span>
-                </div>
+              <div className="text-center" style={{ padding: 'var(--space-16) 0' }}>
+                <div className="spinner" style={{ width: '48px', height: '48px', margin: '0 auto var(--space-4)' }}></div>
                 <p className="text-muted">
                   {discoveryMode === 'personalized'
                     ? 'AI is analyzing your preferences...'
@@ -403,8 +411,8 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
 
             {/* Error State */}
             {error && (
-              <div className="alert alert-warning">
-                <i className="fas fa-exclamation-triangle me-2"></i>
+              <div className="alert alert-warning mb-6">
+                <i className="fas fa-exclamation-triangle" style={{ marginRight: 'var(--space-2)' }}></i>
                 {error}
                 <br />
                 <small className="text-muted">Showing cached events or falling back to basic search.</small>
@@ -413,55 +421,60 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
 
             {/* Empty State */}
             {!loading && !error && events.length === 0 && userLocation && (
-              <div className="text-center py-5">
-                <div className="display-1 mb-3">🔍</div>
-                <h3>No events found</h3>
-                <p className="text-muted">
+              <div className="empty-state">
+                <div className="empty-state-icon">🔍</div>
+                <h3 className="empty-state-title">No events found</h3>
+                <p className="empty-state-description">
                   Try selecting a different location or mode
                 </p>
                 <button
                   className="btn btn-primary"
                   onClick={() => setDiscoveryMode('surprise')}
                 >
-                  <i className="fas fa-gift me-2"></i>
-                  Try Surprise Me
+                  <i className="fas fa-gift"></i> Try Surprise Me
                 </button>
               </div>
             )}
 
             {/* Events Grid */}
             {!loading && filteredEvents.length > 0 && (
-              <div className="row g-4">
-                {filteredEvents.map((event) => (
-                  <div key={event.id} className="col-md-6 col-lg-4">
-                    <div
-                      className="event-card-wrapper"
-                      onClick={() => {
-                        setSelectedEvent(event);
-                        handleEventInteraction(event, 'view');
-                      }}
-                    >
-                      <EventCard event={event} />
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4 }}
+                className="grid grid-3"
+              >
+                {filteredEvents.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05, duration: 0.3 }}
+                    className="event-card-wrapper"
+                    onClick={() => {
+                      setSelectedEvent(event);
+                      handleEventInteraction(event, 'view');
+                    }}
+                  >
+                    <EventCard event={event} />
 
-                      {/* AI Match Score Badge (Personalized Mode) */}
-                      {discoveryMode === 'personalized' && event.ai_match_score && (
-                        <div className="ai-badge">
-                          <i className="fas fa-magic me-1"></i>
-                          {event.ai_match_score}% match
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    {/* AI Match Score Badge (Personalized Mode) */}
+                    {discoveryMode === 'personalized' && event.ai_match_score && (
+                      <div className="ai-badge">
+                        <i className="fas fa-magic"></i> {event.ai_match_score}% match
+                      </div>
+                    )}
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {/* No Results After Filter */}
             {!loading && events.length > 0 && filteredEvents.length === 0 && (
-              <div className="text-center py-5">
-                <div className="display-1 mb-3">🎭</div>
-                <h3>No matching events</h3>
-                <p className="text-muted">
+              <div className="empty-state">
+                <div className="empty-state-icon">🎭</div>
+                <h3 className="empty-state-title">No matching events</h3>
+                <p className="empty-state-description">
                   Try adjusting your filters or search query
                 </p>
                 <button
@@ -492,17 +505,8 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
             <button
               className="btn btn-primary btn-lg ar-nav-button"
               onClick={() => setShowARNav(true)}
-              style={{
-                position: 'fixed',
-                bottom: '80px',
-                right: '20px',
-                zIndex: 1055,
-                borderRadius: '50px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
-              }}
             >
-              <i className="fas fa-directions me-2"></i>
-              Navigate
+              <i className="fas fa-directions"></i> Navigate
             </button>
           )}
         </>
@@ -518,36 +522,12 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
       )}
 
       <style jsx>{`
-        .event-card-wrapper {
-          position: relative;
-          cursor: pointer;
-        }
-
-        .event-card-wrapper:hover {
-          transform: translateY(-4px);
-          transition: transform 0.2s;
-        }
-
-        .ai-badge {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-size: 0.85rem;
-          font-weight: bold;
-          box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
-          z-index: 10;
-        }
-
-        .bg-gradient {
+        .hero-header {
           position: relative;
           overflow: hidden;
         }
 
-        .bg-gradient::before {
+        .hero-header::before {
           content: '';
           position: absolute;
           top: 0;
@@ -555,22 +535,143 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
           right: 0;
           bottom: 0;
           background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+          pointer-events: none;
         }
 
-        .btn-group {
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        .mode-tabs {
+          display: flex;
+          gap: var(--space-2);
+          flex-wrap: wrap;
+        }
+
+        .mode-tab {
+          flex: 1;
+          min-width: 120px;
+          padding: var(--space-3) var(--space-4);
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          border-radius: var(--radius-lg);
+          font-weight: var(--fw-semibold);
+          cursor: pointer;
+          transition: all var(--transition-fast);
+        }
+
+        .mode-tab:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: translateY(-2px);
+        }
+
+        .mode-tab.active {
+          background: white;
+          color: var(--primary);
+          box-shadow: var(--shadow-md);
+        }
+
+        .location-search {
+          display: flex;
+          gap: var(--space-3);
+          align-items: center;
+        }
+
+        .search-bar {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          padding: var(--space-4);
+        }
+
+        .search-bar input {
+          flex: 1;
+          border: none;
+          box-shadow: none;
+        }
+
+        .search-bar input:focus {
+          outline: none;
+          box-shadow: none;
+          border: none;
+        }
+
+        .badge-primary {
+          display: inline-block;
+          padding: var(--space-1) var(--space-3);
+          background: var(--primary);
+          color: white;
+          border-radius: var(--radius-full);
+          font-size: var(--fs-sm);
+          font-weight: var(--fw-semibold);
+          margin-left: var(--space-2);
+        }
+
+        .view-toggle {
+          display: flex;
+          gap: var(--space-1);
+        }
+
+        .view-toggle button.active {
+          background: var(--bg-light);
+          color: var(--primary);
+        }
+
+        .event-card-wrapper {
+          position: relative;
+          cursor: pointer;
+          transition: transform var(--transition-base);
+        }
+
+        .event-card-wrapper:hover {
+          transform: translateY(-4px);
+        }
+
+        .ai-badge {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+          color: white;
+          padding: var(--space-2) var(--space-3);
+          border-radius: var(--radius-full);
+          font-size: var(--fs-sm);
+          font-weight: var(--fw-bold);
+          box-shadow: var(--shadow-primary);
+          z-index: 10;
         }
 
         .ar-nav-button {
+          position: fixed;
+          bottom: 80px;
+          right: 20px;
+          z-index: 1055;
+          border-radius: var(--radius-full);
+          box-shadow: var(--shadow-xl);
           animation: pulse 2s infinite;
         }
 
         @keyframes pulse {
           0%, 100% {
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: var(--shadow-xl);
           }
           50% {
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.8);
+            box-shadow: var(--shadow-primary);
+          }
+        }
+
+        @media (max-width: 768px) {
+          .mode-tabs {
+            flex-direction: column;
+          }
+
+          .mode-tab {
+            min-width: 100%;
+          }
+
+          .location-search {
+            flex-direction: column;
+          }
+
+          .location-search button {
+            width: 100%;
           }
         }
       `}</style>

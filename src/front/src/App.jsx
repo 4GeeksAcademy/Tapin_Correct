@@ -1,257 +1,226 @@
 import React, { useEffect, useState } from 'react';
-import Header from './components/Header';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Components
+import Navigation from './components/Navigation';
 import Footer from './components/Footer';
-import ListingCard from './components/ListingCard';
-import EmptyState from './components/EmptyState';
-import ListingDetail from './components/ListingDetail';
-import Filters from './components/Filters';
-import AuthForm from './components/AuthForm';
-import CreateListingForm from './components/CreateListingForm';
 import DashboardLanding from './pages/DashboardLanding';
-import MapView from './components/MapView';
-import 'leaflet/dist/leaflet.css';
-import LocationSelector from './components/LocationSelector';
-import ResetPasswordConfirm from './components/ResetPasswordConfirm';
+import EventDiscovery from './pages/EventDiscovery';
 import Dashboard from './pages/Dashboard';
+import ResetPasswordConfirm from './components/ResetPasswordConfirm';
+
+// API
 import { API_URL } from './lib/api';
 
 export default function App() {
-  // ...existing code...
-  // Add dashboard route logic (simple example, replace with your router setup if needed)
-  if (pathname === '/dashboard') {
-    return <Dashboard />;
-  }
-  const pathname = typeof globalThis !== 'undefined' ? globalThis.location.pathname : '/';
-  const resetMatch = pathname.match(/^\/reset-password\/confirm\/([^/]+)$/);
-  if (resetMatch) {
-    return <ResetPasswordConfirm token={resetMatch[1]} />;
-  }
-
-  const [listings, setListings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selected, setSelected] = useState(null);
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [token, setToken] = useState(localStorage.getItem('access_token') || null);
-
-  const [showLanding, setShowLanding] = useState(!token);
   const [user, setUser] = useState(null);
-  const [viewMode, setViewMode] = useState('list');
+  const [token, setToken] = useState(localStorage.getItem('access_token') || null);
+  const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
-  const [selectedMapLocation, setSelectedMapLocation] = useState(null);
 
-
-  async function fetchListings(filter) {
-    setLoading(true);
-    setError(null);
-    try {
-      const params = new URLSearchParams();
-      if (filter && filter !== 'All') params.set('q', filter);
-      const url = `${API_URL}/listings${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`status ${res.status}`);
-      const data = await res.json();
-      setListings(data);
-    } catch (error_) {
-      setError(error_.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-
-  useEffect(() => {
-    const params = new URLSearchParams(globalThis.location.search);
-    const q = params.get('q') || 'All';
-    setActiveFilter(q);
-    fetchListings(q);
-
-  }, []);
-
+  // Fetch current user on mount
   useEffect(() => {
     async function fetchMe() {
-      if (!token) return setUser(null);
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch(`${API_URL}/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         if (!res.ok) {
+          localStorage.removeItem('access_token');
+          setToken(null);
           setUser(null);
+          setLoading(false);
           return;
         }
+
         const data = await res.json();
         setUser(data.user);
-      } catch {
+      } catch (error) {
+        console.error('Error fetching user:', error);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
     }
+
     fetchMe();
   }, [token]);
 
-  function handleSelect(item) {
-    setSelected(item);
-  }
+  // Get user's geolocation
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            coords: [position.coords.latitude, position.coords.longitude],
+            type: 'coordinates',
+          });
+        },
+        (error) => {
+          console.log('Geolocation error:', error);
+          // Default to a major city if geolocation fails
+          setUserLocation({
+            name: 'New York, NY',
+            type: 'city',
+          });
+        }
+      );
+    } else {
+      setUserLocation({
+        name: 'New York, NY',
+        type: 'city',
+      });
+    }
+  }, []);
 
-  function handleFilterChange(filter) {
-    setActiveFilter(filter);
-    const params = new URLSearchParams(globalThis.location.search);
-    if (!filter || filter === 'All') params.delete('q');
-    else params.set('q', filter);
-    const qs = params.toString();
-    const newUrl = qs ? `?${qs}` : globalThis.location.pathname;
-    globalThis.history.replaceState(null, '', newUrl);
-    fetchListings(filter);
-  }
+  const handleLogin = (userData, accessToken) => {
+    if (accessToken) {
+      localStorage.setItem('access_token', accessToken);
+      setToken(accessToken);
+    }
+    if (userData) {
+      setUser(userData);
+    }
+  };
 
-  function SkeletonList({ count = 3 }) {
+  const handleLogout = () => {
+    localStorage.removeItem('access_token');
+    setToken(null);
+    setUser(null);
+  };
+
+  if (loading) {
     return (
-      <ul className="listings skeleton-list">
-        {Array.from({ length: count }).map((_, i) => (
-          <li key={i} className="listing-item">
-            <div className="skeleton-card">
-              <div className="skeleton-title" />
-              <div className="skeleton-line" />
-              <div className="skeleton-line" style={{ width: '80%' }} />
-            </div>
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  if (showLanding && !token) {
-    return (
-      <div className="app-root">
-        <Header user={user} onLogout={() => { localStorage.removeItem('access_token'); setToken(null); setUser(null); }} />
-        <DashboardLanding
-          onEnter={() => setShowLanding(false)}
-          onLogin={(_user, accessToken) => {
-            if (accessToken) {
-              localStorage.setItem('access_token', accessToken);
-              setToken(accessToken);
-            }
-            setShowLanding(false);
-          }}
-        />
+      <div className="app-root" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+      }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+          style={{ textAlign: 'center' }}
+        >
+          <div className="spinner" style={{ margin: '0 auto var(--space-4)' }} />
+          <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-lg)' }}>
+            Loading TapIn...
+          </p>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="app-root">
-      <Header
-        user={user}
-        onLogout={() => {
-          localStorage.removeItem('access_token');
-          setToken(null);
-          setUser(null);
-        }}
-      />
+    <Router>
+      <div className="app-root">
+        <Navigation user={user} onLogout={handleLogout} />
 
-      <div className="top-section">
-        {!user && (
-          <div className="auth-section">
-            <AuthForm
-              onLogin={(d) => {
-                localStorage.setItem('access_token', d.access_token);
-                setToken(d.access_token);
-              }}
-            />
-          </div>
-        )}
-
-        <Filters active={activeFilter} onChange={handleFilterChange} />
-      </div>
-
-      <main>
-        { }
-        {!loading && !error && listings.length > 0 && (
-          <div style={{ marginBottom: '20px', textAlign: 'center' }}>
-            <button
-              onClick={() => setViewMode('list')}
-              style={{
-                padding: '8px 16px',
-                background: viewMode === 'list' ? '#007bff' : '#fff',
-                color: viewMode === 'list' ? '#fff' : '#333',
-                border: '1px solid #007bff',
-                borderRadius: '4px 0 0 4px',
-                cursor: 'pointer',
-                fontWeight: viewMode === 'list' ? 'bold' : 'normal',
-              }}
-            >
-              📋 List
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              style={{
-                padding: '8px 16px',
-                background: viewMode === 'map' ? '#007bff' : '#fff',
-                color: viewMode === 'map' ? '#fff' : '#333',
-                border: '1px solid #007bff',
-                borderLeft: 'none',
-                borderRadius: '0 4px 4px 0',
-                cursor: 'pointer',
-                fontWeight: viewMode === 'map' ? 'bold' : 'normal',
-              }}
-            >
-              🗺️ Map
-            </button>
-          </div>
-        )}
-
-        {loading && <SkeletonList count={3} />}
-        {error && <p className="error">Error: {error}</p>}
-
-        {!loading && !error && (
-          <section>
-            {listings.length === 0 ? (
-              <EmptyState />
-            ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 20 }}>
-                <div className="listings-grid">
-                  {listings.map((l) => (
-                    <ListingCard key={l.id} listing={l} onSelect={handleSelect} />
-                  ))}
-                </div>
-                <div className="map-view-container">
-                  <MapView
-                    listings={listings}
-                    onListingClick={handleSelect}
-                    userLocation={userLocation}
-                    selectedLocation={selectedMapLocation}
-                    onMapLocationSelect={setSelectedMapLocation}
+        <AnimatePresence mode="wait">
+          <Routes>
+            {/* Landing Page / Home */}
+            <Route
+              path="/"
+              element={
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DashboardLanding
+                    user={user}
+                    onLogin={handleLogin}
                   />
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        {user && (
-          <div style={{ marginTop: 12 }}>
-            <h3>Create a listing</h3>
-            <CreateListingForm
-              token={token}
-              userLocation={userLocation}
-              onCreated={(data) => {
-                setListings((s) => [data, ...s]);
-              }}
+                </motion.div>
+              }
             />
-          </div>
-        )}
-      </main>
 
-      {selected && (
-        <ListingDetail
-          listing={selected}
-          onClose={() => setSelected(null)}
-          token={token}
-          user={user}
-          userLocation={userLocation}
-        />
-      )}
+            {/* Event Discovery */}
+            <Route
+              path="/discover"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <EventDiscovery
+                    token={token}
+                    user={user}
+                    userLocation={userLocation}
+                    onLocationChange={setUserLocation}
+                  />
+                </motion.div>
+              }
+            />
 
-      <Footer />
-    </div>
+            {/* User Dashboard - Protected Route */}
+            <Route
+              path="/dashboard"
+              element={
+                user ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <Dashboard />
+                  </motion.div>
+                ) : (
+                  <Navigate to="/?auth=true" replace />
+                )
+              }
+            />
+
+            {/* Password Reset Confirmation */}
+            <Route
+              path="/reset-password/confirm/:token"
+              element={
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ResetPasswordConfirm />
+                </motion.div>
+              }
+            />
+
+            {/* 404 Not Found */}
+            <Route
+              path="*"
+              element={
+                <div className="container" style={{ paddingTop: 'var(--space-20)', paddingBottom: 'var(--space-20)' }}>
+                  <div className="empty-state">
+                    <div className="empty-state-icon">404</div>
+                    <h2 className="empty-state-title">Page Not Found</h2>
+                    <p className="empty-state-description">
+                      The page you're looking for doesn't exist or has been moved.
+                    </p>
+                    <a href="/" className="btn btn-primary btn-lg" style={{ marginTop: 'var(--space-6)' }}>
+                      Back to Home
+                    </a>
+                  </div>
+                </div>
+              }
+            />
+          </Routes>
+        </AnimatePresence>
+
+        <Footer />
+      </div>
+    </Router>
   );
 }

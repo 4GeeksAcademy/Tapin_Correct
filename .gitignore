@@ -99,6 +99,9 @@ src/front/playwright-report/
 src/front/test-results/
 test-results/
 
+# Avoid committing deployment docs that may contain secrets
+DEPLOYMENT_GUIDE.md
+
 # Large brand assets (over 500KB - should use CDN/asset storage)
 src/front/src/assets/brand/ChatGPT*.png
 src/front/src/assets/brand/Gemini_Generated*.png

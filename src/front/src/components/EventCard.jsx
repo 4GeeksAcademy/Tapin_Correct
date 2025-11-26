@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getCategoryByName, getCategoryColor } from '../config/categories';
+import './EventCard.css';
 
 /**
  * Modern event card component with image gallery
@@ -34,39 +35,30 @@ export default function EventCard({ event, onClick }) {
 
   return (
     <div
-      className="card h-100 shadow-sm event-card"
+      className="card event-card"
       style={{ cursor: onClick ? 'pointer' : 'default', borderTop: `4px solid ${categoryColor}` }}
       onClick={onClick}
     >
       {images.length > 0 && (
-        <div className="position-relative" style={{ height: '200px', overflow: 'hidden' }}>
+        <div className="event-card-image">
           <img
             src={images[imageIndex]}
-            className="card-img-top"
             alt={event.title}
-            style={{
-              height: '200px',
-              objectFit: 'cover',
-              transition: 'transform 0.3s ease'
-            }}
+            className="event-card-img"
             onError={(e) => {
               e.target.src = 'https://via.placeholder.com/800x600/607D8B/ffffff?text=No+Image';
             }}
           />
 
           {images.length > 1 && (
-            <div className="position-absolute bottom-0 start-0 end-0 d-flex justify-content-center pb-2">
+            <div className="event-card-indicators">
               {images.map((_, idx) => (
                 <button
                   key={idx}
-                  className="btn btn-sm mx-1"
+                  className="event-card-indicator"
+                  aria-label={`View image ${idx + 1}`}
                   style={{
-                    width: '8px',
-                    height: '8px',
-                    borderRadius: '50%',
-                    padding: 0,
-                    backgroundColor: idx === imageIndex ? '#fff' : 'rgba(255,255,255,0.5)',
-                    border: 'none'
+                    backgroundColor: idx === imageIndex ? 'var(--white)' : 'rgba(255,255,255,0.5)',
                   }}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -78,7 +70,7 @@ export default function EventCard({ event, onClick }) {
           )}
 
           <span
-            className="badge position-absolute top-0 end-0 m-2"
+            className="event-card-badge"
             style={{ backgroundColor: categoryColor }}
           >
             {event.category}
@@ -86,10 +78,10 @@ export default function EventCard({ event, onClick }) {
         </div>
       )}
 
-      <div className="card-body">
-        <h5 className="card-title">{event.title}</h5>
+      <div className="event-card-body">
+        <h3 className="event-card-title">{event.title}</h3>
 
-        <div className="mb-2">
+        <div className="event-card-meta">
           <small className="text-muted">
             <i className="far fa-clock me-1"></i>
             {formatDate(event.date_start)}
@@ -97,7 +89,7 @@ export default function EventCard({ event, onClick }) {
         </div>
 
         {event.venue && (
-          <div className="mb-2">
+          <div className="event-card-meta">
             <small className="text-muted">
               <i className="fas fa-map-marker-alt me-1"></i>
               {event.venue}
@@ -106,34 +98,29 @@ export default function EventCard({ event, onClick }) {
         )}
 
         {event.price && (
-          <div className="mb-2">
-            <small className="text-success fw-bold">
+          <div className="event-card-meta">
+            <small style={{ color: 'var(--success)', fontWeight: 'var(--fw-bold)' }}>
               <i className="fas fa-tag me-1"></i>
               {event.price}
             </small>
           </div>
         )}
 
-        <p className="card-text small" style={{
-          display: '-webkit-box',
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden'
-        }}>
+        <p className="event-card-description">
           {event.description}
         </p>
 
         {event.source && (
-          <div className="mt-2">
-            <span className="badge bg-secondary small">{event.source}</span>
+          <div className="event-card-source">
+            <span className="event-card-source-badge">{event.source}</span>
           </div>
         )}
 
         {/* Volunteer Button - Shows if event has contact info */}
         {(event.contact_email || event.contact_phone || event.contact_person) && (
-          <div className="mt-3">
+          <div className="event-card-actions">
             <button
-              className="btn btn-success btn-sm w-100"
+              className="btn btn-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 // Show contact modal or expand contact info

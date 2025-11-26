@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../lib/api';
+import './ListingCard.css';
 
 export default function ListingCard({ listing = {}, onOpen, onSelect }) {
   const { title, description, image_url, location, id, category } = listing;
@@ -36,31 +37,31 @@ export default function ListingCard({ listing = {}, onOpen, onSelect }) {
     fetchRating();
   }, [id]);
 
-  // Category styling
+  // Category styling - updated to use design system colors
   const getCategoryColor = (cat) => {
     const colors = {
-      'Community': '#8b5cf6',
-      'Environment': '#10b981',
-      'Education': '#3b82f6',
-      'Health': '#ef4444',
-      'Animals': '#f59e0b',
+      'Community': 'var(--primary)',
+      'Environment': 'var(--success)',
+      'Education': 'var(--info)',
+      'Health': 'var(--error)',
+      'Animals': 'var(--warning)',
     };
-    return colors[cat] || '#6b7280';
+    return colors[cat] || 'var(--text-secondary)';
   };
 
   return (
-    <article className="card" role="article" aria-label={title || 'Listing'}>
-      <div className="card-media" aria-hidden={image_url ? 'false' : 'true'}>
+    <article className="card listing-card" role="article" aria-label={title || 'Listing'}>
+      <div className="listing-card-media" aria-hidden={image_url ? 'false' : 'true'}>
         {image_url ? (
-          <img src={image_url} alt={title || 'Listing image'} loading="lazy" />
+          <img src={image_url} alt={title || 'Listing image'} loading="lazy" className="listing-card-img" />
         ) : (
-          <div className="placeholder" aria-hidden="true">
+          <div className="listing-card-placeholder" aria-hidden="true">
             📷
           </div>
         )}
         {category && (
           <div
-            className="category-badge"
+            className="listing-card-category"
             style={{
               backgroundColor: getCategoryColor(category),
             }}
@@ -70,27 +71,27 @@ export default function ListingCard({ listing = {}, onOpen, onSelect }) {
         )}
       </div>
 
-      <div className="card-content">
-        <h3 className="card-title">{title || 'Untitled listing'}</h3>
+      <div className="listing-card-content">
+        <h3 className="listing-card-title">{title || 'Untitled listing'}</h3>
 
         {averageRating !== null && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '8px' }}>
-            <span style={{ color: '#ffc107', fontSize: '16px' }}>★</span>
-            <span style={{ fontWeight: 'bold', fontSize: '14px' }}>{averageRating.toFixed(1)}</span>
-            <span style={{ color: '#666', fontSize: '12px' }}>({reviewCount})</span>
+          <div className="listing-card-rating">
+            <span className="listing-card-star">★</span>
+            <span className="listing-card-score">{averageRating.toFixed(1)}</span>
+            <span className="listing-card-count">({reviewCount})</span>
           </div>
         )}
 
-        <p className="card-desc">{description || 'No description provided.'}</p>
+        <p className="listing-card-description">{description || 'No description provided.'}</p>
 
         {location && (
-          <div className="location-tag">
+          <div className="listing-card-location">
             <span>📍</span> {location}
           </div>
         )}
       </div>
 
-      <div className="card-footer">
+      <div className="listing-card-footer">
         <button
           className="btn btn-primary"
           onClick={() => {
