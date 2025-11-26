@@ -18,6 +18,7 @@ psycopg2-binary>=2.9  # PostgreSQL adapter for production
 itsdangerous>=2.1
 Werkzeug>=2.2
 python-dotenv>=0.21
+beautifulsoup4
 
 # CLI utilities
 click>=8.0

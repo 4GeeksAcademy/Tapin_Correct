@@ -170,13 +170,7 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="hero-header"
-        style={{
-          background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-          color: 'white',
-          padding: 'var(--space-8) 0',
-          marginBottom: 'var(--space-8)'
-        }}
+        className="hero-header gradient-primary"
       >
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>

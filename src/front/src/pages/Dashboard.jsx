@@ -161,9 +161,9 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <div className="text-center" style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-4)' }}>
-                <div className="spinner" style={{ width: '50px', height: '50px' }} />
-                <p style={{ fontSize: 'var(--fs-xl)', opacity: 0.8 }}>Loading your dashboard...</p>
+            <div className="loading-container">
+                <div className="spinner spinner-lg" />
+                <p className="loading-text">Loading your dashboard...</p>
             </div>
         );
     }
