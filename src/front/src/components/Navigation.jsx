@@ -23,10 +23,9 @@ export default function Navigation({ user, onLogout }) {
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
       <div className="nav-content">
-        {/* Brand */}
-        <Link to="/" className="nav-brand">
-          <BrandLogo size={32} />
-          <span>TapIn</span>
+        {/* Brand - show only the logo icon (no duplicate text) */}
+        <Link to="/" className="nav-brand" aria-label="Tapin home">
+          <BrandLogo width={48} variant="icon" alt="Tapin" />
         </Link>
 
         {/* Desktop Navigation */}
