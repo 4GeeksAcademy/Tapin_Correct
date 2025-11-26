@@ -1,6 +1,5 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-import json
 from datetime import datetime
 
 from backend.event_discovery.cache_manager import EventCacheManager
@@ -125,14 +124,10 @@ def interact():
         interaction = UserEventInteraction(
             user_id=user_id,
             event_id=str(data["event_id"]),
+            event_title=data.get("event_title"),
+            category=data.get("category"),
             interaction_type=data.get("interaction"),
-            interaction_metadata=json.dumps(
-                {
-                    "title": data.get("event_title"),
-                    "category": data.get("category"),
-                    "source": data.get("source"),
-                }
-            ),
+            source=data.get("source"),
             timestamp=datetime.utcnow(),
         )
 
