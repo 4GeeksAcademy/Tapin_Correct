@@ -34,6 +34,10 @@
   --text-secondary: #5a5550;
   --text-muted: #8b8782;
   --text-light: #b5b1ac;
+  /* Navigation specific */
+  --nav-bg: rgba(255, 255, 255, 0.8);
+  --nav-border: var(--border-light);
+  --nav-text: var(--text-secondary);
 
   /* Typography */
   --font-display: "Outfit", system-ui, sans-serif;
@@ -116,6 +120,10 @@
     --text-secondary: #d4d1cc;
     --text-muted: #a5a19c;
     --text-light: #8b8782;
+    /* nav overrides for dark mode */
+    --nav-bg: rgba(42, 38, 33, 0.6);
+    --nav-border: #3a3631;
+    --nav-text: var(--text-secondary);
   }
 }
 
@@ -214,9 +222,9 @@ a:hover {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--nav-bg);
   backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--nav-border);
   animation: slideDown 0.4s var(--transition-base);
 }
 
@@ -268,7 +276,7 @@ a:hover {
   font-family: var(--font-body);
   font-size: var(--fs-base);
   font-weight: var(--fw-medium);
-  color: var(--text-secondary);
+  color: var(--nav-text);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
