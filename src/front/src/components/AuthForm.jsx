@@ -65,12 +65,13 @@ export default function AuthForm({ onLogin }) {
 
   return (
     <>
-      <div className="auth-form">
+      <div className="auth-form" data-testid="auth-form">
         {/* Mode Tabs */}
         <div className="auth-tabs">
           <button
             type="button"
             className={`auth-tab ${mode === 'login' ? 'active' : ''}`}
+            data-testid="auth-tab-login"
             onClick={() => setMode('login')}
           >
             Login
@@ -78,6 +79,7 @@ export default function AuthForm({ onLogin }) {
           <button
             type="button"
             className={`auth-tab ${mode === 'register' ? 'active' : ''}`}
+            data-testid="auth-tab-register"
             onClick={() => setMode('register')}
           >
             Register
@@ -155,6 +157,7 @@ export default function AuthForm({ onLogin }) {
               required
               className="form-input"
               autoComplete="email"
+              data-testid="auth-email-input"
             />
           </div>
 
@@ -169,6 +172,7 @@ export default function AuthForm({ onLogin }) {
               required
               className="form-input"
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              data-testid="auth-password-input"
             />
           </div>
 
@@ -190,6 +194,7 @@ export default function AuthForm({ onLogin }) {
                   required
                   className="form-input"
                   autoComplete="new-password"
+                  data-testid="auth-confirm-password-input"
                 />
               </motion.div>
             )}

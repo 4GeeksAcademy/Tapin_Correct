@@ -84,6 +84,7 @@ export default function Navigation({ user, onLogout }) {
               <button
                 onClick={onLogout}
                 className="btn btn-ghost btn-sm"
+                data-testid="logout-btn"
               >
                 Logout
               </button>
