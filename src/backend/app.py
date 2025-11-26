@@ -145,7 +145,13 @@ def create_app():
                 app.logger.info(
                     "Creating DB tables for local dev (RUN_MIGRATIONS_ON_START or sqlite)"
                 )
-                db.create_all()
+                try:
+                    db.create_all()
+                    app.logger.info("Database tables created successfully")
+                except Exception as e:
+                    app.logger.warning(
+                        f"Failed to create database tables (they may already exist): {e}"
+                    )
             else:
                 app.logger.info(
                     "Skipping automatic DB table creation. "
