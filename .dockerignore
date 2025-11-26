@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+build/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.venv-tools/
+src/backend/.venv/
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+playwright-report/
+
+# Logs
+*.log
+app.log
+
+# Database
+*.db
+*.db-journal
+*.db.backup
+instance/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Frontend build files (we only need backend)
+src/front/node_modules/
+src/front/build/
+src/front/.vite/
+src/front/test-results/
+src/front/playwright-report/
+
+# Development files
+.env.sample
+.env.example
+*.sample
+
+# Fly.io
+fly.toml
+
+# Misc
+.cache/
+tmp/
+temp/
