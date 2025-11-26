@@ -54,3 +54,21 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
+
+/* Dark Mode Map Popups */
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.9) !important; /* Dark blue background */
+  backdrop-filter: blur(10px);
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px !important;
+}
+
+.leaflet-popup-content a {
+  color: #a5b4fc !important; /* Light purple link */
+}
+
+.leaflet-container {
+  background: #0f172a !important; /* Prevents white flash while loading tiles */
+}

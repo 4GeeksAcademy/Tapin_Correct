@@ -2,14 +2,21 @@ import React, { useRef, useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+// FIX: Use bundled marker icons so Vite doesn't break image paths
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-// Fix for default marker icons in React-Leaflet
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+const DefaultIcon = L.icon({
+  iconUrl,
+  iconRetinaUrl,
+  shadowUrl,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  tooltipAnchor: [16, -28]
 });
+L.Marker.prototype.options.icon = DefaultIcon;
 
 export default function MapView({ listings, onListingClick, userLocation, selectedLocation, onMapLocationSelect }) {
   const mapRef = useRef();
@@ -173,17 +180,17 @@ export default function MapView({ listings, onListingClick, userLocation, select
         {/* controller to handle clicks and panning to external selected location */}
         <MapController selectedLocation={selectedLocation} />
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
         {mappableListings.map((listing) => (
           <Marker key={listing.id} position={[listing.latitude, listing.longitude]}>
             <Popup>
               <div style={{ minWidth: '200px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>{listing.title}</h3>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: 'white' }}>{listing.title}</h3>
                 {listing.location && (
-                  <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: '#666' }}>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: 'var(--text-muted)' }}>
                     📍 {listing.location}
                   </p>
                 )}
@@ -205,10 +212,10 @@ export default function MapView({ listings, onListingClick, userLocation, select
                   style={{
                     marginTop: '8px',
                     padding: '6px 12px',
-                    background: '#007bff',
+                    background: 'var(--primary)',
                     color: 'white',
                     border: 'none',
-                    borderRadius: '4px',
+                    borderRadius: '6px',
                     cursor: 'pointer',
                     width: '100%',
                   }}
@@ -225,8 +232,8 @@ export default function MapView({ listings, onListingClick, userLocation, select
           <Marker position={[selectedLocation.coords[0], selectedLocation.coords[1]]}>
             <Popup>
               <div style={{ minWidth: '180px' }}>
-                <strong>{selectedLocation.name || 'Selected location'}</strong>
-                <div style={{ marginTop: 6, fontSize: 12, color: '#666' }}>{selectedLocation.type}</div>
+                <strong style={{ color: 'white' }}>{selectedLocation.name || 'Selected location'}</strong>
+                <div style={{ marginTop: 6, fontSize: 12, color: 'var(--text-muted)' }}>{selectedLocation.type}</div>
               </div>
             </Popup>
           </Marker>

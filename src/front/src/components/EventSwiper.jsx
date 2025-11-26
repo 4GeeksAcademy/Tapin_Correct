@@ -1,521 +1,91 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
+import GlassCard from './GlassCard';
 
-import { API_URL } from '../lib/api';
-
-/**
- * Tinder-style Event Swiper
- *
- * Swipe right = Like/Interested
- * Swipe left = Not interested
- * Swipe up = Super like
- * Tap = View details
- */
-export default function EventSwiper({ token, userLocation, onComplete }) {
-  const [events, setEvents] = useState([]);
+const EventSwiper = ({ events = [], onSwipe = () => { } }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [animating, setAnimating] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState(null);
+  const [direction, setDirection] = useState(null);
 
-  const cardRef = useRef(null);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const isDraggingRef = useRef(false);
+  const handleSwipe = (dir) => {
+    if (currentIndex >= events.length) return;
+    setDirection(dir);
 
-  useEffect(() => {
-    if (userLocation && token) {
-      loadEvents();
-    }
-  }, [userLocation, token]);
-
-  async function loadEvents() {
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/events/personalized`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          location: userLocation,
-          limit: 50
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setEvents(data.events || []);
-        setCurrentIndex(0);
-      }
-    } catch (error) {
-      console.error('Error loading events:', error);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function recordInteraction(eventId, interactionType, swipeDir = null) {
-    try {
-      await fetch(`${API_URL}/api/events/interact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          event_id: eventId,
-          interaction_type: interactionType,
-          metadata: {
-            swipe_direction: swipeDir,
-            timestamp: new Date().toISOString()
-          }
-        })
-      });
-    } catch (error) {
-      console.error('Error recording interaction:', error);
-    }
-  }
-
-  function handleSwipe(direction) {
-    if (animating || currentIndex >= events.length) return;
-
-    const currentEvent = events[currentIndex];
-    setSwipeDirection(direction);
-    setAnimating(true);
-
-    // Record interaction
-    const interactionMap = {
-      'left': 'dislike',
-      'right': 'like',
-      'up': 'super_like',
-      'down': 'skip'
-    };
-
-    recordInteraction(currentEvent.id, interactionMap[direction], direction);
-
-    // Animate out and move to next
     setTimeout(() => {
-      setCurrentIndex(currentIndex + 1);
-      setSwipeDirection(null);
-      setAnimating(false);
-
-      // Check if completed
-      if (currentIndex + 1 >= events.length) {
-        if (onComplete) onComplete();
-      }
+      const ev = events[currentIndex];
+      try { onSwipe(ev, dir); } catch (e) { console.error(e); }
+      setCurrentIndex((prev) => prev + 1);
+      setDirection(null);
     }, 300);
-  }
+  };
 
-  function handleTouchStart(e) {
-    startXRef.current = e.touches[0].clientX;
-    startYRef.current = e.touches[0].clientY;
-    isDraggingRef.current = true;
-  }
-
-  function handleTouchMove(e) {
-    if (!isDraggingRef.current || !cardRef.current) return;
-
-    const currentX = e.touches[0].clientX;
-    const currentY = e.touches[0].clientY;
-    const diffX = currentX - startXRef.current;
-    const diffY = currentY - startYRef.current;
-
-    // Apply transform
-    cardRef.current.style.transform = `translate(${diffX}px, ${diffY}px) rotate(${diffX * 0.1}deg)`;
-
-    // Update opacity based on direction
-    const opacity = 1 - Math.abs(diffX) / 300;
-    cardRef.current.style.opacity = Math.max(0.5, opacity);
-  }
-
-  function handleTouchEnd(e) {
-    if (!isDraggingRef.current || !cardRef.current) return;
-
-    const endX = e.changedTouches[0].clientX;
-    const endY = e.changedTouches[0].clientY;
-    const diffX = endX - startXRef.current;
-    const diffY = endY - startYRef.current;
-
-    isDraggingRef.current = false;
-
-    // Reset transform
-    cardRef.current.style.transform = '';
-    cardRef.current.style.opacity = '1';
-
-    // Determine swipe direction
-    const threshold = 100;
-
-    if (Math.abs(diffX) > threshold) {
-      if (diffX > 0) {
-        handleSwipe('right');
-      } else {
-        handleSwipe('left');
-      }
-    } else if (Math.abs(diffY) > threshold && diffY < 0) {
-      handleSwipe('up'); // Super like
-    } else {
-      // No significant swipe, reset position
-      cardRef.current.style.transition = 'transform 0.2s';
-      setTimeout(() => {
-        if (cardRef.current) {
-          cardRef.current.style.transition = '';
-        }
-      }, 200);
-    }
-  }
-
-  if (loading) {
+  if (!events || events.length === 0 || currentIndex >= events.length) {
     return (
-      <div className="text-center py-5">
-        <div className="spinner-border text-primary mb-3"></div>
-        <p>Loading events...</p>
-      </div>
-    );
-  }
-
-  if (events.length === 0) {
-    return (
-      <div className="text-center py-5">
-        <div className="display-1 mb-3">🎉</div>
-        <h3>No more events!</h3>
-        <p className="text-muted">Check back later for new discoveries</p>
-        <button className="btn btn-primary mt-3" onClick={loadEvents}>
-          <i className="fas fa-sync me-2"></i>
-          Refresh
-        </button>
-      </div>
-    );
-  }
-
-  if (currentIndex >= events.length) {
-    return (
-      <div className="text-center py-5">
-        <div className="display-1 mb-3">✨</div>
-        <h3>You've seen all events!</h3>
-        <p className="text-muted">Great job exploring!</p>
-        <button className="btn btn-primary mt-3" onClick={loadEvents}>
-          <i className="fas fa-sync me-2"></i>
-          Load More
-        </button>
+      <div style={{ textAlign: 'center', padding: '3rem', opacity: 0.9 }}>
+        <h3>🎉 All caught up!</h3>
+        <p>Check back later for more events.</p>
       </div>
     );
   }
 
   const currentEvent = events[currentIndex];
-  const remainingCount = events.length - currentIndex;
+  const nextEvent = events[currentIndex + 1];
 
   return (
-    <div className="event-swiper">
-      {/* Counter */}
-      <div className="text-center mb-3">
-        <span className="badge bg-secondary">
-          {currentIndex + 1} / {events.length}
-        </span>
-      </div>
-
-      {/* Swipe cards stack */}
-      <div className="swipe-container">
-        {/* Next card (background) */}
-        {currentIndex + 1 < events.length && (
-          <div className="swipe-card swipe-card-next">
-            <img
-              src={events[currentIndex + 1].image_url || 'https://via.placeholder.com/400x600/607D8B/fff?text=Event'}
-              alt="Next event"
-            />
-          </div>
-        )}
-
-        {/* Current card */}
-        <div
-          ref={cardRef}
-          className={`swipe-card swipe-card-current ${animating ? `swipe-${swipeDirection}` : ''}`}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+    <div style={{ position: 'relative', height: '400px', maxWidth: '100%', perspective: '1000px' }}>
+      {nextEvent && (
+        <GlassCard
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, width: '100%', height: '100%',
+            transform: 'scale(0.95) translateY(10px)',
+            opacity: 0.6,
+            zIndex: 1,
+            filter: 'blur(1px)'
+          }}
         >
-          <img
-            src={currentEvent.image_url || 'https://via.placeholder.com/400x600/667eea/fff?text=Event'}
-            alt={currentEvent.title}
-            className="swipe-card-image"
-          />
-
-          <div className="swipe-card-content">
-            <h3 className="swipe-card-title">{currentEvent.title}</h3>
-
-            {currentEvent.match_score && (
-              <div className="match-badge">
-                <span className="badge bg-success">
-                  {currentEvent.match_score}% Match
-                </span>
-              </div>
-            )}
-
-            <div className="swipe-card-details">
-              {currentEvent.venue && (
-                <div className="mb-2">
-                  <i className="fas fa-map-marker-alt me-2"></i>
-                  <small>{currentEvent.venue}</small>
-                </div>
-              )}
-
-              {currentEvent.date_start && (
-                <div className="mb-2">
-                  <i className="far fa-clock me-2"></i>
-                  <small>{new Date(currentEvent.date_start).toLocaleDateString()}</small>
-                </div>
-              )}
-
-              {currentEvent.price && (
-                <div className="mb-2">
-                  <i className="fas fa-tag me-2"></i>
-                  <small className="text-success fw-bold">{currentEvent.price}</small>
-                </div>
-              )}
-
-              <span className="badge" style={{
-                backgroundColor: currentEvent.category_color || '#667eea'
-              }}>
-                {currentEvent.category}
-              </span>
-            </div>
-
-            {currentEvent.match_explanation && (
-              <div className="mt-3">
-                <small className="text-muted">
-                  <i className="fas fa-lightbulb me-1"></i>
-                  {currentEvent.match_explanation}
-                </small>
-              </div>
-            )}
+          <div style={{ height: '200px', background: '#222', borderRadius: '12px', marginBottom: '1rem', overflow: 'hidden' }}>
+            <img src={nextEvent.image || nextEvent.image_url || "https://via.placeholder.com/400x200?text=Event"} alt="Next" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
+          <h3 style={{ color: 'white' }}>{nextEvent.title}</h3>
+        </GlassCard>
+      )}
 
-          {/* Swipe indicators */}
-          <div className="swipe-indicator swipe-indicator-left">
-            <i className="fas fa-times"></i>
-          </div>
-          <div className="swipe-indicator swipe-indicator-right">
-            <i className="fas fa-heart"></i>
-          </div>
-          <div className="swipe-indicator swipe-indicator-up">
-            <i className="fas fa-star"></i>
+      <GlassCard
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, width: '100%', height: '100%',
+          zIndex: 2,
+          cursor: 'grab',
+          transition: 'transform 0.3s ease, opacity 0.3s ease',
+          transform: direction === 'left' ? 'translateX(-150%) rotate(-20deg)' : direction === 'right' ? 'translateX(150%) rotate(20deg)' : 'translateX(0) rotate(0)',
+          opacity: direction ? 0 : 1,
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div style={{ height: '200px', background: '#222', borderRadius: '12px', marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
+          <img src={currentEvent.image || currentEvent.image_url || "https://via.placeholder.com/400x200?text=Event"} alt={currentEvent.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div style={{ position: 'absolute', top: 10, right: 10, background: 'rgba(0,0,0,0.5)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', color: 'white' }}>
+            {currentEvent.category}
           </div>
         </div>
-      </div>
 
-      {/* Action buttons */}
-      <div className="swipe-actions mt-4">
-        <button
-          className="swipe-btn swipe-btn-dislike"
-          onClick={() => handleSwipe('left')}
-          disabled={animating}
-        >
-          <i className="fas fa-times"></i>
-        </button>
+        <h3 style={{ marginBottom: '0.5rem', color: 'white' }}>{currentEvent.title}</h3>
+        <p style={{ fontSize: '0.9rem', opacity: 0.85, marginBottom: '1rem', color: 'var(--text-muted)' }}>
+          📍 {currentEvent.location || currentEvent.venue || 'Location TBD'} <br />
+          📅 {currentEvent.date || currentEvent.date_start ? new Date(currentEvent.date || currentEvent.date_start).toLocaleDateString() : 'TBD'}
+        </p>
 
-        <button
-          className="swipe-btn swipe-btn-superlike"
-          onClick={() => handleSwipe('up')}
-          disabled={animating}
-        >
-          <i className="fas fa-star"></i>
-        </button>
-
-        <button
-          className="swipe-btn swipe-btn-like"
-          onClick={() => handleSwipe('right')}
-          disabled={animating}
-        >
-          <i className="fas fa-heart"></i>
-        </button>
-      </div>
-
-      <style jsx>{`
-        .event-swiper {
-          max-width: 500px;
-          margin: 0 auto;
-          padding: 20px;
-        }
-
-        .swipe-container {
-          position: relative;
-          height: 600px;
-          margin-bottom: 20px;
-        }
-
-        .swipe-card {
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          background: white;
-          border-radius: 20px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          overflow: hidden;
-          cursor: grab;
-          user-select: none;
-          -webkit-user-select: none;
-        }
-
-        .swipe-card:active {
-          cursor: grabbing;
-        }
-
-        .swipe-card-next {
-          transform: scale(0.95);
-          opacity: 0.8;
-          z-index: 1;
-        }
-
-        .swipe-card-current {
-          z-index: 2;
-          transition: none;
-        }
-
-        .swipe-card.swipe-left {
-          animation: swipeLeft 0.3s forwards;
-        }
-
-        .swipe-card.swipe-right {
-          animation: swipeRight 0.3s forwards;
-        }
-
-        .swipe-card.swipe-up {
-          animation: swipeUp 0.3s forwards;
-        }
-
-        @keyframes swipeLeft {
-          to {
-            transform: translateX(-150%) rotate(-30deg);
-            opacity: 0;
-          }
-        }
-
-        @keyframes swipeRight {
-          to {
-            transform: translateX(150%) rotate(30deg);
-            opacity: 0;
-          }
-        }
-
-        @keyframes swipeUp {
-          to {
-            transform: translateY(-150%) scale(1.1);
-            opacity: 0;
-          }
-        }
-
-        .swipe-card-image {
-          width: 100%;
-          height: 400px;
-          object-fit: cover;
-        }
-
-        .swipe-card-content {
-          padding: 20px;
-          background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.7));
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          color: white;
-        }
-
-        .swipe-card-title {
-          font-size: 1.5rem;
-          font-weight: bold;
-          margin-bottom: 10px;
-          text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .match-badge {
-          margin-bottom: 10px;
-        }
-
-        .swipe-card-details {
-          margin-bottom: 10px;
-        }
-
-        .swipe-indicator {
-          position: absolute;
-          top: 50px;
-          font-size: 4rem;
-          opacity: 0;
-          transition: opacity 0.2s;
-          pointer-events: none;
-        }
-
-        .swipe-indicator-left {
-          left: 50px;
-          color: #ff4458;
-        }
-
-        .swipe-indicator-right {
-          right: 50px;
-          color: #2ecc71;
-        }
-
-        .swipe-indicator-up {
-          top: 50px;
-          left: 50%;
-          transform: translateX(-50%);
-          color: #f39c12;
-        }
-
-        .swipe-actions {
-          display: flex;
-          justify-content: center;
-          gap: 20px;
-        }
-
-        .swipe-btn {
-          width: 60px;
-          height: 60px;
-          border-radius: 50%;
-          border: none;
-          font-size: 1.5rem;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .swipe-btn:hover:not(:disabled) {
-          transform: scale(1.1);
-          box-shadow: 0 6px 12px rgba(0,0,0,0.3);
-        }
-
-        .swipe-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .swipe-btn-dislike {
-          background: linear-gradient(135deg, #ff4458 0%, #ff1744 100%);
-          color: white;
-        }
-
-        .swipe-btn-like {
-          background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
-          color: white;
-        }
-
-        .swipe-btn-superlike {
-          background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
-          color: white;
-          width: 70px;
-          height: 70px;
-          font-size: 1.8rem;
-        }
-
-        @media (max-width: 768px) {
-          .swipe-container {
-            height: 500px;
-          }
-
-          .swipe-card-image {
-            height: 300px;
-          }
-        }
-      `}</style>
+        <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto' }}>
+          <button onClick={() => handleSwipe('left')} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ff6b6b', background: 'rgba(255,107,107,0.08)', color: '#ff6b6b', cursor: 'pointer', fontWeight: '700' }}>
+            Skip
+          </button>
+          <button onClick={() => handleSwipe('right')} style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #51cf66', background: 'rgba(81,207,102,0.08)', color: '#51cf66', cursor: 'pointer', fontWeight: '700' }}>
+            I'm In!
+          </button>
+        </div>
+      </GlassCard>
     </div>
   );
-}
+};
+
+export default EventSwiper;
