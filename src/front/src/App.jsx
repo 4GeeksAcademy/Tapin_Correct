@@ -12,9 +12,15 @@ import MapView from './components/MapView';
 import 'leaflet/dist/leaflet.css';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
+import Dashboard from './pages/Dashboard';
 import { API_URL } from './lib/api';
 
 export default function App() {
+  // ...existing code...
+  // Add dashboard route logic (simple example, replace with your router setup if needed)
+  if (pathname === '/dashboard') {
+    return <Dashboard />;
+  }
   const pathname = typeof globalThis !== 'undefined' ? globalThis.location.pathname : '/';
   const resetMatch = pathname.match(/^\/reset-password\/confirm\/([^/]+)$/);
   if (resetMatch) {

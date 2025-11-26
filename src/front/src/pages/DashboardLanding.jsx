@@ -4,7 +4,6 @@ import volunteerIcon from '@/assets/icons/volunteer.svg';
 import organizationIcon from '@/assets/icons/organization.svg';
 import locationIcon from '@/assets/icons/location.svg';
 import AuthForm from '../components/AuthForm';
-import HeroVideo from '../components/HeroVideo';
 
 export default function DashboardLanding({ onLogin, onEnter, user }) {
   const [showAuth, setShowAuth] = useState(false);
@@ -88,8 +87,6 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
             Log In
           </button>
         </div>
-
-        <HeroVideo />
 
         <ul className="landing-features">
           <li><img src={volunteerIcon} alt="" className="icon" /> Volunteer opportunities: Find meaningful ways to give back</li>

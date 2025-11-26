@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 80" width="280" height="80">
+  <!-- Reversed TapIn Logo - White text with teal panda for colored backgrounds -->
+
+  <!-- Dark background -->
+  <rect width="280" height="80" fill="#2F3E46" rx="4"/>
+
+  <!-- Panda Icon in Location Pin -->
+  <g transform="translate(40, 40)">
+    <path d="M 0,-30 C -16,-30 -28,-18 -28,0 C -28,18 0,30 0,30 C 0,30 28,18 28,0 C 28,-18 16,-30 0,-30 Z"
+          fill="#17B8A3"/>
+
+    <circle cx="-8" cy="-5" r="4" fill="white"/>
+    <circle cx="8" cy="-5" r="4" fill="white"/>
+    <circle cx="0" cy="0" r="12" fill="white"/>
+
+    <ellipse cx="-4" cy="-2" rx="3" ry="4" fill="#2F3E46"/>
+    <ellipse cx="4" cy="-2" rx="3" ry="4" fill="#2F3E46"/>
+    <circle cx="-4" cy="-2.5" r="1.5" fill="white"/>
+    <circle cx="4" cy="-2.5" r="1.5" fill="white"/>
+
+    <ellipse cx="0" cy="2" rx="1.5" ry="1" fill="#2F3E46"/>
+    <path d="M -3,5 Q 0,7 3,5" stroke="#2F3E46" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- TapIn Text -->
+  <text x="85" y="52" font-family="'Segoe UI', Arial, sans-serif" font-size="38" font-weight="700" fill="white">
+    TapIn
+  </text>
+
+  <!-- Tagline -->
+  <text x="85" y="68" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="#E2E8F0">
+    Volunteer with Purpose
+  </text>
+
+  <!-- Orange accent -->
+  <circle cx="245" cy="35" r="3" fill="#FF9D42"/>
+</svg>
