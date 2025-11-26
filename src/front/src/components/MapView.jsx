@@ -18,13 +18,24 @@ const DefaultIcon = L.icon({
 });
 L.Marker.prototype.options.icon = DefaultIcon;
 
-export default function MapView({ listings, onListingClick, userLocation, selectedLocation, onMapLocationSelect }) {
+export default function MapView({
+  listings,
+  events,
+  onListingClick,
+  userLocation,
+  selectedLocation,
+  onMapLocationSelect,
+  center: propCenter,
+}) {
   const mapRef = useRef();
   const [isGeocoding, setIsGeocoding] = useState(false);
 
-  // Use user's selected location or default to Houston/Dallas area
-  const LOCAL_CITY_CENTER = userLocation?.coords || [29.7604, -95.3698]; // Houston, TX (default)
-  const MAX_DISTANCE_KM = 50; // Only show listings within 50km of city center
+  // Normalize data: support both listings and events props
+  const items = events || listings || [];
+
+  // Use provided center or user's selected location or default to Houston
+  const LOCAL_CITY_CENTER = propCenter || userLocation?.coords || [29.7604, -95.3698];
+  const MAX_DISTANCE_KM = 50; // Only show items within 50km of center
 
   // Helper function to calculate distance between two coordinates (Haversine formula)
   const getDistanceKm = (lat1, lon1, lat2, lon2) => {
@@ -39,33 +50,41 @@ export default function MapView({ listings, onListingClick, userLocation, select
     return R * c;
   };
 
-  // Filter listings that have coordinates AND are within local area
-  const mappableListings = listings.filter(
-    (listing) => {
-      if (listing.latitude == null || listing.longitude == null) return false;
+  // Normalize item coordinates (support both lat/latitude and lng/longitude)
+  const normalizeItem = (item) => ({
+    ...item,
+    lat: item.lat || item.latitude,
+    lng: item.lng || item.longitude,
+  });
+
+  // Filter items that have coordinates AND are within local area (if center provided, skip distance check)
+  const mappableItems = items
+    .map(normalizeItem)
+    .filter((item) => {
+      if (item.lat == null || item.lng == null) return false;
+      // If a specific center is provided (like in EventDetail), skip distance filtering
+      if (propCenter) return true;
       const distance = getDistanceKm(
         LOCAL_CITY_CENTER[0],
         LOCAL_CITY_CENTER[1],
-        listing.latitude,
-        listing.longitude
+        item.lat,
+        item.lng
       );
       return distance <= MAX_DISTANCE_KM;
-    }
-  );
+    });
 
   // Fixed center on local city
-  const center = LOCAL_CITY_CENTER;
+  const mapCenter = LOCAL_CITY_CENTER;
 
-  // Fixed zoom level for city view (prevent zooming out to see entire country)
-  const zoom = 11;
+  // Fixed zoom level for city view
+  const zoom = propCenter ? 14 : 11; // Closer zoom for single event view
 
   useEffect(() => {
-    // Keep map centered on local city, don't auto-fit to all markers
-    // This ensures the map stays focused on your local area
+    // Keep map centered appropriately
     if (mapRef.current) {
       mapRef.current.setView(LOCAL_CITY_CENTER, zoom);
     }
-  }, [mappableListings]);
+  }, [mappableItems]);
 
   // Component to handle map clicks and react to external selectedLocation
   function MapController({ selectedLocation }) {
@@ -129,7 +148,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
     return null;
   }
 
-  if (mappableListings.length === 0) {
+  if (mappableItems.length === 0) {
     return (
       <div
         style={{
@@ -137,15 +156,15 @@ export default function MapView({ listings, onListingClick, userLocation, select
           alignItems: 'center',
           justifyContent: 'center',
           height: '500px',
-          background: '#f5f5f5',
+          background: 'rgba(255, 255, 255, 0.05)',
           borderRadius: '8px',
-          color: '#666',
+          color: '#999',
         }}
       >
         <div style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '18px', marginBottom: '8px' }}>📍 No local listings found</p>
+          <p style={{ fontSize: '18px', marginBottom: '8px' }}>📍 No events with location data</p>
           <p style={{ fontSize: '14px' }}>
-            No listings within {MAX_DISTANCE_KM}km of your area have location data.
+            {propCenter ? 'Location data unavailable for this event.' : `No items within ${MAX_DISTANCE_KM}km have location data.`}
           </p>
         </div>
       </div>
@@ -165,14 +184,14 @@ export default function MapView({ listings, onListingClick, userLocation, select
       `}</style>
 
       <MapContainer
-        center={center}
+        center={mapCenter}
         zoom={zoom}
         ref={mapRef}
         style={{ height: '600px', width: '100%', borderRadius: '8px', zIndex: 0, position: 'relative' }}
         scrollWheelZoom={true}
-        minZoom={10}
-        maxZoom={15}
-        maxBounds={[
+        minZoom={propCenter ? 10 : 10}
+        maxZoom={18}
+        maxBounds={propCenter ? undefined : [
           [LOCAL_CITY_CENTER[0] - 0.5, LOCAL_CITY_CENTER[1] - 0.5],
           [LOCAL_CITY_CENTER[0] + 0.5, LOCAL_CITY_CENTER[1] + 0.5]
         ]}
@@ -184,44 +203,53 @@ export default function MapView({ listings, onListingClick, userLocation, select
           url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
 
-        {mappableListings.map((listing) => (
-          <Marker key={listing.id} position={[listing.latitude, listing.longitude]}>
+        {mappableItems.map((item) => (
+          <Marker key={item.id} position={[item.lat, item.lng]}>
             <Popup>
-              <div style={{ minWidth: '200px' }}>
-                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: 'white' }}>{listing.title}</h3>
-                {listing.location && (
-                  <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: 'var(--text-muted)' }}>
-                    📍 {listing.location}
+              <div style={{ minWidth: '200px', background: '#1a1a1a', padding: '8px', borderRadius: '8px' }}>
+                <h3 style={{ margin: '0 0 8px 0', fontSize: '16px', color: '#fff' }}>{item.title}</h3>
+                {(item.location || item.venue || item.location_name) && (
+                  <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: '#aaa' }}>
+                    📍 {item.location || item.venue || item.location_name}
                   </p>
                 )}
-                {listing.description && (
+                {item.date && (
+                  <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: '#aaa' }}>
+                    📅 {typeof item.date === 'string' ? new Date(item.date).toLocaleDateString() : item.date}
+                  </p>
+                )}
+                {item.description && (
                   <p
                     style={{
                       margin: '8px 0',
                       fontSize: '14px',
                       maxHeight: '60px',
                       overflow: 'hidden',
+                      color: '#ccc',
                     }}
                   >
-                    {listing.description.substring(0, 100)}
-                    {listing.description.length > 100 ? '...' : ''}
+                    {item.description.substring(0, 100)}
+                    {item.description.length > 100 ? '...' : ''}
                   </p>
                 )}
-                <button
-                  onClick={() => onListingClick && onListingClick(listing)}
-                  style={{
-                    marginTop: '8px',
-                    padding: '6px 12px',
-                    background: 'var(--primary)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    width: '100%',
-                  }}
-                >
-                  View Details
-                </button>
+                {onListingClick && (
+                  <button
+                    onClick={() => onListingClick(item)}
+                    style={{
+                      marginTop: '8px',
+                      padding: '6px 12px',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      width: '100%',
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    View Details
+                  </button>
+                )}
               </div>
             </Popup>
           </Marker>
