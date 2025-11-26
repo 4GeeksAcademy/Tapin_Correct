@@ -197,24 +197,28 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
           <div className="mode-tabs mb-6">
             <button
               className={`mode-tab ${discoveryMode === 'personalized' ? 'active' : ''}`}
+              data-testid="mode-tab-personalized"
               onClick={() => setDiscoveryMode('personalized')}
             >
               <i className="fas fa-magic"></i> AI Personalized
             </button>
             <button
               className={`mode-tab ${discoveryMode === 'swipe' ? 'active' : ''}`}
+              data-testid="mode-tab-swipe"
               onClick={() => setDiscoveryMode('swipe')}
             >
               <i className="fas fa-hand-pointer"></i> Swipe Mode
             </button>
             <button
               className={`mode-tab ${discoveryMode === 'surprise' ? 'active' : ''}`}
+              data-testid="mode-tab-surprise"
               onClick={() => setDiscoveryMode('surprise')}
             >
               <i className="fas fa-gift"></i> Surprise Me
             </button>
             <button
               className={`mode-tab ${discoveryMode === 'browse' ? 'active' : ''}`}
+              data-testid="mode-tab-browse"
               onClick={() => setDiscoveryMode('browse')}
             >
               <i className="fas fa-th"></i> Browse All
@@ -235,12 +239,14 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                 }}
                 userCoords={userCoords ? [userCoords.latitude, userCoords.longitude] : null}
                 placeholder="Enter city, state (e.g., Dallas, TX)"
+                data-testid="location-input"
                 countryFilter="US"
               />
             </div>
             <button
               className="btn btn-secondary"
               onClick={discoverEvents}
+              data-testid="discover-btn"
               disabled={!userLocation || loading}
             >
               {loading ? (
@@ -341,6 +347,7 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                   type="text"
                   className="form-input"
                   placeholder="🤖 Search events: 'live music', 'food', 'outdoor'..."
+                  data-testid="event-search-input"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -424,6 +431,7 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                 <button
                   className="btn btn-primary"
                   onClick={() => setDiscoveryMode('surprise')}
+                  data-testid="empty-surprise-btn"
                 >
                   <i className="fas fa-gift"></i> Try Surprise Me
                 </button>
@@ -445,6 +453,7 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05, duration: 0.3 }}
                     className="event-card-wrapper"
+                    data-testid={`event-card-wrapper-${event.id}`}
                     onClick={() => {
                       setSelectedEvent(event);
                       handleEventInteraction(event, 'view');

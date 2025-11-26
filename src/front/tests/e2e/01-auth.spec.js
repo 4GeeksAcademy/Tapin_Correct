@@ -6,6 +6,56 @@ import { test, expect } from "@playwright/test";
  */
 
 test.describe("Authentication", () => {
+  // Robust locator: try data-testid -> CSS fallback (with text) -> CSS fallback -> role/text
+  async function findLocator(
+    page,
+    { testId, fallbackCssWithText, fallbackCss, role, nameRegex }
+  ) {
+    if (testId) {
+      const byTestId = page.getByTestId(testId);
+      if (await byTestId.isVisible().catch(() => false)) return byTestId;
+    }
+    if (fallbackCssWithText) {
+      const loc = page.locator(fallbackCssWithText).first();
+      if (await loc.isVisible().catch(() => false)) return loc;
+    }
+    if (fallbackCss) {
+      const loc = page.locator(fallbackCss).first();
+      if (await loc.isVisible().catch(() => false)) return loc;
+    }
+    if (role && nameRegex) {
+      const byRole = page.getByRole(role, { name: nameRegex });
+      if (await byRole.isVisible().catch(() => false)) return byRole;
+    }
+    return testId ? page.getByTestId(testId) : page.locator("");
+  }
+
+  // Fill an input: try data-testid first, then fallbacks (CSS selectors array)
+  async function fillInput(page, testId, fallbacks = [], value) {
+    if (testId) {
+      const sel = `[data-testid="${testId}"]`;
+      if (
+        await page
+          .locator(sel)
+          .first()
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await page.fill(sel, value);
+        return;
+      }
+    }
+    for (const s of fallbacks) {
+      const loc = page.locator(s).first();
+      if (await loc.isVisible().catch(() => false)) {
+        await loc.fill(value);
+        return;
+      }
+    }
+    // last resort: try testId selector (will throw)
+    if (testId) await page.fill(`[data-testid="${testId}"]`, value);
+  }
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
   });
@@ -41,8 +91,18 @@ test.describe("Authentication", () => {
     await page.waitForSelector(".auth-form", { timeout: 5000 });
 
     // Verify auth tabs are visible
-    const loginTab = page.getByTestId("auth-tab-login");
-    const registerTab = page.getByTestId("auth-tab-register");
+    const loginTab = await findLocator(page, {
+      testId: "auth-tab-login",
+      fallbackCssWithText: 'button.auth-tab:has-text("Login")',
+      role: "button",
+      nameRegex: /login/i,
+    });
+    const registerTab = await findLocator(page, {
+      testId: "auth-tab-register",
+      fallbackCssWithText: 'button.auth-tab:has-text("Register")',
+      role: "button",
+      nameRegex: /register/i,
+    });
     await expect(loginTab).toBeVisible();
     await expect(registerTab).toBeVisible();
   });
@@ -59,17 +119,34 @@ test.describe("Authentication", () => {
     await page.waitForSelector(".auth-form", { timeout: 5000 });
 
     // Click Register tab
-    const registerTab = page.getByTestId("auth-tab-register");
+    const registerTab = await findLocator(page, {
+      testId: "auth-tab-register",
+      fallbackCssWithText: 'button.auth-tab:has-text("Register")',
+      role: "button",
+      nameRegex: /register/i,
+    });
     await registerTab.click();
 
     // Wait a moment for tab switch
     await page.waitForTimeout(500);
 
-    // Fill registration form
-    await page.fill('[data-testid="auth-email-input"]', testEmail);
-    await page.fill('[data-testid="auth-password-input"]', "Test123!@#");
-    await page.fill(
-      '[data-testid="auth-confirm-password-input"]',
+    // Fill registration form (support deployed selectors)
+    await fillInput(
+      page,
+      "auth-email-input",
+      ["#email", 'input[type="email"]'],
+      testEmail
+    );
+    await fillInput(
+      page,
+      "auth-password-input",
+      ["#password", 'input[type="password"]'],
+      "Test123!@#"
+    );
+    await fillInput(
+      page,
+      "auth-confirm-password-input",
+      ["#confirm-password", "input#confirm-password", 'input[type="password"]'],
       "Test123!@#"
     );
 
@@ -105,14 +182,31 @@ test.describe("Authentication", () => {
     await getStartedButton.click();
     await page.waitForSelector(".auth-form", { timeout: 5000 });
 
-    const registerTab = page.getByTestId("auth-tab-register");
+    const registerTab = await findLocator(page, {
+      testId: "auth-tab-register",
+      fallbackCssWithText: 'button.auth-tab:has-text("Register")',
+      role: "button",
+      nameRegex: /register/i,
+    });
     await registerTab.click();
     await page.waitForTimeout(500);
 
-    await page.fill('[data-testid="auth-email-input"]', testEmail);
-    await page.fill('[data-testid="auth-password-input"]', testPassword);
-    await page.fill(
-      '[data-testid="auth-confirm-password-input"]',
+    await fillInput(
+      page,
+      "auth-email-input",
+      ["#email", 'input[type="email"]'],
+      testEmail
+    );
+    await fillInput(
+      page,
+      "auth-password-input",
+      ["#password", 'input[type="password"]'],
+      testPassword
+    );
+    await fillInput(
+      page,
+      "auth-confirm-password-input",
+      ["#confirm-password", "input#confirm-password", 'input[type="password"]'],
       testPassword
     );
 
@@ -149,8 +243,18 @@ test.describe("Authentication", () => {
     await page.waitForSelector(".auth-form", { timeout: 5000 });
 
     // Fill with invalid credentials
-    await page.fill('[data-testid="auth-email-input"]', "invalid@test.com");
-    await page.fill('[data-testid="auth-password-input"]', "wrongpassword");
+    await fillInput(
+      page,
+      "auth-email-input",
+      ["#email", 'input[type="email"]'],
+      "invalid@test.com"
+    );
+    await fillInput(
+      page,
+      "auth-password-input",
+      ["#password", 'input[type="password"]'],
+      "wrongpassword"
+    );
     await page.getByTestId("login-submit-btn").click();
 
     // Should show error
@@ -173,19 +277,41 @@ test.describe("Authentication", () => {
     await getStartedButton.click();
     await page.waitForSelector(".auth-form", { timeout: 5000 });
 
-    const registerTab = page.getByTestId("auth-tab-register");
+    const registerTab = await findLocator(page, {
+      testId: "auth-tab-register",
+      fallbackCssWithText: 'button.auth-tab:has-text("Register")',
+      role: "button",
+      nameRegex: /register/i,
+    });
     await registerTab.click();
     await page.waitForTimeout(500);
 
-    await page.fill('input[type="email"]', testEmail);
-    await page.fill('input[type="password"]', testPassword);
-    await page.fill("input#confirm-password", testPassword);
+    await fillInput(page, null, ["#email", 'input[type="email"]'], testEmail);
+    await fillInput(
+      page,
+      null,
+      ["#password", 'input[type="password"]'],
+      testPassword
+    );
+    await fillInput(
+      page,
+      null,
+      ["#confirm-password", "input#confirm-password"],
+      testPassword
+    );
 
     await page.getByTestId("register-submit-btn").click();
     await page.waitForTimeout(3000);
 
     // Look for logout button in header
-    const logoutButton = page.getByTestId("logout-btn");
+    const logoutButton = await findLocator(page, {
+      testId: "logout-btn",
+      fallbackCssWithText: 'button:has-text("Log Out")',
+      fallbackCss:
+        'button[aria-label*="logout" i], button[aria-label*="sign out" i]',
+      role: "button",
+      nameRegex: /log out|logout|sign out/i,
+    });
     await expect(logoutButton).toBeVisible({ timeout: 5000 });
 
     // Click logout

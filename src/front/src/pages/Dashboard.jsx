@@ -334,6 +334,7 @@ const Dashboard = () => {
                             <button
                                 onClick={() => setShowSurpriseMe(!showSurpriseMe)}
                                 className="btn btn-accent btn-lg"
+                                data-testid="dashboard-surprise-btn"
                             >
                                 🎲 Surprise Me!
                             </button>
@@ -401,6 +402,7 @@ const Dashboard = () => {
                 <button
                     onClick={() => navigate('/events')}
                     className="btn btn-primary btn-lg"
+                    data-testid="browse-all-btn"
                 >
                     Browse All Events →
                 </button>

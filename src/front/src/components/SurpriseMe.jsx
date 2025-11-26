@@ -87,6 +87,7 @@ export default function SurpriseMe({ token, userLocation }) {
               key={m.value}
               className={`mood-btn ${mood === m.value ? 'active' : ''}`}
               onClick={() => setMood(m.value)}
+              data-testid={`mood-${m.value}`}
             >
               <div className="mood-icon">{m.icon}</div>
               <div className="mood-label">{m.label}</div>
@@ -177,6 +178,7 @@ export default function SurpriseMe({ token, userLocation }) {
         className="btn btn-lg btn-primary w-100 mb-4 surprise-btn"
         onClick={generateSurprise}
         disabled={loading}
+        data-testid="surprise-btn"
       >
         {loading ? (
           <>
@@ -263,6 +265,7 @@ export default function SurpriseMe({ token, userLocation }) {
                 <button
                   className="btn btn-outline-secondary"
                   onClick={generateSurprise}
+                  data-testid="surprise-tryagain-btn"
                 >
                   <i className="fas fa-sync me-2"></i>
                   Try Again

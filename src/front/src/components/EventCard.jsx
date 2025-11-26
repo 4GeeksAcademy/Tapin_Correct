@@ -12,8 +12,8 @@ export default function EventCard({ event, onClick }) {
   // Parse image URLs
   const images = event.image_urls
     ? (typeof event.image_urls === 'string'
-        ? JSON.parse(event.image_urls)
-        : event.image_urls)
+      ? JSON.parse(event.image_urls)
+      : event.image_urls)
     : (event.image_url ? [event.image_url] : []);
 
   // Format date
@@ -36,6 +36,7 @@ export default function EventCard({ event, onClick }) {
   return (
     <div
       className="card event-card"
+      data-testid={`event-card-${event.id}`}
       style={{ cursor: onClick ? 'pointer' : 'default', borderTop: `4px solid ${categoryColor}` }}
       onClick={onClick}
     >
@@ -121,6 +122,7 @@ export default function EventCard({ event, onClick }) {
           <div className="event-card-actions">
             <button
               className="btn btn-primary"
+              data-testid={`volunteer-btn-${event.id}`}
               onClick={(e) => {
                 e.stopPropagation();
                 // Show contact modal or expand contact info
