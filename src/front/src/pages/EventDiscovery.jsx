@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import EventCard from '../components/EventCard';
 import CategoryFilter from '../components/CategoryFilter';
-import LocationDropdown from '../components/LocationDropdown';
 import EventSwiper from '../components/EventSwiper';
 import SurpriseMe from '../components/SurpriseMe';
 import AchievementsPanel from '../components/AchievementsPanel';
@@ -33,90 +32,120 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
   const [showAchievements, setShowAchievements] = useState(false);
   const [showARNav, setShowARNav] = useState(false);
   const [userCoords, setUserCoords] = useState(null);
-  const [locationInput, setLocationInput] = useState(''); // For the location dropdown
+  const [activeLocation, setActiveLocation] = useState('Houston, TX'); // Track the active search location
+  const [geoLocationName, setGeoLocationName] = useState(''); // Human-readable location name
 
-  // Get user's geolocation
+  // Get user's geolocation and convert to city name
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserCoords({
+        async (position) => {
+          const coords = {
             latitude: position.coords.latitude,
             longitude: position.coords.longitude
-          });
+          };
+          setUserCoords(coords);
+
+          // Reverse geocode to get city name
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.latitude}&lon=${coords.longitude}`
+            );
+            const data = await response.json();
+            const city = data.address.city || data.address.town || data.address.county || 'Unknown';
+            const state = data.address.state || '';
+            const locationName = state ? `${city}, ${state}` : city;
+
+            setGeoLocationName(locationName);
+            setActiveLocation(locationName);
+
+            // Also update parent component if callback exists
+            if (onLocationChange) {
+              onLocationChange({
+                coords: [coords.latitude, coords.longitude],
+                name: locationName,
+                type: 'geolocation'
+              });
+            }
+
+            console.log(`📍 Location detected: ${locationName}`);
+          } catch (error) {
+            console.error('Geocoding error:', error);
+            // Fallback to default location
+            setActiveLocation('Houston, TX');
+          }
         },
-        (error) => console.log('Geolocation error:', error)
+        (error) => {
+          console.log('Geolocation error:', error);
+          // Fallback to default location
+          setActiveLocation('Houston, TX');
+        }
       );
+    } else {
+      // Geolocation not supported, use default
+      setActiveLocation('Houston, TX');
     }
   }, []);
 
   useEffect(() => {
-    if (userLocation && token) {
+    if (activeLocation && token) {
       discoverEvents();
     }
-  }, [userLocation, token, discoveryMode]);
+  }, [activeLocation, token, discoveryMode]);
 
   async function discoverEvents() {
-    if (!userLocation) return;
+    if (!activeLocation) {
+      console.warn('No location set for event discovery');
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
-      let endpoint = '/api/local-events/tonight';
+      let endpoint = '/api/events/live';
 
       // Use AI personalized endpoint for personalized mode
       if (discoveryMode === 'personalized') {
         endpoint = '/api/events/personalized';
       }
 
-      // Fetch both local volunteer events and Ticketmaster events in parallel
-      const [localRes, ticketmasterRes] = await Promise.all([
-        fetch(`${API_URL}${endpoint}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            location: userLocation,
-            limit: 25,  // Reduced to make room for Ticketmaster events
-          }),
+      console.log(`🔍 Discovering events for: ${activeLocation}`);
+
+      // Fetch live events from Ticketmaster, Google, and other sources
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          location: activeLocation,
+          limit: 50,
         }),
-        fetch(`${API_URL}/api/events/ticketmaster`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            location: userLocation,
-            limit: 25,  // Add 25 Ticketmaster events
-          }),
-        }).catch(() => null)  // Don't fail if Ticketmaster is unavailable
-      ]);
+      });
 
-      let allEvents = [];
-
-      // Parse local events
-      if (localRes.ok) {
-        const localData = await localRes.json();
-        allEvents = localData.events || [];
+      if (!res.ok) {
+        throw new Error('Failed to fetch live events');
       }
 
-      // Parse and merge Ticketmaster events
-      if (ticketmasterRes && ticketmasterRes.ok) {
-        const tmData = await ticketmasterRes.json();
-        const tmEvents = tmData.events || [];
-        allEvents = [...allEvents, ...tmEvents];
-      }
+      const data = await res.json();
+      let allEvents = data.events || [];
 
-      // Shuffle events to mix volunteer and commercial events
+      // Shuffle events for variety
       allEvents.sort(() => Math.random() - 0.5);
 
       setEvents(allEvents);
+
+      if (allEvents.length === 0) {
+        console.warn('No live events found. Check API keys and backend logs.');
+      } else {
+        console.log(`✅ Found ${allEvents.length} events for ${activeLocation}`);
+      }
     } catch (error) {
       console.error('Discovery error:', error);
       setError(error.message);
+      // Optional: Fallback to seeded/cached data if live fetch fails
     } finally {
       setLoading(false);
     }
@@ -225,34 +254,24 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
             </button>
           </div>
 
-          {/* Location selector */}
-          <div className="location-search">
-            <div style={{ flex: 1 }}>
-              <LocationDropdown
-                value={locationInput}
-                onChange={setLocationInput}
-                onSelect={(city) => {
-                  setLocationInput(city.name);
-                  if (onLocationChange) {
-                    onLocationChange({ coords: [city.lat, city.lon], name: city.name, type: 'city' });
-                  }
-                }}
-                userCoords={userCoords ? [userCoords.latitude, userCoords.longitude] : null}
-                placeholder="Enter city, state (e.g., Dallas, TX)"
-                data-testid="location-input"
-                countryFilter="US"
-              />
+          {/* Location display (auto-detected) */}
+          <div className="location-display">
+            <div className="location-info">
+              <i className="fas fa-map-marker-alt" style={{ marginRight: 'var(--space-2)', color: 'var(--primary)' }}></i>
+              <span style={{ fontWeight: 'var(--fw-semibold)' }}>
+                {geoLocationName || activeLocation || 'Detecting location...'}
+              </span>
             </div>
             <button
               className="btn btn-secondary"
               onClick={discoverEvents}
               data-testid="discover-btn"
-              disabled={!userLocation || loading}
+              disabled={!activeLocation || loading}
             >
               {loading ? (
                 <span className="spinner" />
               ) : (
-                <><i className="fas fa-search"></i> Discover</>
+                <><i className="fas fa-sync-alt"></i> Refresh Events</>
               )}
             </button>
           </div>
@@ -571,10 +590,22 @@ export default function EventDiscovery({ token, userLocation, onLocationChange }
           box-shadow: var(--shadow-md);
         }
 
-        .location-search {
+        .location-display {
           display: flex;
           gap: var(--space-3);
           align-items: center;
+          justify-content: space-between;
+          background: rgba(255, 255, 255, 0.2);
+          padding: var(--space-4);
+          border-radius: var(--radius-lg);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .location-info {
+          display: flex;
+          align-items: center;
+          color: white;
+          font-size: var(--fs-lg);
         }
 
         .search-bar {

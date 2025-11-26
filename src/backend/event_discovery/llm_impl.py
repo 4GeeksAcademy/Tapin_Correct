@@ -35,12 +35,14 @@ class HybridLLM:
     def __init__(self, provider: Optional[str] = None):
         env_provider = os.environ.get("LLM_PROVIDER")
         pytest_hint = "PYTEST_CURRENT_TEST" in os.environ
+        # Default to Gemini (unless in test mode)
         default = "ollama" if pytest_hint else "gemini"
         self.provider = provider or env_provider or default
 
         self._llm = None
         self._init_attempted = False
         self._ollama_http_available = False
+        self._rate_limited = False  # Track rate limit status
 
     def _check_ollama_http(self) -> bool:
         url = os.environ.get("OLLAMA_API_URL", "http://localhost:11434")
@@ -144,6 +146,48 @@ class HybridLLM:
 
     # Perplexity integration removed.
 
+    async def _try_perplexity_fallback(self, prompt: str):
+        """Try Perplexity API as fallback when Gemini is rate limited."""
+        api_key = os.environ.get("PERPLEXITY_API_KEY")
+        if not api_key:
+            return None
+
+        try:
+            import urllib.request
+            import json as json_mod
+
+            url = "https://api.perplexity.ai/chat/completions"
+            model = os.environ.get("PERPLEXITY_MODEL", "sonar")
+
+            payload = json_mod.dumps(
+                {"model": model, "messages": [{"role": "user", "content": prompt}]}
+            ).encode("utf-8")
+
+            req = urllib.request.Request(
+                url,
+                data=payload,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                data = resp.read().decode("utf-8")
+                parsed = json_mod.loads(data)
+                if "choices" in parsed and parsed["choices"]:
+                    message = parsed["choices"][0].get("message", {})
+                    content = message.get("content")
+                    if content:
+                        logger.info("✅ Using Perplexity fallback")
+                        return content
+
+            return None
+        except Exception as e:
+            logger.info(f"Perplexity fallback failed: {e}")
+            return None
+
     async def ainvoke(self, prompt: str):
         class Resp:
             def __init__(self, content: str):
@@ -176,7 +220,20 @@ class HybridLLM:
                 return Resp(json.dumps(result))
 
             except Exception as exc:  # noqa: S110 - logging only
-                logger.info(f"LLM invocation error: {exc}")
+                error_str = str(exc).lower()
+                # Check if this is a rate limit error from Gemini
+                if "rate" in error_str or "quota" in error_str or "429" in error_str:
+                    logger.info(f"🔴 Gemini rate limit detected: {exc}")
+                    logger.info("⚡ Attempting Perplexity fallback...")
+
+                    # Try Perplexity fallback
+                    fallback_result = await self._try_perplexity_fallback(prompt)
+                    if fallback_result:
+                        return Resp(fallback_result)
+
+                    logger.info("❌ Perplexity fallback also failed, using mock")
+                else:
+                    logger.info(f"LLM invocation error: {exc}")
 
         if self._ollama_http_available or (self.provider == "ollama"):
             if not self._ollama_http_available:

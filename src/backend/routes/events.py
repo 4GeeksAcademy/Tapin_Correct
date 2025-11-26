@@ -65,6 +65,48 @@ def personalized_events():
     return jsonify({"events": combined}), 200
 
 
+@events_bp.route("/live", methods=["POST"])
+@jwt_required()
+def get_live_events():
+    """
+    Fetch LIVE events from external APIs (Ticketmaster, Google, etc.).
+    This endpoint specifically fetches fresh data from live services,
+    separate from seeded/cached data for safety.
+
+    POST body: {"location": "City, ST", "limit": 20}
+    """
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+    location = data.get("location", "Houston, TX")
+
+    try:
+        limit = min(int(data.get("limit", 20)), 50)
+    except Exception:
+        limit = 20
+
+    # 1. Fetch from Ticketmaster
+    live_events = fetch_ticketmaster_events(city=location, limit=limit)
+
+    # 2. (Optional) Fetch from Google if service is ready
+    try:
+        google_events = fetch_google_events(city=location, limit=limit)
+        live_events += google_events
+    except Exception as e:
+        print(f"Google events fetch failed (non-critical): {e}")
+
+    # 3. Remove duplicates (if fetching from multiple sources)
+    seen_ids = set()
+    unique_events = []
+    for event in live_events:
+        if event["id"] not in seen_ids:
+            unique_events.append(event)
+            seen_ids.add(event["id"])
+
+    print(f"✅ Fetched {len(unique_events)} live events for {location}.")
+
+    return jsonify({"events": unique_events}), 200
+
+
 @events_bp.route("/interact", methods=["POST"])
 @jwt_required()
 def interact():

@@ -80,6 +80,7 @@ def register_routes(
         password = data.get("password")
         user_type = data.get("user_type", "volunteer")  # 'volunteer' or 'organization'
         organization_name = data.get("organization_name")
+        name = data.get("name") or data.get("full_name") or "New User"
 
         if not email or not password:
             return jsonify({"error": "email and password required"}), 400
@@ -91,59 +92,109 @@ def register_routes(
                 400,
             )
 
-        # Validate organization name if user_type is organization
-        if user_type == "organization" and not organization_name:
-            return (
-                jsonify({"error": "organization name required for organizations"}),
-                400,
-            )
-
         if User.query.filter_by(email=email).first():
             return jsonify({"error": "user already exists"}), 400
 
-        pw_hash = generate_password_hash(password)
-        user = User(
-            email=email,
-            password_hash=pw_hash,
-            role=user_type,
-            organization_name=(
-                organization_name if user_type == "organization" else None
-            ),
-        )
-        db.session.add(user)
-        db.session.commit()
+        # Create user in DB using the available model API (supports older/newer User)
+        user = User(email=email)
+        # prefer set_password if available
+        if hasattr(user, "set_password"):
+            user.set_password(password)
+        else:
+            user.password_hash = generate_password_hash(password)
 
-        # Ensure a corresponding UserProfile row exists for the new user.
-        # This keeps the frontend and personalization engine happy by
-        # having a predictable profile entry to read/update later.
+        # Handle user_type field compatibility (enum vs role string)
         try:
-            from backend.models import UserProfile
+            from backend.models import UserType, VolunteerProfile, OrganizationProfile
 
-            default_profile = {
-                "category_preferences": {},
-                "hour_preferences": {},
-                "price_sensitivity": "medium",
-                "adventure_level": 0.5,
-                "favorite_venues": [],
-                "average_lead_time": 7,
-            }
+            if user_type == "volunteer":
+                # set enum value if attribute exists
+                if hasattr(user, "user_type"):
+                    user.user_type = UserType.VOLUNTEER
+            else:
+                if hasattr(user, "user_type"):
+                    user.user_type = UserType.ORGANIZATION
+        except Exception:
+            # fallback to legacy role attribute
+            if user_type == "volunteer" and hasattr(user, "role"):
+                user.role = "volunteer"
+            elif hasattr(user, "role"):
+                user.role = "organization"
 
-            profile = UserProfile(
-                user_id=user.id,
-                taste_profile=json.dumps(default_profile),
-                adventure_level=default_profile["adventure_level"],
-                price_sensitivity=default_profile["price_sensitivity"],
-                favorite_venues=json.dumps(default_profile["favorite_venues"]),
+        # organization_name compatibility
+        if hasattr(user, "organization_name") and organization_name:
+            user.organization_name = organization_name
+
+        db.session.add(user)
+        db.session.flush()
+
+        # Auto-create profile record to avoid dashboard crashes
+        try:
+            # Attempt to import modern profile models
+            from backend.models import (
+                VolunteerProfile,
+                OrganizationProfile,
+                UserProfile,
             )
-            db.session.add(profile)
+
+            if user_type == "volunteer":
+                # split provided name
+                parts = name.split(" ", 1)
+                first = parts[0]
+                last = parts[1] if len(parts) > 1 else ""
+                v = VolunteerProfile(
+                    user_id=user.id,
+                    first_name=first,
+                    last_name=last,
+                    total_hours_volunteered=0,
+                    city="Houston",
+                )
+                db.session.add(v)
+            else:
+                o = OrganizationProfile(
+                    user_id=user.id,
+                    organization_name=organization_name or name,
+                    organization_type="Nonprofit",
+                    city="Houston",
+                )
+                db.session.add(o)
+
+            # Also ensure the Taste/UserProfile exists if model present
+            try:
+                default_profile = {
+                    "category_preferences": {},
+                    "hour_preferences": {},
+                    "price_sensitivity": "medium",
+                    "adventure_level": 0.5,
+                    "favorite_venues": [],
+                    "average_lead_time": 7,
+                }
+                up = UserProfile(
+                    user_id=user.id,
+                    taste_profile=json.dumps(default_profile),
+                    adventure_level=default_profile["adventure_level"],
+                    price_sensitivity=default_profile["price_sensitivity"],
+                    favorite_venues=json.dumps(default_profile["favorite_venues"]),
+                )
+                db.session.add(up)
+            except Exception:
+                # ignore
+                pass
+
             db.session.commit()
         except Exception as e:
-            # Log and continue — registration should not fail solely because
-            # creating the profile entry failed (DB permissions, migrations, etc.)
+            # If profile creation fails, rollback profile-specific additions but keep user
             try:
-                app.logger.warning(f"Failed to create user profile: {e}")
+                db.session.rollback()
             except Exception:
                 pass
+            # commit user alone
+            try:
+                db.session.add(user)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                return jsonify({"error": "registration failed"}), 500
 
         # return both access and refresh tokens (identity stored as string)
         from auth import token_pair

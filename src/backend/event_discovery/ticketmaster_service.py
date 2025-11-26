@@ -2,106 +2,75 @@ import os
 import requests
 from datetime import datetime
 
-TICKETMASTER_API_KEY = os.getenv("TICKETMASTER_API_KEY")
 
-
-def fetch_ticketmaster_events(location="Houston", keyword=None, limit=20):
+def fetch_ticketmaster_events(city="Houston", keyword=None, limit=20):
     """
     Fetches events from Ticketmaster API and returns a standardized list.
+    More robust version with better error handling and data validation.
     """
-    if not TICKETMASTER_API_KEY:
-        print("Warning: TICKETMASTER_API_KEY not set.")
+    api_key = os.getenv("TICKETMASTER_API_KEY")
+    if not api_key:
+        print("🔴 WARNING: TICKETMASTER_API_KEY is not set. Skipping fetch.")
         return []
 
     url = "https://app.ticketmaster.com/discovery/v2/events.json"
-    city_name = location.split(",")[0].strip() if location else ""
     params = {
-        "apikey": TICKETMASTER_API_KEY,
-        "city": city_name,
+        "apikey": api_key,
+        "city": city.split(",")[0].strip(),
         "size": limit,
         "sort": "date,asc",
-        "classificationName": "music,arts,theatre,sports",
+        "classificationName": "Music,Sports,Arts & Theatre,Film,Miscellaneous",
     }
-
     if keyword:
         params["keyword"] = keyword
 
     try:
-        response = requests.get(url, params=params, timeout=8)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         data = response.json()
 
         events = []
-        if "_embedded" in data and "events" in data["_embedded"]:
-            for event in data["_embedded"]["events"]:
-                # Extract highest resolution image
-                image_url = ""
-                if "images" in event and event["images"]:
-                    images = sorted(
-                        event["images"], key=lambda x: x.get("width", 0), reverse=True
-                    )
-                    image_url = images[0].get("url", "") if images else ""
+        for event in data.get("_embedded", {}).get("events", []):
+            # Get 16:9 ratio image for better display
+            image = next(
+                (img for img in event.get("images", []) if img.get("ratio") == "16_9"),
+                None,
+            )
+            venue = event.get("_embedded", {}).get("venues", [{}])[0]
 
-                venue = (
-                    event["_embedded"]["venues"][0]["name"]
-                    if "_embedded" in event
-                    and "venues" in event["_embedded"]
-                    and event["_embedded"]["venues"]
-                    else "Unknown Venue"
-                )
+            # Skip events without essential data for a cleaner demo
+            if not venue.get("location"):
+                continue
 
-                lat = None
-                lng = None
-                try:
-                    if (
-                        "_embedded" in event
-                        and "venues" in event["_embedded"]
-                        and event["_embedded"]["venues"]
-                        and "location" in event["_embedded"]["venues"][0]
-                    ):
-                        lat = float(
-                            event["_embedded"]["venues"][0]["location"].get("latitude")
-                        )
-                        lng = float(
-                            event["_embedded"]["venues"][0]["location"].get("longitude")
-                        )
-                except Exception:
-                    lat = None
-                    lng = None
+            events.append(
+                {
+                    "id": event["id"],
+                    "title": event["name"],
+                    "date": event.get("dates", {}).get("start", {}).get("localDate"),
+                    "time": event.get("dates", {})
+                    .get("start", {})
+                    .get("localTime", ""),
+                    "location": venue.get("name", "TBA"),
+                    "city": venue.get("city", {}).get(
+                        "name", city.split(",")[0].strip()
+                    ),
+                    "image": image["url"] if image else None,
+                    "category": (
+                        event.get("classifications", [{}])[0].get("segment", {}) or {}
+                    ).get("name", "Event"),
+                    "source": "ticketmaster",
+                    "url": event.get("url"),
+                    "lat": float(venue["location"]["latitude"]),
+                    "lng": float(venue["location"]["longitude"]),
+                }
+            )
 
-                category = "Event"
-                try:
-                    if "classifications" in event and event["classifications"]:
-                        category = (
-                            event["classifications"][0]
-                            .get("segment", {})
-                            .get("name", "Event")
-                        )
-                except Exception:
-                    category = "Event"
-
-                events.append(
-                    {
-                        "id": event.get("id"),
-                        "title": event.get("name"),
-                        "date": event.get("dates", {})
-                        .get("start", {})
-                        .get("localDate"),
-                        "time": event.get("dates", {})
-                        .get("start", {})
-                        .get("localTime", "TBD"),
-                        "location": venue,
-                        "city": city_name,
-                        "image": image_url,
-                        "category": category,
-                        "source": "ticketmaster",
-                        "url": event.get("url"),
-                        "lat": lat,
-                        "lng": lng,
-                    }
-                )
-
+        print(f"✅ Successfully fetched {len(events)} Ticketmaster events for {city}")
         return events
+
+    except requests.exceptions.RequestException as e:
+        print(f"🔴 TICKETMASTER API ERROR: {e}")
+        return []
     except Exception as e:
-        print(f"Error fetching Ticketmaster events: {e}")
+        print(f"🔴 Error processing Ticketmaster data: {e}")
         return []
