@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import logoTransparent from '@/assets/brand/logo-transparent.svg';
+import pandaWaving from '@/assets/mascot/panda-waving.svg';
+import volunteerIcon from '@/assets/icons/volunteer.svg';
+import organizationIcon from '@/assets/icons/organization.svg';
+import locationIcon from '@/assets/icons/location.svg';
 import AuthForm from '../components/AuthForm';
+import HeroVideo from '../components/HeroVideo';
 
 export default function DashboardLanding({ onLogin, onEnter, user }) {
   const [showAuth, setShowAuth] = useState(false);
@@ -11,8 +15,8 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
         <div className="landing-hero" style={{ maxWidth: '500px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
             <img
-              src={logoTransparent}
-              alt="Tapin logo"
+              src={pandaWaving}
+              alt="Tapin panda mascot waving"
               className="landing-logo"
               style={{ width: 220, height: 220, objectFit: 'contain' }}
             />
@@ -25,7 +29,7 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
                 if (data?.access_token) {
                   localStorage.setItem('access_token', data.access_token);
                 }
-              } catch {}
+              } catch { }
               // Notify parent if provided
               if (typeof onLogin === 'function') {
                 const user = data?.user || null;
@@ -59,7 +63,7 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
   return (
     <div className="landing-root">
       <div className="landing-hero">
-        <img src={logoTransparent} alt="Tapin logo" className="landing-logo" />
+        <img src={pandaWaving} alt="Tapin panda mascot waving" className="landing-logo" />
         <h1 className="landing-title">TapIn — connect your community</h1>
         <p className="landing-sub">
           Find volunteer opportunities to give back, or discover local services from small
@@ -75,10 +79,12 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
           </button>
         </div>
 
+        <HeroVideo />
+
         <ul className="landing-features">
-          <li>🤝 Volunteer opportunities: Find meaningful ways to give back</li>
-          <li>💼 Local services: Discover small businesses and professionals</li>
-          <li>📍 Map view: Browse opportunities by location</li>
+          <li><img src={volunteerIcon} alt="" className="icon" /> Volunteer opportunities: Find meaningful ways to give back</li>
+          <li><img src={organizationIcon} alt="" className="icon" /> Local services: Discover small businesses and professionals</li>
+          <li><img src={locationIcon} alt="" className="icon" /> Map view: Browse opportunities by location</li>
         </ul>
 
         <div className="landing-footer-note">Free to use • School Project</div>

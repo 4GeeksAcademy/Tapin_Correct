@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import EditListingForm from './EditListingForm';
 import ReviewForm from './ReviewForm';
+import { apiFetch } from '../lib/api';
 
 export default function ListingDetail({
   listing,
@@ -33,8 +34,8 @@ export default function ListingDetail({
       setLoadingReviews(true);
       try {
         const [reviewsRes, ratingRes] = await Promise.all([
-          fetch(`http://127.0.0.1:5000/listings/${listing.id}/reviews`),
-          fetch(`http://127.0.0.1:5000/listings/${listing.id}/average-rating`),
+          apiFetch(`/listings/${listing.id}/reviews`),
+          apiFetch(`/listings/${listing.id}/average-rating`),
         ]);
 
         if (reviewsRes.ok) {
@@ -77,7 +78,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}/signup`, {
+      const res = await apiFetch(`/listings/${listing.id}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +112,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}`, {
+      const res = await apiFetch(`/listings/${listing.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

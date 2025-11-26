@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import LocationDropdown from './LocationDropdown';
+import { apiFetch } from '../lib/api';
 
 export default function EditListingForm({ listing, token, onClose, onUpdated, userLocation }) {
   const [title, setTitle] = useState(listing.title);
@@ -44,7 +45,7 @@ export default function EditListingForm({ listing, token, onClose, onUpdated, us
         body.longitude = parseFloat(longitude);
       }
 
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}`, {
+      const res = await apiFetch(`/listings/${listing.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

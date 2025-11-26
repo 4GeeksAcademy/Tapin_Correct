@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Header from './components/Header';
+import Footer from './components/Footer';
 import ListingCard from './components/ListingCard';
 import EmptyState from './components/EmptyState';
 import ListingDetail from './components/ListingDetail';
@@ -157,7 +158,7 @@ export default function App() {
       </div>
 
       <main>
-        {}
+        { }
         {!loading && !error && listings.length > 0 && (
           <div style={{ marginBottom: '20px', textAlign: 'center' }}>
             <button
@@ -244,9 +245,7 @@ export default function App() {
         />
       )}
 
-      <footer>
-        <small>Tapin prototype</small>
-      </footer>
+      <Footer />
     </div>
   );
 }

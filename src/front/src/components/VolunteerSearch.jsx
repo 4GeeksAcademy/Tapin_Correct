@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './VolunteerSearch.css';
+import { apiFetch } from '../lib/api';
 
 const VolunteerSearch = () => {
   const [query, setQuery] = useState('');
@@ -29,7 +30,7 @@ const VolunteerSearch = () => {
         return;
       }
 
-      const response = await fetch('http://127.0.0.1:5000/api/web-search', {
+      const response = await apiFetch('/api/web-search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

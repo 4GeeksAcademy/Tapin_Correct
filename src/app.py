@@ -19,14 +19,8 @@ static_file_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../
 @app.route("/")
 def sitemap():
     """
-    Serve Vite's index.html in production, otherwise fall back to whatever
-    default route the Tapin backend defines for local development.
+    Serve Vite's index.html.
     """
-    if ENV == "development":
-        # Reuse the backend's original "/" route if it exists
-        backend_index = app.view_functions.get("index")
-        if backend_index and backend_index is not sitemap:
-            return backend_index()
     return send_from_directory(static_file_dir, "index.html")
 
 

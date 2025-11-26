@@ -30,10 +30,6 @@ def register_routes(
 
         return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
-    @app.route("/")
-    def index():
-        return jsonify({"message": "Tapin Backend API Root"})
-
     @app.route("/api/health", methods=["GET"])
     def api_health():
         """Enhanced health check including database connectivity."""
