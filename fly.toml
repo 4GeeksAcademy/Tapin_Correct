@@ -8,9 +8,6 @@ primary_region = "iad"
   dockerfile = "src/backend/Dockerfile"
 
 [env]
-  DATABASE_URL = "sqlite:////app/data/app.db"
-  SQLALCHEMY_DATABASE_URI = "sqlite:////app/data/app.db"
-  RUN_MIGRATIONS_ON_START = "true"
   PORT = "8080"
   FLASK_ENV = "production"
   PYTHONUNBUFFERED = "1"
