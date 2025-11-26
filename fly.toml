@@ -7,11 +7,10 @@ primary_region = "iad"
 [build]
   dockerfile = "src/backend/Dockerfile"
 
-# [deploy]
-#   release_command = "python -c \"from backend.app import create_app, db; app = create_app(); app.app_context().push(); db.create_all()\""
-# Disabled for demo - tables will be created automatically via RUN_MIGRATIONS_ON_START
-
 [env]
+  DATABASE_URL = "sqlite:////app/data/app.db"
+  SQLALCHEMY_DATABASE_URI = "sqlite:////app/data/app.db"
+  RUN_MIGRATIONS_ON_START = "true"
   PORT = "8080"
   FLASK_ENV = "production"
   PYTHONUNBUFFERED = "1"
