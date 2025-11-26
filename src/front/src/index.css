@@ -1,3 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+/* Consolidated TapIn styles (merged from styles.css) */
+
+/* TapIn - Community Canvas Design System
+   Warm, organic, modern interface for community connection
+*/
+
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Manrope:wght@300;400;500;600;700;800&display=swap");
+
+:root {
+  /* Brand Colors - Elevated Palette */
+  --primary: #0ea5a6; /* Rich teal */
+  --primary-dark: #0b8384; /* Deep teal */
+  --primary-light: #4ec5c6; /* Soft teal */
+  --primary-pale: #e0f5f5; /* Very light teal */
+
+  --accent: #ff8b5a; /* Warm coral */
+  --accent-dark: #ff6b35; /* Deep coral */
+  --accent-light: #ffb088; /* Soft coral */
+  --accent-pale: #ffe9de; /* Very light coral */
+
+  /* Semantic Colors */
+  --success: #00c896;
+  --warning: #ffb647;
+  --error: #ff5a5f;
+  --info: #5b9dff;
+
+  /* Neutrals - Warm Grays */
+  --white: #ffffff;
+  --bg-light: #fafaf9;
+  --bg-warm: #f5f4f1;
+  --bg-cream: #f9f7f4;
+  --surface: #ffffff;
+  --border-light: #e8e6e1;
+  --border: #d4d1cc;
+  --text: #2a2621;
+  --text-secondary: #5a5550;
+  --text-muted: #8b8782;
+  --text-light: #b5b1ac;
+  /* Navigation specific */
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --nav-border: var(--border-light);
+  --nav-text: var(--text);
+
+  /* Typography */
+  --font-display: "Outfit", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+
+  --fs-xs: 0.75rem; /* 12px */
+  --fs-sm: 0.875rem; /* 14px */
+  --fs-base: 1rem; /* 16px */
+  --fs-lg: 1.125rem; /* 18px */
+  --fs-xl: 1.25rem; /* 20px */
+  --fs-2xl: 1.5rem; /* 24px */
+  --fs-3xl: 1.875rem; /* 30px */
+  --fs-4xl: 2.25rem; /* 36px */
+  --fs-5xl: 3rem; /* 48px */
+  --fs-6xl: 3.75rem; /* 60px */
+
+  --fw-light: 300;
+  --fw-normal: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-extrabold: 800;
+  --fw-black: 900;
+
+  /* Spacing */
+  --space-1: 0.25rem; /* 4px */
+  --space-2: 0.5rem; /* 8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+  --space-20: 5rem; /* 80px */
+
+  /* Border Radius */
+  --radius-sm: 0.5rem; /* 8px */
+  --radius-md: 0.75rem; /* 12px */
+  --radius-lg: 1rem; /* 16px */
+  --radius-xl: 1.5rem; /* 24px */
+  --radius-2xl: 2rem; /* 32px */
+  --radius-full: 9999px;
+
+  /* Shadows - Soft and Organic */
+  --shadow-xs: 0 1px 2px rgba(42, 38, 33, 0.04);
+  --shadow-sm:
+    0 2px 8px rgba(42, 38, 33, 0.06), 0 1px 3px rgba(42, 38, 33, 0.04);
+  --shadow-md:
+    0 4px 16px rgba(42, 38, 33, 0.08), 0 2px 6px rgba(42, 38, 33, 0.04);
+  --shadow-lg:
+    0 8px 24px rgba(42, 38, 33, 0.1), 0 4px 12px rgba(42, 38, 33, 0.06);
+  --shadow-xl:
+    0 16px 48px rgba(42, 38, 33, 0.12), 0 8px 24px rgba(42, 38, 33, 0.08);
+  --shadow-2xl:
+    0 24px 64px rgba(42, 38, 33, 0.16), 0 12px 32px rgba(42, 38, 33, 0.1);
+
+  /* Colored Shadows */
+  --shadow-primary: 0 8px 24px rgba(14, 165, 166, 0.2);
+  --shadow-accent: 0 8px 24px rgba(255, 139, 90, 0.2);
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Glass design tokens */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-light: #1a1816;
+    --bg-warm: #211e1c;
+    --bg-cream: #2a2621;
+    --surface: #2a2621;
+    --border-light: #3a3631;
+    --border: #4a4641;
+    --text: #f5f4f1;
+    --text-secondary: #d4d1cc;
+    --text-muted: #a5a19c;
+    --text-light: #8b8782;
+    /* nav overrides for dark mode */
+    --nav-bg: rgba(42, 38, 33, 0.72);
+    --nav-border: #3a3631;
+    --nav-text: var(--text);
+    --glass-bg: rgba(20,20,20,0.5);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+}
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
+
+body { margin: 0; font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.6; color: var(--text); background: var(--bg-warm); overflow-x: hidden; }
+
+/* Typography */
+h1,h2,h3,h4,h5,h6 { font-family: var(--font-display); font-weight: var(--fw-bold); line-height: 1.2; color: var(--text); }
+
+/* Keep existing small utility for glass backgrounds */
+.glass-bg-weak { background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+
+/* Dark Mode Map Popups */
+.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+  background: rgba(15, 23, 42, 0.9) !important; /* Dark blue background */
+  backdrop-filter: blur(10px);
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px !important;
+}
+
+.leaflet-popup-content a { color: #a5b4fc !important; }
+.leaflet-container { background: #0f172a !important; }
 /* Global glassmorphism theme and base resets */
 :root {
   /* Core Palette */
