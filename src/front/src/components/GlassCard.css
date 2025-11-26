@@ -89,7 +89,7 @@
 
 /* Micro-interaction: subtle shine effect */
 .glass-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap");
 
 /* Consolidated TapIn styles (merged from styles.css) */
 
@@ -112,7 +112,7 @@
   /* Glass design tokens */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.3);
-  --glass-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
 }
 
 /* Dark Mode */
@@ -132,27 +132,61 @@
     --nav-bg: rgba(42, 38, 33, 0.72);
     --nav-border: #3a3631;
     --nav-text: var(--text);
-    --glass-bg: rgba(20,20,20,0.5);
-    --glass-border: rgba(255,255,255,0.08);
-    --glass-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    --glass-bg: rgba(20, 20, 20, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   }
 }
 
 /* Reset & Base */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; scroll-behavior: smooth; }
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  scroll-behavior: smooth;
+}
 
-body { margin: 0; font-family: var(--font-body); font-size: var(--fs-base); line-height: 1.6; color: var(--text); background: var(--bg-warm); overflow-x: hidden; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg-warm);
+  overflow-x: hidden;
+}
 
 /* Typography */
-h1,h2,h3,h4,h5,h6 { font-family: var(--font-display); font-weight: var(--fw-bold); line-height: 1.2; color: var(--text); }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  color: var(--text);
+}
 
 /* Keep existing small utility for glass backgrounds */
-.glass-bg-weak { background: var(--glass-bg); border: 1px solid var(--glass-border); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.glass-bg-weak {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
 
 /* Dark Mode Map Popups */
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
   background: rgba(15, 23, 42, 0.9) !important; /* Dark blue background */
   backdrop-filter: blur(10px);
   color: white !important;
@@ -160,8 +194,12 @@ h1,h2,h3,h4,h5,h6 { font-family: var(--font-display); font-weight: var(--fw-bold
   border-radius: 8px !important;
 }
 
-.leaflet-popup-content a { color: #a5b4fc !important; }
-.leaflet-container { background: #0f172a !important; }
+.leaflet-popup-content a {
+  color: #a5b4fc !important;
+}
+.leaflet-container {
+  background: #0f172a !important;
+}
 /* Global glassmorphism theme and base resets */
 :root {
   /* Core Palette */
