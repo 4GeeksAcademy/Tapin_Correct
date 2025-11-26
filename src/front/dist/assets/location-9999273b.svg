@@ -1,5 +1,0 @@
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Map/Location pin icon matching brand style -->
-  <path d="M24 4C16.268 4 10 10.268 10 18C10 28.5 24 44 24 44C24 44 38 28.5 38 18C38 10.268 31.732 4 24 4Z" stroke="#17B8A3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="24" cy="18" r="5" fill="#17B8A3"/>
-</svg>

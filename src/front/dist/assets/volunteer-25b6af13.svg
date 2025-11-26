@@ -1,8 +1,0 @@
-<svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Volunteer hand with heart icon matching brand style -->
-  <!-- Heart -->
-  <path d="M24 18C24 18 19 13 14 13C10 13 7 16 7 20C7 25 12 29 24 38C36 29 41 25 41 20C41 16 38 13 34 13C29 13 24 18 24 18Z" fill="#FF9D42"/>
-  <!-- Hand -->
-  <path d="M10 32C10 32 12 28 15 26C16 25.5 17 25 18 25L24 28L30 31C32 32 33 33 33 35C33 37 31 39 29 39L20 39C16 39 12 36 10 32Z" fill="#2F3E46"/>
-  <path d="M15 26C16 25 17 25 18 25" stroke="#2F3E46" stroke-width="2" stroke-linecap="round"/>
-</svg>
