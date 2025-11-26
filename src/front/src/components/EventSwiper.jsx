@@ -1,15 +1,4 @@
 import React, { useState } from 'react';
-import GlassCard from './GlassCard';
-
-const EventSwiper = ({ events = [], onSwipe = () => { } }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [direction, setDirection] = useState(null);
-
-  const handleSwipe = async (dir) => {
-    if (currentIndex >= events.length) return;
-    setDirection(dir);
-
-    import React, { useState } from 'react';
     import GlassCard from './GlassCard';
 
     const EventSwiper = ({ events = [], onSwipe = () => { } }) => {
