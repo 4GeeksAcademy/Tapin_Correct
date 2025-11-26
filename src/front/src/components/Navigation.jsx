@@ -25,7 +25,7 @@ export default function Navigation({ user, onLogout }) {
       <div className="nav-content">
         {/* Brand - show only the logo icon (no duplicate text) */}
         <Link to="/" className="nav-brand" aria-label="Tapin home">
-          <BrandLogo width={48} variant="icon" alt="Tapin" />
+          <BrandLogo width={56} variant="icon" alt="Tapin" />
         </Link>
 
         {/* Desktop Navigation */}
