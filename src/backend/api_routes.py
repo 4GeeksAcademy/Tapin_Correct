@@ -13,14 +13,9 @@ def register_routes(
     app,
     db,
     User,
-    Listing,
-    Item,
-    SignUp,
-    Review,
     Event,
-    EventImage,
     UserEventInteraction,
-    UserAchievement,
+    EventRegistration,
 ):
 
     def get_serializer():

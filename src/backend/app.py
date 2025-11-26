@@ -7,15 +7,11 @@ import logging
 from backend.models import (
     db,
     User,
-    Listing,
-    Item,
     Event,
-    EventImage,
-    SignUp,
-    Review,
     UserEventInteraction,
-    UserAchievement,
-    UserProfile,
+    EventRegistration,
+    VolunteerProfile,
+    OrganizationProfile,
 )
 from backend.api_routes import register_routes
 
@@ -192,14 +188,9 @@ def create_app():
         app,
         db,
         User,
-        Listing,
-        Item,
-        SignUp,
-        Review,
         Event,
-        EventImage,
         UserEventInteraction,
-        UserAchievement,
+        EventRegistration,
     )
 
     return app
