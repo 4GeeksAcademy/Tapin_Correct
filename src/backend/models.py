@@ -1,286 +1,254 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timezone
-import json
+from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
+import enum
 
 db = SQLAlchemy()
 
 
+# Enums
+class UserType(enum.Enum):
+    VOLUNTEER = "volunteer"
+    ORGANIZATION = "organization"
+    ADMIN = "admin"
+
+
+class VerificationStatus(enum.Enum):
+    PENDING = "pending"
+    VERIFIED = "verified"
+    REJECTED = "rejected"
+
+
+class EventStatus(enum.Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    CANCELLED = "cancelled"
+    COMPLETED = "completed"
+
+
+class InteractionType(enum.Enum):
+    LIKE = "like"
+    DISLIKE = "dislike"
+    VIEW = "view"
+    SHARE = "share"
+    REGISTER = "register"
+
+
+class RegistrationStatus(enum.Enum):
+    REGISTERED = "registered"
+    WAITLIST = "waitlist"
+    CONFIRMED = "confirmed"
+    ATTENDED = "attended"
+    CANCELLED = "cancelled"
+
+
+# ═══════════════════════════════════════════════════════════════
+# CORE USER MODELS
+# ═══════════════════════════════════════════════════════════════
+
+
 class User(db.Model):
+    __tablename__ = "users"
+
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-    role = db.Column(db.String(50), default="volunteer")
-    organization_name = db.Column(db.String(200), nullable=True)
+    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    user_type = db.Column(db.Enum(UserType), nullable=False, default=UserType.VOLUNTEER)
+    email_verified = db.Column(db.Boolean, default=False)
+    profile_completed = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    # Relationships
+    volunteer_profile = db.relationship(
+        "VolunteerProfile", backref="user", uselist=False, cascade="all, delete-orphan"
+    )
+    organization_profile = db.relationship(
+        "OrganizationProfile",
+        backref="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
         return {
             "id": self.id,
             "email": self.email,
-            "role": self.role,
-            "user_type": self.role,
+            "user_type": self.user_type.value,
+            "profile_completed": self.profile_completed,
+        }
+
+
+class VolunteerProfile(db.Model):
+    __tablename__ = "volunteer_profiles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True
+    )
+
+    # Basic Info
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    bio = db.Column(db.Text)
+    avatar_url = db.Column(db.String(500))
+    date_of_birth = db.Column(db.Date)
+    phone_number = db.Column(db.String(20))
+
+    # Location
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(50))
+    zip_code = db.Column(db.String(10))
+
+    # Preferences (stored as JSON)
+    skills = db.Column(db.JSON, default=list)
+    interests = db.Column(db.JSON, default=list)
+    availability = db.Column(db.JSON, default=dict)
+
+    # Stats
+    total_hours_volunteered = db.Column(db.Integer, default=0)
+    events_attended = db.Column(db.Integer, default=0)
+    verified = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "bio": self.bio,
+            "avatar_url": self.avatar_url,
+            "city": self.city,
+            "skills": self.skills,
+            "interests": self.interests,
+            "total_hours_volunteered": self.total_hours_volunteered,
+        }
+
+
+class OrganizationProfile(db.Model):
+    __tablename__ = "organization_profiles"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True
+    )
+
+    # Basic Info
+    organization_name = db.Column(db.String(200), nullable=False)
+    organization_type = db.Column(db.String(50))
+    description = db.Column(db.Text)
+    logo_url = db.Column(db.String(500))
+    website = db.Column(db.String(200))
+    contact_email = db.Column(db.String(120))
+
+    # Location
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(50))
+
+    # Verification
+    verification_status = db.Column(
+        db.Enum(VerificationStatus), default=VerificationStatus.PENDING
+    )
+    verification_documents = db.Column(db.JSON, default=dict)
+    verified_at = db.Column(db.DateTime)
+    verified_by = db.Column(db.Integer)
+
+    total_events = db.Column(db.Integer, default=0)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
             "organization_name": self.organization_name,
-        }
-
-
-class Listing(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    location = db.Column(db.String(200))
-    latitude = db.Column(db.Float, nullable=True)
-    longitude = db.Column(db.Float, nullable=True)
-    category = db.Column(db.String(100), nullable=True)
-    values = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(500), nullable=True)
-    owner_id = db.Column(db.Integer, db.ForeignKey("user.id"))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    def to_dict(self):
-        values_list = []
-        if self.values:
-            try:
-                values_list = json.loads(self.values)
-            except:
-                values_list = []
-
-        return {
-            "id": self.id,
-            "title": self.title,
             "description": self.description,
-            "location": self.location,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "category": self.category,
-            "values": values_list,
-            "image_url": self.image_url,
-            "owner_id": self.owner_id,
-            "created_at": (self.created_at.isoformat() if self.created_at else None),
+            "logo_url": self.logo_url,
+            "city": self.city,
+            "verification_status": self.verification_status.value,
+            "verified": self.verification_status == VerificationStatus.VERIFIED,
         }
 
 
-class Item(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-
-    def to_dict(self):
-        return {"id": self.id, "name": self.name, "description": self.description}
-
-
-class SignUp(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listing.id"), nullable=False)
-    status = db.Column(db.String(50), default="pending")
-    message = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "listing_id", name="_user_listing_uc"),
-    )
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "listing_id": self.listing_id,
-            "status": self.status,
-            "message": self.message,
-            "created_at": (self.created_at.isoformat() if self.created_at else None),
-        }
-
-
-class Review(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    listing_id = db.Column(db.Integer, db.ForeignKey("listing.id"), nullable=False)
-    rating = db.Column(db.Integer, nullable=False)
-    comment = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "listing_id", name="_user_listing_review_uc"),
-    )
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "listing_id": self.listing_id,
-            "rating": self.rating,
-            "comment": self.comment,
-            "created_at": (self.created_at.isoformat() if self.created_at else None),
-        }
+# ═══════════════════════════════════════════════════════════════
+# EVENT MODELS
+# ═══════════════════════════════════════════════════════════════
 
 
 class Event(db.Model):
-    id = db.Column(db.String(36), primary_key=True)
-    title = db.Column(db.Text, nullable=False)
-    organization = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    date_start = db.Column(db.DateTime, nullable=True)
-    location_address = db.Column(db.Text)
-    location_city = db.Column(db.String(120))
-    location_state = db.Column(db.String(10))
-    location_zip = db.Column(db.String(20))
-    latitude = db.Column(db.Float, nullable=True)
-    longitude = db.Column(db.Float, nullable=True)
-    geohash_4 = db.Column(db.String(8))
-    geohash_6 = db.Column(db.String(12), index=True)
-    category = db.Column(db.String(100))
-    values = db.Column(db.Text, nullable=True)
-    url = db.Column(db.String(1000), unique=False)
-    source = db.Column(db.String(200))
-    venue = db.Column(db.String(200), nullable=True)
-    price = db.Column(db.String(100), nullable=True)
-    contact_email = db.Column(db.String(200), nullable=True)
-    contact_phone = db.Column(db.String(50), nullable=True)
-    contact_person = db.Column(db.String(200), nullable=True)
-    scraped_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-    cache_expires_at = db.Column(db.DateTime, nullable=True, index=True)
-    image_url = db.Column(db.String(1000), nullable=True)
-    image_urls = db.Column(db.Text, nullable=True)
+    __tablename__ = "events"
 
-    def to_dict(self):
-        images_list = []
-        if hasattr(self, "images") and self.images:
-            images_list = [
-                {"url": img.url, "caption": img.caption, "position": img.position}
-                for img in sorted(self.images, key=lambda x: x.position)
-            ]
-        values_list = []
-        if self.values:
-            try:
-                values_list = json.loads(self.values)
-            except:
-                values_list = []
-
-        return {
-            "id": self.id,
-            "title": self.title,
-            "organization": self.organization,
-            "description": self.description,
-            "date_start": (self.date_start.isoformat() if self.date_start else None),
-            "location_address": self.location_address,
-            "city": self.location_city,
-            "state": self.location_state,
-            "zip": self.location_zip,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
-            "category": self.category,
-            "values": values_list,
-            "url": self.url,
-            "source": self.source,
-            "venue": self.venue,
-            "price": self.price,
-            "contact_email": self.contact_email,
-            "contact_phone": self.contact_phone,
-            "contact_person": self.contact_person,
-            "scraped_at": (self.scraped_at.isoformat() if self.scraped_at else None),
-            "image_url": self.image_url,
-            "image_urls": self.image_urls,
-            "images": images_list,
-        }
-
-
-class EventImage(db.Model):
-    __tablename__ = "event_image"
     id = db.Column(db.Integer, primary_key=True)
-    event_id = db.Column(
-        db.String(36), db.ForeignKey("event.id"), nullable=False, index=True
+    organization_id = db.Column(
+        db.Integer, db.ForeignKey("organization_profiles.id"), nullable=False
     )
-    url = db.Column(db.String(1000), nullable=False)
-    caption = db.Column(db.Text, nullable=True)
-    position = db.Column(db.Integer, nullable=True)
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "event_id": self.event_id,
-            "url": self.url,
-            "caption": self.caption,
-            "position": self.position,
-            "created_at": (self.created_at.isoformat() if self.created_at else None),
-        }
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50))
 
+    start_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time)
+    end_time = db.Column(db.Time)
 
-Event.images = db.relationship(
-    "EventImage", backref="event", cascade="all, delete-orphan", lazy="dynamic"
-)
+    location_name = db.Column(db.String(200))
+    city = db.Column(db.String(100))
+    latitude = db.Column(db.Float)
+    longitude = db.Column(db.Float)
+
+    max_volunteers = db.Column(db.Integer)
+    current_volunteers = db.Column(db.Integer, default=0)
+
+    image_url = db.Column(db.String(500))
+    status = db.Column(db.Enum(EventStatus), default=EventStatus.DRAFT)
+    source = db.Column(db.String(20), default="internal")
+    external_url = db.Column(db.String(500))
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationships
+    # registrations = db.relationship('EventRegistration', backref='event', cascade='all, delete-orphan')
 
 
 class UserEventInteraction(db.Model):
-    __tablename__ = "user_event_interaction"
+    __tablename__ = "user_event_interactions"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
-    )
-    event_id = db.Column(
-        db.String(36), db.ForeignKey("event.id"), nullable=False, index=True
-    )
-    interaction_type = db.Column(db.String(20), nullable=False)
-    interaction_metadata = db.Column(db.Text, nullable=True)
-    timestamp = db.Column(
-        db.DateTime, default=lambda: datetime.now(timezone.utc), index=True
-    )
-    event = db.relationship("Event", backref="interactions", lazy=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "event_id": self.event_id,
-            "interaction_type": self.interaction_type,
-            "metadata": self.interaction_metadata,
-            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
-        }
+    event_id = db.Column(db.String(100))
+    event_title = db.Column(db.String(200))
+    category = db.Column(db.String(50))
+    interaction_type = db.Column(db.Enum(InteractionType), nullable=False)
+    source = db.Column(db.String(20))
+
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-class UserAchievement(db.Model):
-    __tablename__ = "user_achievement"
+class EventRegistration(db.Model):
+    __tablename__ = "event_registrations"
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False, index=True
+    event_id = db.Column(db.Integer, db.ForeignKey("events.id"), nullable=False)
+    volunteer_id = db.Column(
+        db.Integer, db.ForeignKey("volunteer_profiles.id"), nullable=False
     )
-    achievement_type = db.Column(db.String(50), nullable=False)
-    progress = db.Column(db.Integer, default=0)
-    unlocked = db.Column(db.Boolean, default=False, index=True)
-    unlocked_at = db.Column(db.DateTime, nullable=True)
-    achievement_metadata = db.Column(db.Text, nullable=True)
 
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "achievement_type": self.achievement_type,
-            "progress": self.progress,
-            "unlocked": self.unlocked,
-            "unlocked_at": self.unlocked_at.isoformat() if self.unlocked_at else None,
-            "metadata": self.achievement_metadata,
-        }
-
-
-class UserProfile(db.Model):
-    __tablename__ = "user_profile"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey("user.id"), nullable=False, unique=True, index=True
+    status = db.Column(
+        db.Enum(RegistrationStatus), default=RegistrationStatus.REGISTERED
     )
-    taste_profile = db.Column(db.Text, nullable=True)
-    adventure_level = db.Column(db.Float, default=0.5)
-    price_sensitivity = db.Column(db.String(20), default="medium")
-    favorite_venues = db.Column(db.Text, nullable=True)
-    notification_preferences = db.Column(db.Text, nullable=True)
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "user_id": self.user_id,
-            "taste_profile": self.taste_profile,
-            "adventure_level": self.adventure_level,
-            "price_sensitivity": self.price_sensitivity,
-            "favorite_venues": self.favorite_venues,
-            "notification_preferences": self.notification_preferences,
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
-        }
+    registration_date = db.Column(db.DateTime, default=datetime.utcnow)

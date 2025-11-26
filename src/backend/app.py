@@ -102,7 +102,26 @@ def create_app():
         "SECURITY_PASSWORD_SALT", "dev-salt"
     )
 
-    CORS(app)
+    # LLM provider selection (environment-driven). Default to 'gemini'
+    # so demo runs with Gemini by default unless overridden in .env.
+    app.config["LLM_PROVIDER"] = os.environ.get("LLM_PROVIDER", "gemini")
+
+    # Configure CORS explicitly to ensure preflight OPTIONS requests succeed
+    CORS(
+        app,
+        resources={
+            r"/*": {
+                "origins": [
+                    "http://localhost:5173",
+                    "http://localhost:3000",
+                    "https://tapin-correct.fly.dev",
+                ],
+                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                "allow_headers": ["Content-Type", "Authorization"],
+                "supports_credentials": True,
+            }
+        },
+    )
 
     # Register blueprints
     try:
@@ -111,6 +130,15 @@ def create_app():
         from routes.events import events_bp
 
     app.register_blueprint(events_bp, url_prefix="/events")
+
+    # Register profile blueprint (routes under /api/... are defined in the
+    # blueprint itself, so no url_prefix is necessary)
+    try:
+        from backend.routes.profile import profile_bp
+    except ModuleNotFoundError:
+        from routes.profile import profile_bp
+
+    app.register_blueprint(profile_bp)
 
     # Initialize extensions
     jwt.init_app(app)

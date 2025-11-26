@@ -59,7 +59,7 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-***
+---
 
 ### 2. Event Detail Page
 
@@ -149,7 +149,7 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-***
+---
 
 ### 3. Organization Dashboard
 
@@ -205,7 +205,7 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-***
+---
 
 ### 4. Event Creation Form (Organization)
 
@@ -327,7 +327,7 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-***
+---
 
 ### 5. Mobile Responsive Views (Critical for Volunteers)
 
@@ -370,13 +370,14 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 └──────────────────────┘
 ```
 
-***
+---
 
 ## 📋 Complete Buildout Plan (Phases 1-4)
 
 ### **Phase 1: MVP Foundation (Weeks 1-4) - CURRENT PHASE**
 
 #### Week 1: Core Backend Infrastructure ✅
+
 - [x] User authentication (JWT)
 - [x] Database models (User, Events, Interactions)
 - [x] Basic CRUD APIs
@@ -384,7 +385,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 - [ ] **TO DO:** Wire interaction endpoints
 
 #### Week 2: Event Discovery Experience
+
 **Priority Tasks:**
+
 1. **Fix Event Data Pipeline** (2 days)
    - Fix `ticketmaster_service.py` to return standardized data
    - Fix `google_maps_service.py` to match schema
@@ -413,7 +416,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
    - Add geolocation "Find events near me"
 
 #### Week 3: User Profile & Gamification
+
 **Priority Tasks:**
+
 1. **Profile Pages** (3 days)
    - Build volunteer profile view/edit
    - Add avatar upload
@@ -433,7 +438,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
    - Display in dashboard
 
 #### Week 4: Polish & Testing
+
 **Priority Tasks:**
+
 1. **Mobile Optimization** (2 days)
    - Test all pages on mobile devices
    - Fix touch gestures
@@ -452,12 +459,14 @@ I'll create detailed UI mockups for the most critical pages and provide you with
    - User acceptance testing
    - Performance profiling
 
-***
+---
 
 ### **Phase 2: Organization Portal (Weeks 5-8)**
 
 #### Week 5: Organization Onboarding
+
 **Tasks:**
+
 1. Organization registration flow
 2. Verification document upload
 3. Admin verification queue
@@ -465,7 +474,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Team member invitation system
 
 #### Week 6: Event Management
+
 **Tasks:**
+
 1. Multi-step event creation form
 2. Event edit/duplicate/delete
 3. Draft/publish workflow
@@ -473,7 +484,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Recurring event scheduler
 
 #### Week 7: Volunteer Management
+
 **Tasks:**
+
 1. Registration management table
 2. QR code check-in system
 3. Volunteer database & search
@@ -481,19 +494,23 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Bulk messaging tool
 
 #### Week 8: Analytics Dashboard
+
 **Tasks:**
+
 1. Event performance metrics
 2. Volunteer engagement charts
 3. Geographic distribution map
 4. Retention rate calculator
 5. PDF report generator
 
-***
+---
 
 ### **Phase 3: Social & Communication (Weeks 9-12)**
 
 #### Week 9: Messaging System
+
 **Tasks:**
+
 1. Real-time messaging (Socket.io)
 2. Conversation threads
 3. Event context in messages
@@ -501,7 +518,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. File attachments
 
 #### Week 10: Social Features
+
 **Tasks:**
+
 1. Friend system
 2. Activity feed
 3. Event sharing
@@ -509,7 +528,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Social proof (friends attending)
 
 #### Week 11: Notifications
+
 **Tasks:**
+
 1. Email notification service
 2. Push notifications (Firebase)
 3. SMS reminders (Twilio)
@@ -517,19 +538,23 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Unsubscribe management
 
 #### Week 12: Community Features
+
 **Tasks:**
+
 1. Teams/groups creation
 2. Leaderboards
 3. Impact stories feed
 4. Photo galleries
 5. Volunteer spotlight
 
-***
+---
 
 ### **Phase 4: Advanced Features (Weeks 13-16)**
 
 #### Week 13: Advanced Search & Filters
+
 **Tasks:**
+
 1. Elasticsearch integration
 2. Full-text search
 3. Advanced filtering UI
@@ -537,7 +562,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Search suggestions
 
 #### Week 14: AI/ML Enhancements
+
 **Tasks:**
+
 1. Collaborative filtering recommendations
 2. Content-based filtering
 3. Hybrid recommendation engine
@@ -545,7 +572,9 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Personalization experiments
 
 #### Week 15: Monetization & Premium
+
 **Tasks:**
+
 1. Stripe integration
 2. Organization subscription tiers
 3. Featured event listings
@@ -553,31 +582,37 @@ I'll create detailed UI mockups for the most critical pages and provide you with
 5. Payment dashboard
 
 #### Week 16: Platform Optimization
+
 **Tasks:**
+
 1. CDN setup (Cloudflare)
 2. Image optimization pipeline
 3. Database query optimization
 4. Caching strategy (Redis)
 5. Load testing & scaling
 
-***
+---
 
 ## 🚀 Immediate Next Steps (This Week)
 
 ### Priority 1: Fix Event Data Pipeline (Critical)
+
 **File:** `src/backend/event_discovery/ticketmaster_service.py`
+
 ```python
 # Complete implementation from earlier response
 # Ensure it returns standardized event objects
 ```
 
 **File:** `src/backend/event_discovery/google_maps_service.py`
+
 ```python
 # Match Ticketmaster schema exactly
 # Return same keys: id, title, date, location, image, lat, lng
 ```
 
 **File:** `src/backend/app.py`
+
 ```python
 @app.route('/api/events/personalized', methods=['POST'])
 @jwt_required()
@@ -587,7 +622,9 @@ def get_personalized_events():
 ```
 
 ### Priority 2: Wire Swiper Interactions
+
 **File:** `src/front/src/components/EventSwiper.jsx`
+
 ```jsx
 const handleSwipe = async (dir) => {
   // POST to /api/events/interact
@@ -597,6 +634,7 @@ const handleSwipe = async (dir) => {
 ```
 
 **File:** `src/backend/app.py`
+
 ```python
 @app.route('/api/events/interact', methods=['POST'])
 @jwt_required()
@@ -607,6 +645,7 @@ def log_interaction():
 ```
 
 ### Priority 3: Deploy & Test
+
 ```bash
 # 1. Test locally
 cd src/backend && python app.py
@@ -622,11 +661,12 @@ fly deploy
 curl https://tapin-correct.fly.dev/api/events/personalized
 ```
 
-***
+---
 
 ## 📊 Success Metrics
 
 ### Week 1-4 (MVP)
+
 - [ ] 10+ events loading from APIs
 - [ ] Swiper animations smooth (60fps)
 - [ ] Users can like/dislike events
@@ -635,26 +675,30 @@ curl https://tapin-correct.fly.dev/api/events/personalized
 - [ ] Lighthouse score >90
 
 ### Week 5-8 (Organization Portal)
+
 - [ ] 5 test organizations onboarded
 - [ ] 20+ events created by orgs
 - [ ] QR code check-in working
 - [ ] Analytics dashboard showing data
 
 ### Week 9-12 (Social)
+
 - [ ] Real-time messaging functional
 - [ ] Email notifications sending
 - [ ] Users can follow organizations
 - [ ] Activity feed showing updates
 
 ### Week 13-16 (Advanced)
+
 - [ ] Search returns results <200ms
 - [ ] ML recommendations active
 - [ ] Payment processing live
 - [ ] Platform handles 1000+ concurrent users
 
-***
+---
 
 Would you like me to:
+
 1. **Generate the exact code files** for Priority 1-3 tasks?
 2. **Create a detailed Sprint Planning board** (Kanban/Jira format)?
 3. **Build out the SQL migration scripts** for the complete database schema?

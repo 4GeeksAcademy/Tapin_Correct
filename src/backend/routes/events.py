@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-import asyncio
 import json
+from datetime import datetime
 
 from backend.event_discovery.cache_manager import EventCacheManager
 from backend.event_discovery.ticketmaster_service import fetch_ticketmaster_events
+from backend.event_discovery.google_maps_service import fetch_google_events
 from backend.models import db, UserEventInteraction
 
 
@@ -14,7 +15,7 @@ events_bp = Blueprint("events", __name__)
 @events_bp.route("/search", methods=["GET"])
 @jwt_required()
 def search_events():
-    """Search events by city/state and return cached or freshly scraped results.
+    """Search events by city/state and return cached or cached/fresh results.
 
     Query params: ?city=CityName&state=ST
     """
@@ -25,7 +26,7 @@ def search_events():
 
     manager = EventCacheManager()
     try:
-        events = asyncio.run(manager.search_by_location(city or "", state))
+        events = manager.search_by_location(city or "", state)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -35,20 +36,33 @@ def search_events():
 @events_bp.route("/personalized", methods=["POST"])
 @jwt_required()
 def personalized_events():
-    """Return combined personalized events from Ticketmaster (and other sources).
+    """Return combined events from Ticketmaster and Google as a fallback.
 
-    POST body: {"location": "City, ST"}
+    POST body: {"location": "City, ST", "limit": 20}
     """
     data = request.get_json() or {}
     location = data.get("location", "Houston, TX")
+    try:
+        limit = min(int(data.get("limit", 20)), 50)
+    except Exception:
+        limit = 20
 
     try:
-        tm_events = fetch_ticketmaster_events(location=location)
-        # TODO: combine with other sources (google, local scraper) as available
-        all_events = tm_events
-        return jsonify({"events": all_events}), 200
+        tm_events = fetch_ticketmaster_events(city=location, limit=limit)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        tm_events = []
+        print("Ticketmaster fetch error:", e)
+
+    try:
+        google_events = fetch_google_events(city=location, limit=limit)
+    except Exception as e:
+        google_events = []
+        print("Google fetch error:", e)
+
+    combined = (tm_events or []) + (google_events or [])
+    combined = combined[:limit]
+
+    return jsonify({"events": combined}), 200
 
 
 @events_bp.route("/interact", methods=["POST"])
@@ -56,34 +70,34 @@ def personalized_events():
 def interact():
     """Log a user's interaction (like/dislike) with an event.
 
-    POST body should include: event_id, event_title, event_category, interaction ('like'|'dislike'), source
+    POST body must include: event_id, event_title, category, interaction ('like'|'dislike'), source
     """
     user_id = get_jwt_identity()
     data = request.get_json() or {}
 
-    event_id = data.get("event_id")
-    if not event_id:
-        return jsonify({"error": "event_id is required"}), 400
+    required_keys = ["event_id", "event_title", "category", "interaction", "source"]
+    if not all(k in data for k in required_keys):
+        return jsonify({"error": "Missing data"}), 400
 
     try:
         interaction = UserEventInteraction(
             user_id=user_id,
-            event_id=event_id,
-            interaction_type=data.get("interaction", "unknown"),
+            event_id=str(data["event_id"]),
+            interaction_type=data.get("interaction"),
             interaction_metadata=json.dumps(
                 {
                     "title": data.get("event_title"),
-                    "category": data.get("event_category"),
+                    "category": data.get("category"),
                     "source": data.get("source"),
                 }
             ),
+            timestamp=datetime.utcnow(),
         )
 
         db.session.add(interaction)
         db.session.commit()
-
-        # Optionally, trigger gamification checks here
-        return jsonify({"status": "success"}), 200
+        return jsonify({"success": True}), 200
     except Exception as e:
         db.session.rollback()
-        return jsonify({"error": str(e)}), 500
+        print("Interaction error:", e)
+        return jsonify({"error": "Could not save interaction"}), 500

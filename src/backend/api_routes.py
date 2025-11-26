@@ -160,6 +160,13 @@ def register_routes(
             201,
         )
 
+    # Alias for frontend compatibility
+    @app.route("/api/auth/register", methods=["POST", "OPTIONS"])
+    def api_auth_register():
+        if request.method == "OPTIONS":
+            return "", 200
+        return register_user()
+
     @app.route("/login", methods=["POST"])
     def login_user():
         data = request.get_json() or {}
@@ -175,6 +182,14 @@ def register_routes(
         return jsonify(
             {"message": "login successful", "user": user.to_dict(), **tokens}
         )
+
+    # Backwards-compatible alias used by frontend: /api/auth/login
+    @app.route("/api/auth/login", methods=["POST", "OPTIONS"])
+    def api_auth_login():
+        # Handle CORS preflight
+        if request.method == "OPTIONS":
+            return "", 200
+        return login_user()
 
     @app.route("/refresh", methods=["POST"])
     @jwt_required(refresh=True)

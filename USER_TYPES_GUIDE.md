@@ -3,6 +3,7 @@
 ## Overview
 
 Tapin Correct now supports two types of user accounts:
+
 1. **Volunteer** - Individual users looking for volunteer opportunities
 2. **Organization** - Organizations posting volunteer events
 
@@ -15,12 +16,13 @@ curl -X POST http://localhost:5000/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "volunteer@example.com",
-    "password": "password123",
+    "password": "[REDACTED]",
     "user_type": "volunteer"
   }'
 ```
 
 **Response:**
+
 ```json
 {
   "message": "volunteer account created successfully",
@@ -30,8 +32,8 @@ curl -X POST http://localhost:5000/register \
     "role": "volunteer",
     "user_type": "volunteer"
   },
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  "access_token": "[REDACTED_TOKEN]",
+  "refresh_token": "[REDACTED_TOKEN]"
 }
 ```
 
@@ -42,12 +44,13 @@ curl -X POST http://localhost:5000/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "org@example.com",
-    "password": "password123",
+    "password": "[REDACTED]",
     "user_type": "organization"
   }'
 ```
 
 **Response:**
+
 ```json
 {
   "message": "organization account created successfully",
@@ -57,8 +60,8 @@ curl -X POST http://localhost:5000/register \
     "role": "organization",
     "user_type": "organization"
   },
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  "access_token": "[REDACTED_TOKEN]",
+  "refresh_token": "[REDACTED_TOKEN]"
 }
 ```
 
@@ -69,11 +72,12 @@ curl -X POST http://localhost:5000/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "volunteer@example.com",
-    "password": "password123"
+    "password": "[REDACTED]"
   }'
 ```
 
 **Response:**
+
 ```json
 {
   "message": "login successful",
@@ -83,8 +87,8 @@ curl -X POST http://localhost:5000/login \
     "role": "volunteer",
     "user_type": "volunteer"
   },
-  "access_token": "eyJ0eXAiOiJKV1QiLCJhbGc...",
-  "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+  "access_token": "[REDACTED_TOKEN]",
+  "refresh_token": "[REDACTED_TOKEN]"
 }
 ```
 
@@ -95,28 +99,28 @@ curl -X POST http://localhost:5000/login \
 ```javascript
 // Volunteer Registration
 const registerVolunteer = async (email, password) => {
-  const response = await fetch('http://localhost:5000/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("http://localhost:5000/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       password,
-      user_type: 'volunteer'  // <-- Key difference
-    })
+      user_type: "volunteer", // <-- Key difference
+    }),
   });
   return response.json();
 };
 
 // Organization Registration
 const registerOrganization = async (email, password) => {
-  const response = await fetch('http://localhost:5000/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const response = await fetch("http://localhost:5000/register", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       password,
-      user_type: 'organization'  // <-- Key difference
-    })
+      user_type: "organization", // <-- Key difference
+    }),
   });
   return response.json();
 };
@@ -126,25 +130,25 @@ const registerOrganization = async (email, password) => {
 
 ```javascript
 const login = async (email, password) => {
-  const response = await fetch('http://localhost:5000/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+  const response = await fetch("http://localhost:5000/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
   });
 
   const data = await response.json();
 
   // Store tokens
-  localStorage.setItem('access_token', data.access_token);
-  localStorage.setItem('refresh_token', data.refresh_token);
+  localStorage.setItem("access_token", data.access_token);
+  localStorage.setItem("refresh_token", data.refresh_token);
 
   // Check user type and redirect accordingly
-  if (data.user.user_type === 'organization') {
+  if (data.user.user_type === "organization") {
     // Redirect to organization dashboard
-    window.location.href = '/organization-dashboard';
+    window.location.href = "/organization-dashboard";
   } else {
     // Redirect to volunteer dashboard
-    window.location.href = '/volunteer-dashboard';
+    window.location.href = "/volunteer-dashboard";
   }
 };
 ```
@@ -153,20 +157,21 @@ const login = async (email, password) => {
 
 ```javascript
 const checkUserType = async () => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem("access_token");
 
-  const response = await fetch('http://localhost:5000/me', {
-    headers: { 'Authorization': `Bearer ${token}` }
+  const response = await fetch("http://localhost:5000/me", {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   const data = await response.json();
-  return data.user_type;  // 'volunteer' or 'organization'
+  return data.user_type; // 'volunteer' or 'organization'
 };
 ```
 
 ## User Type Features
 
 ### Volunteers Can:
+
 - ✅ Search for events
 - ✅ Register for events
 - ✅ Track event participation
@@ -175,6 +180,7 @@ const checkUserType = async () => {
 - ✅ Use AI-powered event discovery
 
 ### Organizations Can:
+
 - ✅ Create event listings
 - ✅ Edit/update events
 - ✅ Delete events

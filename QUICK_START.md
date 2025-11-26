@@ -73,11 +73,11 @@ npm run dev
 ```bash
 curl -X POST http://localhost:5000/api/register \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123"}'
+  -d '{"email":"test@example.com","password":"[REDACTED]"}'
 
 curl -X POST http://localhost:5000/api/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","password":"test123"}'
+  -d '{"email":"test@example.com","password":"[REDACTED]"}'
 ```
 
 ### 2. Discover Events (with AI)

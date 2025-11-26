@@ -9,6 +9,10 @@ import DashboardLanding from './pages/DashboardLanding';
 import EventDiscovery from './pages/EventDiscovery';
 import Dashboard from './pages/Dashboard';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
+import VolunteerManagement from './pages/VolunteerManagement';
+import Notifications from './pages/Notifications';
+import Messages from './pages/Messages';
+import Signup from './pages/Signup';
 
 // API
 import { API_URL } from './lib/api';
@@ -180,6 +184,66 @@ export default function App() {
                 ) : (
                   <Navigate to="/?auth=true" replace />
                 )
+              }
+            />
+
+            {/* Organization volunteer management */}
+            <Route
+              path="/org/volunteers"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <VolunteerManagement />
+                </motion.div>
+              }
+            />
+
+            {/* Notifications */}
+            <Route
+              path="/notifications"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Notifications />
+                </motion.div>
+              }
+            />
+
+            {/* Messages */}
+            <Route
+              path="/messages"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Messages />
+                </motion.div>
+              }
+            />
+
+            {/* Signup */}
+            <Route
+              path="/signup"
+              element={
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Signup />
+                </motion.div>
               }
             />
 
