@@ -106,12 +106,130 @@ def get_live_events():
     return jsonify({"events": unique_events}), 200
 
 
+@events_bp.route("/<event_id>", methods=["GET"])
+@jwt_required()
+def get_event(event_id):
+    """
+    Fetch a single event by ID. Attempts to fetch from external APIs if needed.
+
+    For Ticketmaster events, event_id format: ticketmaster_<id>
+    For Google events, event_id format: google_<id>
+    For internal events, event_id is just the integer ID
+    """
+    try:
+        # Check if it's an external event from Ticketmaster
+        if event_id.startswith("ticketmaster_") or (
+            not event_id.startswith("google_") and len(event_id) > 10
+        ):
+            # This is likely a Ticketmaster event ID
+            # We can't fetch single events from Ticketmaster easily, so return a helpful error
+            return (
+                jsonify(
+                    {
+                        "error": "Event not found in cache. Please return to discovery page."
+                    }
+                ),
+                404,
+            )
+
+        # Check if it's a Google search event
+        if event_id.startswith("google_"):
+            return (
+                jsonify(
+                    {
+                        "error": "Event not found in cache. Please return to discovery page."
+                    }
+                ),
+                404,
+            )
+
+        # Try to fetch from internal database for org-created events
+        from backend.models import Event as DBEvent
+
+        db_event = DBEvent.query.get(int(event_id))
+        if db_event:
+            return (
+                jsonify(
+                    {
+                        "id": db_event.id,
+                        "title": db_event.title,
+                        "description": db_event.description,
+                        "date": (
+                            db_event.start_date.isoformat()
+                            if db_event.start_date
+                            else None
+                        ),
+                        "time": (
+                            db_event.start_time.isoformat()
+                            if db_event.start_time
+                            else None
+                        ),
+                        "location": db_event.location_name,
+                        "city": db_event.city,
+                        "lat": db_event.latitude,
+                        "lng": db_event.longitude,
+                        "image": db_event.image_url,
+                        "category": db_event.category,
+                        "source": "internal",
+                        "max_volunteers": db_event.max_volunteers,
+                        "current_volunteers": db_event.current_volunteers,
+                    }
+                ),
+                200,
+            )
+
+        return jsonify({"error": "Event not found"}), 404
+
+    except Exception as e:
+        print(f"Error fetching event {event_id}: {e}")
+        return jsonify({"error": "Failed to fetch event"}), 500
+
+
+@events_bp.route("/register", methods=["POST"])
+@jwt_required()
+def register_for_event():
+    """Register a user for an event (save as 'register' interaction).
+
+    POST body: {event_id, event_title, category, source, ...other event details}
+    """
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+
+    required_keys = ["event_id", "event_title", "category", "source"]
+    if not all(k in data for k in required_keys):
+        return jsonify({"error": "Missing required event data"}), 400
+
+    try:
+        # Save as a 'register' interaction
+        interaction = UserEventInteraction(
+            user_id=user_id,
+            event_id=str(data["event_id"]),
+            event_title=data.get("event_title"),
+            category=data.get("category"),
+            interaction_type="register",
+            source=data.get("source"),
+            timestamp=datetime.utcnow(),
+        )
+
+        db.session.add(interaction)
+        db.session.commit()
+
+        return (
+            jsonify({"success": True, "message": "Successfully registered for event!"}),
+            200,
+        )
+    except Exception as e:
+        db.session.rollback()
+        print("Registration error:", e)
+        return jsonify({"error": "Could not register for event"}), 500
+
+
 @events_bp.route("/interact", methods=["POST"])
 @jwt_required()
 def interact():
-    """Log a user's interaction (like/dislike) with an event.
+    """Log a user's interaction (like/dislike/view/save) with an event.
 
-    POST body must include: event_id, event_title, category, interaction ('like'|'dislike'), source
+    POST body must include: event_id, event_title, category, interaction, source
     """
     user_id = get_jwt_identity()
     data = request.get_json() or {}

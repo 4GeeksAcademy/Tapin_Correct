@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+    import { useNavigate } from 'react-router-dom';
     import GlassCard from './GlassCard';
 
     const EventSwiper = ({ events = [], onSwipe = () => { } }) => {
+      const navigate = useNavigate();
       const [currentIndex, setCurrentIndex] = useState(0);
       const [direction, setDirection] = useState(null);
       const [loading, setLoading] = useState(false);
@@ -90,12 +92,17 @@ import React, { useState } from 'react';
                 width: '100%',
                 height: '100%',
                 zIndex: 2,
-                cursor: 'grab',
+                cursor: 'pointer',
                 transition: 'transform 0.3s ease, opacity 0.3s ease',
                 transform: direction === 'left' ? 'translateX(-150%) rotate(-20deg)' : direction === 'right' ? 'translateX(150%) rotate(20deg)' : 'translateX(0) rotate(0)',
                 opacity: direction ? 0 : 1,
                 display: 'flex',
                 flexDirection: 'column'
+              }}
+              onClick={() => {
+                if (!loading) {
+                  navigate(`/event/${currentEvent.id}`, { state: { event: currentEvent } });
+                }
               }}
             >
               <div style={{ height: '200px', background: '#222', borderRadius: '12px', marginBottom: '1rem', overflow: 'hidden', position: 'relative' }}>
