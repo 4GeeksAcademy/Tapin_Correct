@@ -5,16 +5,41 @@ const EventSwiper = ({ events = [], onSwipe = () => { } }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(null);
 
-  const handleSwipe = (dir) => {
+  const handleSwipe = async (dir) => {
     if (currentIndex >= events.length) return;
     setDirection(dir);
 
+    const currentEvent = events[currentIndex];
+    const interactionType = dir === 'right' ? 'like' : 'dislike';
+
+    // Optimistic UI animation + advance
     setTimeout(() => {
-      const ev = events[currentIndex];
-      try { onSwipe(ev, dir); } catch (e) { console.error(e); }
+      try { onSwipe(currentEvent, dir); } catch (e) { console.error(e); }
       setCurrentIndex((prev) => prev + 1);
       setDirection(null);
     }, 300);
+
+    // Send interaction to backend (fire-and-forget)
+    try {
+      const backend = import.meta.env.VITE_BACKEND_URL || '';
+      const token = localStorage.getItem('token');
+      await fetch(`${backend}/events/interact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          event_id: currentEvent.id,
+          event_title: currentEvent.title,
+          event_category: currentEvent.category,
+          interaction: interactionType,
+          source: currentEvent.source,
+        }),
+      });
+    } catch (err) {
+      console.error('Error saving interaction', err);
+    }
   };
 
   if (!events || events.length === 0 || currentIndex >= events.length) {
