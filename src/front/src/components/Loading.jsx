@@ -7,15 +7,17 @@ const Loading = ({ message = 'Loading...' }) => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '200px',
-            gap: '1rem'
+            width: '100%',
+            height: '100%',
+            minHeight: '50vh',
+            gap: '1.5rem'
         }}>
             <div className="spinner" style={{
-                border: '4px solid rgba(255, 255, 255, 0.1)',
+                border: '4px solid rgba(255, 255, 255, 0.08)',
                 borderTop: '4px solid #fff',
                 borderRadius: '50%',
-                width: '40px',
-                height: '40px',
+                width: '48px',
+                height: '48px',
                 animation: 'spin 1s linear infinite'
             }} />
             <p>{message}</p>

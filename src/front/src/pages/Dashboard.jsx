@@ -200,8 +200,13 @@ const Dashboard = () => {
                 </p>
             </div>
 
-            {/* Quick Stats Row */}
-            <div className="grid grid-3 mb-8">
+            {/* Quick Stats Row (responsive) */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                gap: '1rem',
+                marginBottom: '2rem'
+            }}>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -242,8 +247,13 @@ const Dashboard = () => {
                 </motion.div>
             </div>
 
-            {/* Main Dashboard Grid */}
-            <div className="grid grid-2">
+            {/* Main Dashboard Grid (responsive) */}
+            <div style={{
+                display: 'grid',
+                gap: '2rem',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))',
+                alignItems: 'start'
+            }}>
 
                 {/* Left Column */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>

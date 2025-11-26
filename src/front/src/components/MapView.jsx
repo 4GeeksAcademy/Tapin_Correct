@@ -161,7 +161,7 @@ export default function MapView({ listings, onListingClick, userLocation, select
         center={center}
         zoom={zoom}
         ref={mapRef}
-        style={{ height: '600px', width: '100%', borderRadius: '8px' }}
+        style={{ height: '600px', width: '100%', borderRadius: '8px', zIndex: 0, position: 'relative' }}
         scrollWheelZoom={true}
         minZoom={10}
         maxZoom={15}
