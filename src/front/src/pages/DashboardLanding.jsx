@@ -187,7 +187,7 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
             className="text-center text-muted mt-16"
             style={{ paddingBottom: 'var(--space-12)' }}
           >
-            Free to use • School Project
+            © {new Date().getFullYear()} TapIn
           </motion.div>
         </div>
       </section>
