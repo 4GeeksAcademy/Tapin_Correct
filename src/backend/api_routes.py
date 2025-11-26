@@ -113,6 +113,38 @@ def register_routes(
         db.session.add(user)
         db.session.commit()
 
+        # Ensure a corresponding UserProfile row exists for the new user.
+        # This keeps the frontend and personalization engine happy by
+        # having a predictable profile entry to read/update later.
+        try:
+            from backend.models import UserProfile
+
+            default_profile = {
+                "category_preferences": {},
+                "hour_preferences": {},
+                "price_sensitivity": "medium",
+                "adventure_level": 0.5,
+                "favorite_venues": [],
+                "average_lead_time": 7,
+            }
+
+            profile = UserProfile(
+                user_id=user.id,
+                taste_profile=json.dumps(default_profile),
+                adventure_level=default_profile["adventure_level"],
+                price_sensitivity=default_profile["price_sensitivity"],
+                favorite_venues=json.dumps(default_profile["favorite_venues"]),
+            )
+            db.session.add(profile)
+            db.session.commit()
+        except Exception as e:
+            # Log and continue — registration should not fail solely because
+            # creating the profile entry failed (DB permissions, migrations, etc.)
+            try:
+                app.logger.warning(f"Failed to create user profile: {e}")
+            except Exception:
+                pass
+
         # return both access and refresh tokens (identity stored as string)
         from auth import token_pair
 

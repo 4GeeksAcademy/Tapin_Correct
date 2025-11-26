@@ -9,7 +9,7 @@ import EventPreview from '../components/EventPreview';
 import ARWayfinding from '../components/ARWayfinding';
 import GlassCard from '../components/GlassCard';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 /**
  * Modern event discovery page with AI-powered features

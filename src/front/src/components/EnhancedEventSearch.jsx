@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LocationDropdown from './LocationDropdown';
 import EventCard from './EventCard';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 export default function EnhancedEventSearch({ onEventsLoaded }) {
   const [selectedCity, setSelectedCity] = useState('');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 /**
  * Surprise Me! - AI Event Generator

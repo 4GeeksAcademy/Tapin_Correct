@@ -139,7 +139,7 @@ describe('ReviewForm Component', () => {
 
     await waitFor(() => {
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        `http://127.0.0.1:5000/listings/${mockListing.id}/reviews`,
+        `${process.env.VITE_API_URL}/listings/${mockListing.id}/reviews`,
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({

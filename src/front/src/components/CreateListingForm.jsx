@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import LocationDropdown from './LocationDropdown';
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 export default function CreateListingForm({ token, onCreated, userLocation }) {
   const [title, setTitle] = useState('');

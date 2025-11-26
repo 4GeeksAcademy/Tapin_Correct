@@ -12,7 +12,7 @@ import MapView from './components/MapView';
 import 'leaflet/dist/leaflet.css';
 import LocationSelector from './components/LocationSelector';
 import ResetPasswordConfirm from './components/ResetPasswordConfirm';
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from './lib/api';
 
 export default function App() {
   const pathname = typeof globalThis !== 'undefined' ? globalThis.location.pathname : '/';

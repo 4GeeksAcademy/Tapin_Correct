@@ -3,7 +3,7 @@ import LocationDropdown from './LocationDropdown';
 import Filters from './Filters';
 import { filterByCategory } from '../config/categories';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 export default function EventSearch({ onEventsLoaded }) {
   const [selectedCity, setSelectedCity] = useState('');
@@ -360,168 +360,168 @@ export default function EventSearch({ onEventsLoaded }) {
               }}
             >
               {filteredEvents.map((event) => (
-              <div
-                key={event.id}
-                style={{
-                  background: '#f9f9f9',
-                  borderRadius: '10px',
-                  padding: '16px',
-                  border: '1px solid #eee',
-                  transition: 'transform 0.2s, box-shadow 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow =
-                    '0 8px 24px rgba(0,0,0,0.12)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                {/* Event Image */}
-                {event.image_url && (
-                  <div
-                    style={{
-                      marginBottom: '12px',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <img
-                      src={event.image_url}
-                      alt={event.title}
+                <div
+                  key={event.id}
+                  style={{
+                    background: '#f9f9f9',
+                    borderRadius: '10px',
+                    padding: '16px',
+                    border: '1px solid #eee',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow =
+                      '0 8px 24px rgba(0,0,0,0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  {/* Event Image */}
+                  {event.image_url && (
+                    <div
                       style={{
-                        width: '100%',
-                        height: '160px',
-                        objectFit: 'cover',
+                        marginBottom: '12px',
+                        borderRadius: '8px',
+                        overflow: 'hidden',
                       }}
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  </div>
-                )}
+                    >
+                      <img
+                        src={event.image_url}
+                        alt={event.title}
+                        style={{
+                          width: '100%',
+                          height: '160px',
+                          objectFit: 'cover',
+                        }}
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
 
-                {/* Event Title */}
-                <h4
-                  style={{
-                    margin: '0 0 8px 0',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    color: '#333',
-                    lineHeight: '1.3',
-                  }}
-                >
-                  {event.title}
-                </h4>
-
-                {/* Organization */}
-                <div
-                  style={{
-                    fontSize: '14px',
-                    color: '#667eea',
-                    fontWeight: '500',
-                    marginBottom: '8px',
-                  }}
-                >
-                  {event.organization}
-                </div>
-
-                {/* Date */}
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    marginBottom: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <span>&#128197;</span>
-                  {formatDate(event.date_start)}
-                </div>
-
-                {/* Location */}
-                <div
-                  style={{
-                    fontSize: '13px',
-                    color: '#666',
-                    marginBottom: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                  }}
-                >
-                  <span>&#128205;</span>
-                  {event.location_city}, {event.location_state}
-                </div>
-
-                {/* Description */}
-                {event.description && (
-                  <p
+                  {/* Event Title */}
+                  <h4
                     style={{
-                      margin: '0 0 12px 0',
-                      fontSize: '13px',
-                      color: '#555',
-                      lineHeight: '1.5',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
+                      margin: '0 0 8px 0',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      color: '#333',
+                      lineHeight: '1.3',
                     }}
                   >
-                    {event.description}
-                  </p>
-                )}
+                    {event.title}
+                  </h4>
 
-                {/* Category Badge */}
-                {event.category && (
+                  {/* Organization */}
                   <div
                     style={{
-                      display: 'inline-block',
-                      padding: '4px 10px',
-                      background: '#e8f4f8',
-                      color: '#0077b6',
-                      borderRadius: '20px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      marginBottom: '12px',
+                      fontSize: '14px',
+                      color: '#667eea',
+                      fontWeight: '500',
+                      marginBottom: '8px',
                     }}
                   >
-                    {event.category}
+                    {event.organization}
                   </div>
-                )}
 
-                {/* Link to Event */}
-                {event.url && (
-                  <a
-                    href={event.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  {/* Date */}
+                  <div
                     style={{
-                      display: 'inline-block',
-                      padding: '8px 16px',
-                      background: '#667eea',
-                      color: '#fff',
-                      textDecoration: 'none',
-                      borderRadius: '6px',
                       fontSize: '13px',
-                      fontWeight: '600',
-                      transition: 'background 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.target.style.background = '#5a6fd6';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.background = '#667eea';
+                      color: '#666',
+                      marginBottom: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
                     }}
                   >
-                    View Details
-                  </a>
-                )}
-              </div>
+                    <span>&#128197;</span>
+                    {formatDate(event.date_start)}
+                  </div>
+
+                  {/* Location */}
+                  <div
+                    style={{
+                      fontSize: '13px',
+                      color: '#666',
+                      marginBottom: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <span>&#128205;</span>
+                    {event.location_city}, {event.location_state}
+                  </div>
+
+                  {/* Description */}
+                  {event.description && (
+                    <p
+                      style={{
+                        margin: '0 0 12px 0',
+                        fontSize: '13px',
+                        color: '#555',
+                        lineHeight: '1.5',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {event.description}
+                    </p>
+                  )}
+
+                  {/* Category Badge */}
+                  {event.category && (
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        padding: '4px 10px',
+                        background: '#e8f4f8',
+                        color: '#0077b6',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        marginBottom: '12px',
+                      }}
+                    >
+                      {event.category}
+                    </div>
+                  )}
+
+                  {/* Link to Event */}
+                  {event.url && (
+                    <a
+                      href={event.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-block',
+                        padding: '8px 16px',
+                        background: '#667eea',
+                        color: '#fff',
+                        textDecoration: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        transition: 'background 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.target.style.background = '#5a6fd6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.target.style.background = '#667eea';
+                      }}
+                    >
+                      View Details
+                    </a>
+                  )}
+                </div>
               ))}
             </div>
           </div>

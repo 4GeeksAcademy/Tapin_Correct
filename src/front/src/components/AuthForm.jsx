@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import ForgotPassword from './ForgotPassword';
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+import { API_URL } from '../lib/api';
 
 export default function AuthForm({ onLogin }) {
   const [mode, setMode] = useState('login'); // 'login' or 'register'

@@ -1,8 +1,7 @@
 // Resolve API URL at build time, but allow runtime override via `window.__API_URL__`.
 export const API_URL =
   (typeof window !== "undefined" && window.__API_URL__) ||
-  import.meta.env.VITE_API_URL ||
-  "http://127.0.0.1:5000";
+  import.meta.env.VITE_API_URL;
 
 // Helper for API fetches that accepts either a full URL or a path.
 export async function apiFetch(pathOrUrl, options) {
