@@ -18,6 +18,10 @@ RUN pip install --upgrade pip setuptools wheel && \
 COPY src/backend /app/backend
 # Copy wsgi entrypoint from repo root `src/wsgi.py` so gunicorn can import it
 COPY src/wsgi.py /app/wsgi.py
+# Copy app wrapper that serves both backend API and frontend
+COPY src/app.py /app/src/app.py
+# Copy built frontend from dist/
+COPY dist /app/dist
 
 # Copy entrypoint script
 COPY src/backend/docker-entrypoint.sh /app/docker-entrypoint.sh
