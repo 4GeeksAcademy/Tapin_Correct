@@ -165,8 +165,14 @@ export default function AuthForm({ onLogin }) {
 
           {error && <p className="error" style={{ marginBottom: 'var(--space-3)' }}>{error}</p>}
 
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {mode === 'login' ? (loading ? 'Login...' : 'Login') : loading ? 'Register...' : 'Register'}
+          <button
+            type="submit"
+            className="btn btn-primary"
+            disabled={loading}
+            data-testid={mode === 'login' ? 'login-submit-btn' : 'register-submit-btn'}
+            aria-label={mode === 'login' ? 'Submit login' : 'Submit registration'}
+          >
+            {mode === 'login' ? (loading ? 'Logging in...' : 'Log In') : loading ? 'Registering...' : 'Sign Up'}
           </button>
 
           {mode === 'login' && (

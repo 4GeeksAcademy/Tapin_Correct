@@ -71,10 +71,20 @@ export default function DashboardLanding({ onLogin, onEnter, user }) {
         </p>
 
         <div className="landing-cta-row">
-          <button className="btn btn-primary landing-cta" onClick={() => setShowAuth(true)}>
+          <button
+            className="btn btn-primary landing-cta"
+            onClick={() => setShowAuth(true)}
+            data-testid="get-started-btn"
+            aria-label="Get started with registration"
+          >
             Get Started
           </button>
-          <button className="btn btn-outline landing-cta" onClick={() => setShowAuth(true)}>
+          <button
+            className="btn btn-outline landing-cta"
+            onClick={() => setShowAuth(true)}
+            data-testid="login-btn"
+            aria-label="Log in to your account"
+          >
             Log In
           </button>
         </div>

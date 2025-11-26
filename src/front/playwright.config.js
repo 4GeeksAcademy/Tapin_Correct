@@ -16,7 +16,7 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'https://tapin-correct.fly.dev',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
@@ -45,20 +45,20 @@ export default defineConfig({
     },
   ],
 
-  webServer: [
-    {
-      command: 'cd ../backend && PYTHONPATH=/Users/houseofobi/Documents/GitHub/Tapin_Correct/src/backend LLM_PROVIDER=mock pipenv run python app.py',
-      url: 'http://127.0.0.1:5000',
-      reuseExistingServer: !process.env.CI,
-      timeout: 120 * 1000,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    },
-    {
-      command: 'npm run dev',
-      url: 'http://localhost:5173',
-      reuseExistingServer: !process.env.CI,
-      timeout: 60 * 1000,
-    },
-  ],
+  // webServer: [
+  //   {
+  //     command: 'cd ../backend && PYTHONPATH=/Users/houseofobi/Documents/GitHub/Tapin_Correct/src:/Users/houseofobi/Documents/GitHub/Tapin_Correct/src/backend LLM_PROVIDER=mock FLASK_APP=app:create_app .venv/bin/flask run --host=127.0.0.1 --port=5000',
+  //     url: 'http://127.0.0.1:5000',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 120 * 1000,
+  //     stdout: 'pipe',
+  //     stderr: 'pipe',
+  //   },
+  //   {
+  //     command: '$HOME/.nvm/versions/node/v18.20.8/bin/npm run dev',
+  //     url: 'http://localhost:3000',
+  //     reuseExistingServer: !process.env.CI,
+  //     timeout: 60 * 1000,
+  //   },
+  // ],
 });
