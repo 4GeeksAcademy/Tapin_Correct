@@ -1,0 +1,26 @@
+[
+  {
+    "organization_name": "Houston Community Aid",
+    "email": "houstonaid@example.com",
+    "password": "password123",
+    "organization_type": "Nonprofit",
+    "city": "Houston",
+    "description": "Community services and food distribution in Houston."
+  },
+  {
+    "organization_name": "TX Environmental Corps",
+    "email": "txenv@example.com",
+    "password": "password123",
+    "organization_type": "Nonprofit",
+    "city": "Austin",
+    "description": "Trail restoration and park cleanups across Texas."
+  },
+  {
+    "organization_name": "Dallas Senior Support",
+    "email": "dallassupport@example.com",
+    "password": "password123",
+    "organization_type": "Nonprofit",
+    "city": "Dallas",
+    "description": "Support services and activities for senior citizens."
+  }
+]

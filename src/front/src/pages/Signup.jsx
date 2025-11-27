@@ -27,8 +27,8 @@ const Signup = () => {
             localStorage.setItem('token', data.token);
             localStorage.setItem('user_type', userType);
 
-            // Redirect based on role
-            navigate(userType === 'organization' ? '/org/dashboard' : '/dashboard');
+            // Redirect based on role — organizations should claim profiles first
+            navigate(userType === 'organization' ? '/claim' : '/dashboard');
 
         } catch (err) {
             setError(err.message);

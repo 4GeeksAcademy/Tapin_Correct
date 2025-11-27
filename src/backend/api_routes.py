@@ -195,16 +195,14 @@ def register_routes(
         from auth import token_pair
 
         tokens = token_pair(user)
-        return (
-            jsonify(
-                {
-                    "message": f"{user_type} account created successfully",
-                    "user": user.to_dict(),
-                    **tokens,
-                }
-            ),
-            201,
-        )
+        # Provide legacy `token` key (access token) for frontend compatibility
+        response_payload = {
+            "message": f"{user_type} account created successfully",
+            "user": user.to_dict(),
+            **tokens,
+            "token": tokens.get("access_token"),
+        }
+        return jsonify(response_payload), 201
 
     # Alias for frontend compatibility
     @app.route("/api/auth/register", methods=["POST", "OPTIONS"])

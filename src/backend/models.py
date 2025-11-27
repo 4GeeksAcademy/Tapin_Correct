@@ -14,6 +14,7 @@ class UserType(enum.Enum):
 
 
 class VerificationStatus(enum.Enum):
+    UNCLAIMED = "unclaimed"
     PENDING = "pending"
     VERIFIED = "verified"
     REJECTED = "rejected"
@@ -63,13 +64,18 @@ class User(db.Model):
 
     # Relationships
     volunteer_profile = db.relationship(
-        "VolunteerProfile", backref="user", uselist=False, cascade="all, delete-orphan"
+        "VolunteerProfile",
+        backref="user",
+        uselist=False,
+        cascade="all, delete-orphan",
+        foreign_keys="[VolunteerProfile.user_id]",
     )
     organization_profile = db.relationship(
         "OrganizationProfile",
         backref="user",
         uselist=False,
         cascade="all, delete-orphan",
+        foreign_keys="[OrganizationProfile.user_id]",
     )
 
     def set_password(self, password):
@@ -91,9 +97,13 @@ class VolunteerProfile(db.Model):
     __tablename__ = "volunteer_profiles"
 
     id = db.Column(db.Integer, primary_key=True)
+    # `user_id` may be NULL for unclaimed organization profiles
     user_id = db.Column(
-        db.Integer, db.ForeignKey("users.id"), nullable=False, unique=True
+        db.Integer, db.ForeignKey("users.id"), nullable=True, unique=True
     )
+
+    # If a logged-in user has started a claim flow, store who is claiming
+    claiming_user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
 
     # Basic Info
     first_name = db.Column(db.String(100))
@@ -179,8 +189,12 @@ class OrganizationProfile(db.Model):
             "description": self.description,
             "logo_url": self.logo_url,
             "city": self.city,
-            "verification_status": self.verification_status.value,
+            "verification_status": (
+                self.verification_status.value if self.verification_status else None
+            ),
             "verified": self.verification_status == VerificationStatus.VERIFIED,
+            "claiming_user_id": self.claiming_user_id,
+            "is_claimed": bool(self.user_id),
         }
 
 
