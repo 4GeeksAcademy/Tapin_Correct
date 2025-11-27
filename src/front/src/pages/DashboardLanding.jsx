@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import pandaWaving from '@/assets/mascot/panda-waving.svg';
-import volunteerIcon from '@/assets/icons/volunteer.svg';
-import organizationIcon from '@/assets/icons/organization.svg';
-import locationIcon from '@/assets/icons/location.svg';
+import pandaWaving from '../assets/mascot/panda-waving.svg';
+import volunteerIcon from '../assets/icons/volunteer.svg';
+import organizationIcon from '../assets/icons/organization.svg';
+import locationIcon from '../assets/icons/location.svg';
 import AuthForm from '../components/AuthForm';
 
 export default function DashboardLanding({ onLogin, onEnter, user }) {

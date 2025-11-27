@@ -38,7 +38,7 @@ export default function Navigation({ user, onLogout }) {
                   to={link.path}
                   className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
                 >
-                  <span style={{ marginRight: '6px' }}>{link.icon}</span>
+                  <span className="nav-icon">{link.icon}</span>
                   {link.label}
                 </Link>
               </li>
@@ -47,38 +47,12 @@ export default function Navigation({ user, onLogout }) {
         </ul>
 
         {/* User Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+        <div className="nav-actions">
           {user ? (
             <>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-3)',
-                padding: 'var(--space-2) var(--space-4)',
-                background: 'var(--primary-pale)',
-                borderRadius: 'var(--radius-full)',
-              }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontWeight: 'var(--fw-bold)',
-                  fontSize: 'var(--fs-sm)',
-                }}>
-                  {user.email?.[0]?.toUpperCase() || '?'}
-                </div>
-                <span style={{
-                  fontSize: 'var(--fs-sm)',
-                  fontWeight: 'var(--fw-medium)',
-                  color: 'var(--text)',
-                }}>
-                  {user.email?.split('@')[0] || 'User'}
-                </span>
+              <div className="nav-user-chip">
+                <div className="nav-avatar">{user.email?.[0]?.toUpperCase() || '?'}</div>
+                <span className="nav-username">{user.email?.split('@')[0] || 'User'}</span>
               </div>
               <button
                 onClick={onLogout}
@@ -100,14 +74,6 @@ export default function Navigation({ user, onLogout }) {
           className="mobile-menu-toggle"
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
-          style={{
-            display: 'none',
-            background: 'none',
-            border: 'none',
-            fontSize: 'var(--fs-2xl)',
-            cursor: 'pointer',
-            padding: 'var(--space-2)',
-          }}
         >
           {mobileMenuOpen ? '✕' : '☰'}
         </button>
@@ -120,24 +86,18 @@ export default function Navigation({ user, onLogout }) {
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: 'auto', opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}
-          style={{
-            background: 'var(--surface)',
-            borderTop: '1px solid var(--border-light)',
-            padding: 'var(--space-4) var(--space-6)',
-          }}
         >
-          <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          <ul className="mobile-menu-list">
             {navLinks.map((link) => {
               if (link.authRequired && !user) return null;
               return (
-                <li key={link.path} style={{ marginBottom: 'var(--space-3)' }}>
+                <li key={link.path} className="mobile-menu-item">
                   <Link
                     to={link.path}
-                    className={`nav-link ${isActive(link.path) ? 'active' : ''}`}
+                    className={`nav-link mobile-menu-link ${isActive(link.path) ? 'active' : ''}`}
                     onClick={() => setMobileMenuOpen(false)}
-                    style={{ display: 'block', width: '100%' }}
                   >
-                    <span style={{ marginRight: '8px' }}>{link.icon}</span>
+                    <span className="nav-icon nav-icon-mobile">{link.icon}</span>
                     {link.label}
                   </Link>
                 </li>
@@ -147,17 +107,7 @@ export default function Navigation({ user, onLogout }) {
         </motion.div>
       )}
 
-      <style jsx>{`
-        @media (max-width: 768px) {
-          .nav-links {
-            display: none !important;
-          }
 
-          .mobile-menu-toggle {
-            display: block !important;
-          }
-        }
-      `}</style>
     </motion.nav>
   );
 }

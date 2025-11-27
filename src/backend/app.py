@@ -4,16 +4,30 @@ from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import os
 import logging
-from backend.models import (
-    db,
-    User,
-    Event,
-    UserEventInteraction,
-    EventRegistration,
-    VolunteerProfile,
-    OrganizationProfile,
-)
-from backend.api_routes import register_routes
+
+# Import models and api_routes with local fallback
+try:
+    from models import (
+        db,
+        User,
+        Event,
+        UserEventInteraction,
+        EventRegistration,
+        VolunteerProfile,
+        OrganizationProfile,
+    )
+    from api_routes import register_routes
+except ImportError:
+    from backend.models import (
+        db,
+        User,
+        Event,
+        UserEventInteraction,
+        EventRegistration,
+        VolunteerProfile,
+        OrganizationProfile,
+    )
+    from backend.api_routes import register_routes
 
 
 # Configure logging

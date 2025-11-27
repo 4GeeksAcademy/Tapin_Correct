@@ -28,7 +28,9 @@ def main():
 
     app = create_app()
     with app.app_context():
-        print("Starting seeding: clearing existing OrganizationProfile and Users for demo orgs...")
+        print(
+            "Starting seeding: clearing existing OrganizationProfile and Users for demo orgs..."
+        )
         # WARNING: this is destructive for demo data; keep minimal
         try:
             # Only remove org users that match seed emails to avoid deleting other accounts
@@ -65,7 +67,9 @@ def main():
                 user.password_hash = generate_password_hash(password)
                 # mark as organization
                 try:
-                    user.user_type = User.user_type.type if hasattr(User, 'user_type') else None
+                    user.user_type = (
+                        User.user_type.type if hasattr(User, "user_type") else None
+                    )
                 except Exception:
                     pass
                 db.session.add(user)

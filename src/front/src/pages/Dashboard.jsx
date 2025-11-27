@@ -39,6 +39,14 @@ const Dashboard = () => {
         }
     }, [token, navigate]);
 
+    // Helper: handle auth errors
+    const handleAuthError = (status) => {
+        if (status === 401 || status === 422) {
+            localStorage.removeItem('token');
+            navigate('/login');
+        }
+    };
+
     // Fetch user taste profile
     useEffect(() => {
         const fetchTasteProfile = async () => {
@@ -51,6 +59,7 @@ const Dashboard = () => {
                 });
 
                 if (!response.ok) {
+                    handleAuthError(response.status);
                     throw new Error(`Failed to fetch taste profile: ${response.status}`);
                 }
 
@@ -89,6 +98,7 @@ const Dashboard = () => {
                 });
 
                 if (!response.ok) {
+                    handleAuthError(response.status);
                     throw new Error(`Failed to fetch events: ${response.status}`);
                 }
 
@@ -118,13 +128,16 @@ const Dashboard = () => {
                     }
                 });
 
-                if (response.ok) {
-                    const data = await response.json();
-                    setUserStats(prev => ({
-                        ...prev,
-                        achievementsUnlocked: data.unlocked_count || 0
-                    }));
+                if (!response.ok) {
+                    handleAuthError(response.status);
+                    return;
                 }
+
+                const data = await response.json();
+                setUserStats(prev => ({
+                    ...prev,
+                    achievementsUnlocked: data.unlocked_count || 0
+                }));
             } catch (error) {
                 console.error('Error fetching stats:', error);
             }

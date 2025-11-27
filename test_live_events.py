@@ -7,8 +7,8 @@ import os
 import sys
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src', 'backend'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src", "backend"))
 
 from backend.event_discovery.ticketmaster_service import fetch_ticketmaster_events
 
@@ -20,10 +20,10 @@ print("=" * 60)
 print("\n1. Testing Ticketmaster Service...")
 print("-" * 60)
 
-api_key = os.getenv("TICKETMASTER_API_KEY")
+api_key = os.getenv("TICKETMASTER_API_KEY")  # pragma: allowlist secret
 if not api_key:
     print("❌ TICKETMASTER_API_KEY not set in environment")
-    print("   Set it with: export TICKETMASTER_API_KEY='your-key-here'")
+    print("   Set the TICKETMASTER_API_KEY environment variable (see README)")
 else:
     print(f"✅ API Key found: {api_key[:10]}...")
 
@@ -40,7 +40,16 @@ if events:
         print(f"{key:15}: {value}")
 
     print("\n✅ All events have required fields:")
-    required_fields = ['id', 'title', 'date', 'location', 'city', 'source', 'lat', 'lng']
+    required_fields = [
+        "id",
+        "title",
+        "date",
+        "location",
+        "city",
+        "source",
+        "lat",
+        "lng",
+    ]
     for field in required_fields:
         has_field = all(field in e for e in events)
         status = "✅" if has_field else "❌"

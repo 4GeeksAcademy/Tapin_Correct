@@ -24,7 +24,12 @@ const Signup = () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Signup failed');
 
-            localStorage.setItem('token', data.token);
+            // Prefer access_token (newer API), but keep `token` for backward compatibility
+            const accessToken = data.access_token || data.token || data.accessToken;
+            if (accessToken) {
+                localStorage.setItem('access_token', accessToken);
+                localStorage.setItem('token', accessToken);
+            }
             localStorage.setItem('user_type', userType);
 
             // Redirect based on role — organizations should claim profiles first

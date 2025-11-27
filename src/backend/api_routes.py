@@ -50,23 +50,24 @@ def register_routes(
 
         return jsonify(health_status), 200
 
-    @app.route("/api/items", methods=["GET"])
-    def api_list_items():
-        # Return all items from the database
-        items = Item.query.order_by(Item.id.asc()).all()
-        return jsonify({"items": [i.to_dict() for i in items]}), 200
+    # DISABLED: Item model does not exist
+    # @app.route("/api/items", methods=["GET"])
+    # def api_list_items():
+    #     # Return all items from the database
+    #     items = Item.query.order_by(Item.id.asc()).all()
+    #     return jsonify({"items": [i.to_dict() for i in items]}), 200
 
-    @app.route("/api/items", methods=["POST"])
-    @jwt_required()
-    def api_create_item():
-        data = request.get_json() or {}
-        name = data.get("name")
-        if not name:
-            return jsonify({"error": "name required"}), 400
-        item = Item(name=name, description=data.get("description"))
-        db.session.add(item)
-        db.session.commit()
-        return jsonify(item.to_dict()), 201
+    # @app.route("/api/items", methods=["POST"])
+    # @jwt_required()
+    # def api_create_item():
+    #     data = request.get_json() or {}
+    #     name = data.get("name")
+    #     if not name:
+    #         return jsonify({"error": "name required"}), 400
+    #     item = Item(name=name, description=data.get("description"))
+    #     db.session.add(item)
+    #     db.session.commit()
+    #     return jsonify(item.to_dict()), 201
 
     @app.route("/register", methods=["POST"])
     def register_user():
@@ -110,15 +111,8 @@ def register_routes(
                 if hasattr(user, "user_type"):
                     user.user_type = UserType.ORGANIZATION
         except Exception:
-            # fallback to legacy role attribute
-            if user_type == "volunteer" and hasattr(user, "role"):
-                user.role = "volunteer"
-            elif hasattr(user, "role"):
-                user.role = "organization"
-
-        # organization_name compatibility
-        if hasattr(user, "organization_name") and organization_name:
-            user.organization_name = organization_name
+            # fallback to legacy role attribute - not needed for current model
+            pass
 
         db.session.add(user)
         db.session.flush()
@@ -129,7 +123,6 @@ def register_routes(
             from backend.models import (
                 VolunteerProfile,
                 OrganizationProfile,
-                UserProfile,
             )
 
             if user_type == "volunteer":
@@ -154,27 +147,27 @@ def register_routes(
                 )
                 db.session.add(o)
 
-            # Also ensure the Taste/UserProfile exists if model present
-            try:
-                default_profile = {
-                    "category_preferences": {},
-                    "hour_preferences": {},
-                    "price_sensitivity": "medium",
-                    "adventure_level": 0.5,
-                    "favorite_venues": [],
-                    "average_lead_time": 7,
-                }
-                up = UserProfile(
-                    user_id=user.id,
-                    taste_profile=json.dumps(default_profile),
-                    adventure_level=default_profile["adventure_level"],
-                    price_sensitivity=default_profile["price_sensitivity"],
-                    favorite_venues=json.dumps(default_profile["favorite_venues"]),
-                )
-                db.session.add(up)
-            except Exception:
-                # ignore
-                pass
+            # UserProfile model does not exist - disabled
+            # try:
+            #     default_profile = {
+            #         "category_preferences": {},
+            #         "hour_preferences": {},
+            #         "price_sensitivity": "medium",
+            #         "adventure_level": 0.5,
+            #         "favorite_venues": [],
+            #         "average_lead_time": 7,
+            #     }
+            #     up = UserProfile(
+            #         user_id=user.id,
+            #         taste_profile=json.dumps(default_profile),
+            #         adventure_level=default_profile["adventure_level"],
+            #         price_sensitivity=default_profile["price_sensitivity"],
+            #         favorite_venues=json.dumps(default_profile["favorite_venues"]),
+            #     )
+            #     db.session.add(up)
+            # except Exception:
+            #     # ignore
+            #     pass
 
             db.session.commit()
         except Exception as e:
@@ -349,272 +342,273 @@ def register_routes(
         db.session.commit()
         return jsonify({"message": "password updated"})
 
-    @app.route("/listings", methods=["GET"])
-    def get_listings():
-        # Support simple filtering via query params: q (text search on
-        # title/description or category), location
-        q = request.args.get("q", type=str)
-        location = request.args.get("location", type=str)
-
-        query = Listing.query
-        if q:
-            # Check if q matches a category exactly (case-insensitive)
-            categories = ["Community", "Environment", "Education", "Health", "Animals"]
-            if q.lower() in [c.lower() for c in categories]:
-                # Filter by category
-                query = query.filter(Listing.category.ilike(q))
-            else:
-                # Text search on title/description
-                like = f"%{q}%"
-                query = query.filter(
-                    (Listing.title.ilike(like)) | (Listing.description.ilike(like))
-                )
-        if location:
-            query = query.filter(Listing.location.ilike(f"%{location}%"))
-
-        listings = query.order_by(Listing.created_at.desc()).all()
-        return jsonify([lst.to_dict() for lst in listings])
-
-    @app.route("/listings", methods=["POST"])
-    @jwt_required()
-    def create_listing():
-        data = request.get_json() or {}
-        title = data.get("title")
-        if not title:
-            return jsonify({"error": "title required"}), 400
-        # JWT identity is stored as string; convert back to int for DB foreign key
-        owner_id = int(get_jwt_identity())
-        # Validate optional category
-        category = data.get("category")
-        allowed = ["Community", "Environment", "Education", "Health", "Animals"]
-        if category and category not in allowed:
-            return jsonify({"error": "invalid category"}), 400
-
-        # Parse optional coordinates
-        latitude = data.get("latitude")
-        longitude = data.get("longitude")
-        try:
-            latitude = float(latitude) if latitude is not None else None
-            longitude = float(longitude) if longitude is not None else None
-        except (TypeError, ValueError):
-            return jsonify({"error": "invalid coordinates"}), 400
-
-        listing = Listing(
-            title=title,
-            description=data.get("description"),
-            location=data.get("location"),
-            latitude=latitude,
-            longitude=longitude,
-            category=category,
-            image_url=data.get("image_url"),
-            owner_id=owner_id,
-        )
-        db.session.add(listing)
-        db.session.commit()
-        return jsonify(listing.to_dict()), 201
-
-    @app.route("/listings/<int:id>", methods=["GET"])
-    def get_listing_detail(id):
-        listing = Listing.query.get_or_404(id)
-        return jsonify(listing.to_dict())
-
-    @app.route("/listings/<int:id>", methods=["PUT"])
-    @jwt_required()
-    def update_listing(id):
-        listing = Listing.query.get_or_404(id)
-        # Verify ownership
-        owner_id = int(get_jwt_identity())
-        if listing.owner_id != owner_id:
-            return jsonify({"error": "unauthorized - you don't own this listing"}), 403
-        data = request.get_json() or {}
-        listing.title = data.get("title", listing.title)
-        listing.description = data.get("description", listing.description)
-        listing.location = data.get("location", listing.location)
-        # Optional fields
-        if "category" in data:
-            category = data.get("category")
-            allowed = ["Community", "Environment", "Education", "Health", "Animals"]
-            if category and category not in allowed:
-                return jsonify({"error": "invalid category"}), 400
-            listing.category = category
-        if "image_url" in data:
-            listing.image_url = data.get("image_url")
-        if "latitude" in data or "longitude" in data:
-            try:
-                if "latitude" in data:
-                    listing.latitude = (
-                        float(data.get("latitude"))
-                        if data.get("latitude") is not None
-                        else None
-                    )
-                if "longitude" in data:
-                    listing.longitude = (
-                        float(data.get("longitude"))
-                        if data.get("longitude") is not None
-                        else None
-                    )
-            except (TypeError, ValueError):
-                return jsonify({"error": "invalid coordinates"}), 400
-        db.session.commit()
-        return jsonify(listing.to_dict())
-
-    @app.route("/listings/<int:id>", methods=["DELETE"])
-    @jwt_required()
-    def delete_listing(id):
-        listing = Listing.query.get_or_404(id)
-        # Verify ownership
-        owner_id = int(get_jwt_identity())
-        if listing.owner_id != owner_id:
-            return jsonify({"error": "unauthorized - you don't own this listing"}), 403
-        db.session.delete(listing)
-        db.session.commit()
-        return jsonify({"message": "deleted"})
-
-    @app.route("/listings/<int:id>/signup", methods=["POST"])
-    @jwt_required()
-    def signup_for_listing(id):
-        """Volunteer signs up for a listing."""
-        _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
-        user_id = int(get_jwt_identity())
-
-        # Check if already signed up
-        existing = SignUp.query.filter_by(user_id=user_id, listing_id=id).first()
-        if existing:
-            return jsonify({"error": "already signed up for this listing"}), 400
-
-        data = request.get_json() or {}
-        signup = SignUp(
-            user_id=user_id,
-            listing_id=id,
-            message=data.get("message"),
-            status="pending",
-        )
-        db.session.add(signup)
-        db.session.commit()
-
-        return jsonify(signup.to_dict()), 201
-
-    @app.route("/listings/<int:id>/signups", methods=["GET"])
-    @jwt_required()
-    def get_listing_signups(id):
-        """Get all sign-ups for a listing (owner only)."""
-        listing = Listing.query.get_or_404(id)
-        owner_id = int(get_jwt_identity())
-
-        # Verify ownership
-        if listing.owner_id != owner_id:
-            return jsonify({"error": "unauthorized - you don't own this listing"}), 403
-
-        signups = (
-            SignUp.query.filter_by(listing_id=id)
-            .order_by(SignUp.created_at.desc())
-            .all()
-        )
-
-        # Include user email with each sign-up
-        results = []
-        for signup in signups:
-            signup_dict = signup.to_dict()
-            user = db.session.get(User, signup.user_id)
-            if user:
-                signup_dict["user_email"] = user.email
-            results.append(signup_dict)
-
-        return jsonify(results)
-
-    @app.route("/signups/<int:id>", methods=["PUT"])
-    @jwt_required()
-    def update_signup_status(id):
-        """Update sign-up status (owner accept/decline, volunteer cancel)."""
-        signup = SignUp.query.get_or_404(id)
-        user_id = int(get_jwt_identity())
-        data = request.get_json() or {}
-        new_status = data.get("status")
-
-        if not new_status:
-            return jsonify({"error": "status required"}), 400
-
-        # Get the listing to check ownership
-        listing = db.session.get(Listing, signup.listing_id)
-        if not listing:
-            return jsonify({"error": "listing not found"}), 404
-
-        # Owner can accept/decline, volunteer can cancel
-        if listing.owner_id == user_id:
-            if new_status not in ["accepted", "declined"]:
-                err = "owner can only set status to accepted or declined"
-                return jsonify({"error": err}), 400
-        elif signup.user_id == user_id:
-            if new_status != "cancelled":
-                return jsonify({"error": "volunteer can only cancel sign-up"}), 400
-        else:
-            return jsonify({"error": "unauthorized"}), 403
-
-        signup.status = new_status
-        db.session.commit()
-        return jsonify(signup.to_dict())
-
-    @app.route("/listings/<int:id>/reviews", methods=["POST"])
-    @jwt_required()
-    def create_review(id):
-        """Create a review for a listing."""
-        _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
-        user_id = int(get_jwt_identity())
-
-        # Check if already reviewed
-        existing = Review.query.filter_by(user_id=user_id, listing_id=id).first()
-        if existing:
-            return jsonify({"error": "you have already reviewed this listing"}), 400
-
-        data = request.get_json() or {}
-        rating = data.get("rating")
-
-        if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
-            err = "rating must be an integer between 1 and 5"
-            return jsonify({"error": err}), 400
-
-        review = Review(
-            user_id=user_id, listing_id=id, rating=rating, comment=data.get("comment")
-        )
-        db.session.add(review)
-        db.session.commit()
-
-        return jsonify(review.to_dict()), 201
-
-    @app.route("/listings/<int:id>/reviews", methods=["GET"])
-    def get_listing_reviews(id):
-        """Get all reviews for a listing."""
-        _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
-        reviews = (
-            Review.query.filter_by(listing_id=id)
-            .order_by(Review.created_at.desc())
-            .all()
-        )
-
-        # Include user email with each review
-        results = []
-        for review in reviews:
-            review_dict = review.to_dict()
-            user = db.session.get(User, review.user_id)
-            if user:
-                review_dict["user_email"] = user.email
-            results.append(review_dict)
-
-        return jsonify(results)
-
-    @app.route("/listings/<int:id>/average-rating", methods=["GET"])
-    def get_listing_average_rating(id):
-        """Get average rating for a listing."""
-        _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
-        reviews = Review.query.filter_by(listing_id=id).all()
-
-        if not reviews:
-            return jsonify({"average_rating": 0, "review_count": 0})
-
-        avg_rating = sum(r.rating for r in reviews) / len(reviews)
-        return jsonify(
-            {"average_rating": round(avg_rating, 1), "review_count": len(reviews)}
-        )
+    # DISABLED: Listing, SignUp, and Review models do not exist
+    # @app.route("/listings", methods=["GET"])
+    # def get_listings():
+    #     # Support simple filtering via query params: q (text search on
+    #     # title/description or category), location
+    #     q = request.args.get("q", type=str)
+    #     location = request.args.get("location", type=str)
+    #
+    #     query = Listing.query
+    #     if q:
+    #         # Check if q matches a category exactly (case-insensitive)
+    #         categories = ["Community", "Environment", "Education", "Health", "Animals"]
+    #         if q.lower() in [c.lower() for c in categories]:
+    #             # Filter by category
+    #             query = query.filter(Listing.category.ilike(q))
+    #         else:
+    #             # Text search on title/description
+    #             like = f"%{q}%"
+    #             query = query.filter(
+    #                 (Listing.title.ilike(like)) | (Listing.description.ilike(like))
+    #             )
+    #     if location:
+    #         query = query.filter(Listing.location.ilike(f"%{location}%"))
+    #
+    #     listings = query.order_by(Listing.created_at.desc()).all()
+    #     return jsonify([lst.to_dict() for lst in listings])
+    #
+    # @app.route("/listings", methods=["POST"])
+    # @jwt_required()
+    # def create_listing():
+    #     data = request.get_json() or {}
+    #     title = data.get("title")
+    #     if not title:
+    #         return jsonify({"error": "title required"}), 400
+    #     # JWT identity is stored as string; convert back to int for DB foreign key
+    #     owner_id = int(get_jwt_identity())
+    #     # Validate optional category
+    #     category = data.get("category")
+    #     allowed = ["Community", "Environment", "Education", "Health", "Animals"]
+    #     if category and category not in allowed:
+    #         return jsonify({"error": "invalid category"}), 400
+    #
+    #     # Parse optional coordinates
+    #     latitude = data.get("latitude")
+    #     longitude = data.get("longitude")
+    #     try:
+    #         latitude = float(latitude) if latitude is not None else None
+    #         longitude = float(longitude) if longitude is not None else None
+    #     except (TypeError, ValueError):
+    #         return jsonify({"error": "invalid coordinates"}), 400
+    #
+    #     listing = Listing(
+    #         title=title,
+    #         description=data.get("description"),
+    #         location=data.get("location"),
+    #         latitude=latitude,
+    #         longitude=longitude,
+    #         category=category,
+    #         image_url=data.get("image_url"),
+    #         owner_id=owner_id,
+    #     )
+    #     db.session.add(listing)
+    #     db.session.commit()
+    #     return jsonify(listing.to_dict()), 201
+    #
+    # @app.route("/listings/<int:id>", methods=["GET"])
+    # def get_listing_detail(id):
+    #     listing = Listing.query.get_or_404(id)
+    #     return jsonify(listing.to_dict())
+    #
+    # @app.route("/listings/<int:id>", methods=["PUT"])
+    # @jwt_required()
+    # def update_listing(id):
+    #     listing = Listing.query.get_or_404(id)
+    #     # Verify ownership
+    #     owner_id = int(get_jwt_identity())
+    #     if listing.owner_id != owner_id:
+    #         return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+    #     data = request.get_json() or {}
+    #     listing.title = data.get("title", listing.title)
+    #     listing.description = data.get("description", listing.description)
+    #     listing.location = data.get("location", listing.location)
+    #     # Optional fields
+    #     if "category" in data:
+    #         category = data.get("category")
+    #         allowed = ["Community", "Environment", "Education", "Health", "Animals"]
+    #         if category and category not in allowed:
+    #             return jsonify({"error": "invalid category"}), 400
+    #         listing.category = category
+    #     if "image_url" in data:
+    #         listing.image_url = data.get("image_url")
+    #     if "latitude" in data or "longitude" in data:
+    #         try:
+    #             if "latitude" in data:
+    #                 listing.latitude = (
+    #                     float(data.get("latitude"))
+    #                     if data.get("latitude") is not None
+    #                     else None
+    #                 )
+    #             if "longitude" in data:
+    #                 listing.longitude = (
+    #                     float(data.get("longitude"))
+    #                     if data.get("longitude") is not None
+    #                     else None
+    #                 )
+    #         except (TypeError, ValueError):
+    #             return jsonify({"error": "invalid coordinates"}), 400
+    #     db.session.commit()
+    #     return jsonify(listing.to_dict())
+    #
+    # @app.route("/listings/<int:id>", methods=["DELETE"])
+    # @jwt_required()
+    # def delete_listing(id):
+    #     listing = Listing.query.get_or_404(id)
+    #     # Verify ownership
+    #     owner_id = int(get_jwt_identity())
+    #     if listing.owner_id != owner_id:
+    #         return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+    #     db.session.delete(listing)
+    #     db.session.commit()
+    #     return jsonify({"message": "deleted"})
+    #
+    # @app.route("/listings/<int:id>/signup", methods=["POST"])
+    # @jwt_required()
+    # def signup_for_listing(id):
+    #     """Volunteer signs up for a listing."""
+    #     _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    #     user_id = int(get_jwt_identity())
+    #
+    #     # Check if already signed up
+    #     existing = SignUp.query.filter_by(user_id=user_id, listing_id=id).first()
+    #     if existing:
+    #         return jsonify({"error": "already signed up for this listing"}), 400
+    #
+    #     data = request.get_json() or {}
+    #     signup = SignUp(
+    #         user_id=user_id,
+    #         listing_id=id,
+    #         message=data.get("message"),
+    #         status="pending",
+    #     )
+    #     db.session.add(signup)
+    #     db.session.commit()
+    #
+    #     return jsonify(signup.to_dict()), 201
+    #
+    # @app.route("/listings/<int:id>/signups", methods=["GET"])
+    # @jwt_required()
+    # def get_listing_signups(id):
+    #     """Get all sign-ups for a listing (owner only)."""
+    #     listing = Listing.query.get_or_404(id)
+    #     owner_id = int(get_jwt_identity())
+    #
+    #     # Verify ownership
+    #     if listing.owner_id != owner_id:
+    #         return jsonify({"error": "unauthorized - you don't own this listing"}), 403
+    #
+    #     signups = (
+    #         SignUp.query.filter_by(listing_id=id)
+    #         .order_by(SignUp.created_at.desc())
+    #         .all()
+    #     )
+    #
+    #     # Include user email with each sign-up
+    #     results = []
+    #     for signup in signups:
+    #         signup_dict = signup.to_dict()
+    #         user = db.session.get(User, signup.user_id)
+    #         if user:
+    #             signup_dict["user_email"] = user.email
+    #         results.append(signup_dict)
+    #
+    #     return jsonify(results)
+    #
+    # @app.route("/signups/<int:id>", methods=["PUT"])
+    # @jwt_required()
+    # def update_signup_status(id):
+    #     """Update sign-up status (owner accept/decline, volunteer cancel)."""
+    #     signup = SignUp.query.get_or_404(id)
+    #     user_id = int(get_jwt_identity())
+    #     data = request.get_json() or {}
+    #     new_status = data.get("status")
+    #
+    #     if not new_status:
+    #         return jsonify({"error": "status required"}), 400
+    #
+    #     # Get the listing to check ownership
+    #     listing = db.session.get(Listing, signup.listing_id)
+    #     if not listing:
+    #         return jsonify({"error": "listing not found"}), 404
+    #
+    #     # Owner can accept/decline, volunteer can cancel
+    #     if listing.owner_id == user_id:
+    #         if new_status not in ["accepted", "declined"]:
+    #             err = "owner can only set status to accepted or declined"
+    #             return jsonify({"error": err}), 400
+    #     elif signup.user_id == user_id:
+    #         if new_status != "cancelled":
+    #             return jsonify({"error": "volunteer can only cancel sign-up"}), 400
+    #     else:
+    #         return jsonify({"error": "unauthorized"}), 403
+    #
+    #     signup.status = new_status
+    #     db.session.commit()
+    #     return jsonify(signup.to_dict())
+    #
+    # @app.route("/listings/<int:id>/reviews", methods=["POST"])
+    # @jwt_required()
+    # def create_review(id):
+    #     """Create a review for a listing."""
+    #     _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    #     user_id = int(get_jwt_identity())
+    #
+    #     # Check if already reviewed
+    #     existing = Review.query.filter_by(user_id=user_id, listing_id=id).first()
+    #     if existing:
+    #         return jsonify({"error": "you have already reviewed this listing"}), 400
+    #
+    #     data = request.get_json() or {}
+    #     rating = data.get("rating")
+    #
+    #     if not rating or not isinstance(rating, int) or rating < 1 or rating > 5:
+    #         err = "rating must be an integer between 1 and 5"
+    #         return jsonify({"error": err}), 400
+    #
+    #     review = Review(
+    #         user_id=user_id, listing_id=id, rating=rating, comment=data.get("comment")
+    #     )
+    #     db.session.add(review)
+    #     db.session.commit()
+    #
+    #     return jsonify(review.to_dict()), 201
+    #
+    # @app.route("/listings/<int:id>/reviews", methods=["GET"])
+    # def get_listing_reviews(id):
+    #     """Get all reviews for a listing."""
+    #     _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    #     reviews = (
+    #         Review.query.filter_by(listing_id=id)
+    #         .order_by(Review.created_at.desc())
+    #         .all()
+    #     )
+    #
+    #     # Include user email with each review
+    #     results = []
+    #     for review in reviews:
+    #         review_dict = review.to_dict()
+    #         user = db.session.get(User, review.user_id)
+    #         if user:
+    #             review_dict["user_email"] = user.email
+    #         results.append(review_dict)
+    #
+    #     return jsonify(results)
+    #
+    # @app.route("/listings/<int:id>/average-rating", methods=["GET"])
+    # def get_listing_average_rating(id):
+    #     """Get average rating for a listing."""
+    #     _listing = Listing.query.get_or_404(id)  # noqa: F841 validate exists
+    #     reviews = Review.query.filter_by(listing_id=id).all()
+    #
+    #     if not reviews:
+    #         return jsonify({"average_rating": 0, "review_count": 0})
+    #
+    #     avg_rating = sum(r.rating for r in reviews) / len(reviews)
+    #     return jsonify(
+    #         {"average_rating": round(avg_rating, 1), "review_count": len(reviews)}
+    #     )
 
     @app.route("/api/discover-events", methods=["POST"])
     @jwt_required()
@@ -649,9 +643,7 @@ def register_routes(
         try:
             # EventCacheManager uses async/await
             # Pass db and models explicitly to avoid app context issues
-            manager = EventCacheManager(
-                db=db, event_model=Event, event_image_model=EventImage
-            )
+            manager = EventCacheManager(db=db, event_model=Event)
 
             # Create a new event loop and run async code
             loop = asyncio.new_event_loop()
@@ -775,15 +767,15 @@ def register_routes(
                     "url": event.url,
                 }
 
-                # Get images
-                images = (
-                    EventImage.query.filter_by(event_id=event.id)
-                    .order_by(EventImage.position)
-                    .all()
-                )
-                if images:
-                    event_dict["image_url"] = images[0].url
-                    event_dict["image_urls"] = json.dumps([img.url for img in images])
+                # EventImage model does not exist - disabled
+                # images = (
+                #     EventImage.query.filter_by(event_id=event.id)
+                #     .order_by(EventImage.position)
+                #     .all()
+                # )
+                # if images:
+                #     event_dict["image_url"] = images[0].url
+                #     event_dict["image_urls"] = json.dumps([img.url for img in images])
 
                 result.append(event_dict)
 
@@ -930,9 +922,7 @@ def register_routes(
 
         try:
             # EventCacheManager uses async/await
-            manager = EventCacheManager(
-                db=db, event_model=Event, event_image_model=EventImage
-            )
+            manager = EventCacheManager(db=db, event_model=Event)
 
             # Create a new event loop and run async code
             loop = asyncio.new_event_loop()
@@ -1002,15 +992,15 @@ def register_routes(
         db.session.add(interaction)
         db.session.commit()
 
-        # Update user achievements based on interaction (volunteers only)
-        user = User.query.get(uid_int)
-        if user and user.role == "volunteer":
-            from backend.event_discovery.gamification import GamificationEngine
-
-            gamification = GamificationEngine(
-                db, User, UserAchievement, UserEventInteraction
-            )
-            gamification.check_achievements(uid_int)
+        # UserAchievement model does not exist - gamification disabled
+        # user = User.query.get(uid_int)
+        # if user and user.role == "volunteer":
+        #     from backend.event_discovery.gamification import GamificationEngine
+        #
+        #     gamification = GamificationEngine(
+        #         db, User, UserAchievement, UserEventInteraction
+        #     )
+        #     gamification.check_achievements(uid_int)
 
         return (
             jsonify(
@@ -1057,9 +1047,7 @@ def register_routes(
             import asyncio
             from backend.event_discovery import EventCacheManager
 
-            manager = EventCacheManager(
-                db=db, event_model=Event, event_image_model=EventImage
-            )
+            manager = EventCacheManager(db=db, event_model=Event)
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1211,9 +1199,7 @@ def register_routes(
             from backend.event_discovery import EventCacheManager
             from backend.ticketmaster_api import TicketmasterAPI
 
-            manager = EventCacheManager(
-                db=db, event_model=Event, event_image_model=EventImage
-            )
+            manager = EventCacheManager(db=db, event_model=Event)
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -1406,58 +1392,26 @@ def register_routes(
             return jsonify({"error": "User not found"}), 404
 
         # Role-aware response
-        if user.role == "organization":
+        if user.user_type.value == "organization":
+            # Get organization profile
+            org_profile = user.organization_profile
+            if not org_profile:
+                return jsonify({"error": "Organization profile not found"}), 404
+
             # Organizations get different metrics
-            # Count events posted by this organization
-            events_posted = Event.query.filter_by(
-                organization=user.organization_name
-            ).count()
-
-            # Count total interactions with organization's events
-            org_events = Event.query.filter_by(
-                organization=user.organization_name
-            ).all()
-            org_event_ids = [e.id for e in org_events]
-
-            total_views = UserEventInteraction.query.filter(
-                UserEventInteraction.event_id.in_(org_event_ids),
-                UserEventInteraction.interaction_type == "view",
-            ).count()
-
-            total_likes = UserEventInteraction.query.filter(
-                UserEventInteraction.event_id.in_(org_event_ids),
-                UserEventInteraction.interaction_type.in_(["like", "super_like"]),
-            ).count()
-
-            total_attendees = UserEventInteraction.query.filter(
-                UserEventInteraction.event_id.in_(org_event_ids),
-                UserEventInteraction.interaction_type == "attend",
-            ).count()
-
-            # Unique volunteers (distinct users who interacted)
-            unique_volunteers = (
-                db.session.query(UserEventInteraction.user_id)
-                .filter(UserEventInteraction.event_id.in_(org_event_ids))
-                .distinct()
-                .count()
-            )
-
+            # For now, return basic org info - Event model doesn't have organization field
             return (
                 jsonify(
                     {
                         "role": "organization",
-                        "organization_name": user.organization_name,
+                        "organization_name": org_profile.organization_name,
                         "metrics": {
-                            "events_posted": events_posted,
-                            "total_views": total_views,
-                            "total_likes": total_likes,
-                            "total_attendees": total_attendees,
-                            "unique_volunteers": unique_volunteers,
-                            "engagement_rate": (
-                                round((total_likes / max(total_views, 1)) * 100, 1)
-                                if total_views > 0
-                                else 0
-                            ),
+                            "events_posted": 0,  # TODO: implement when Event has org_id
+                            "total_views": 0,
+                            "total_likes": 0,
+                            "total_attendees": 0,
+                            "unique_volunteers": 0,
+                            "engagement_rate": 0,
                         },
                     }
                 ),
@@ -1465,25 +1419,15 @@ def register_routes(
             )
 
         else:
-            # Volunteers get achievement system
-            achievements = UserAchievement.query.filter_by(user_id=uid_int).all()
-
-            # Calculate level and XP
-            from backend.event_discovery.gamification import GamificationEngine
-
-            gamification = GamificationEngine(
-                db, User, UserAchievement, UserEventInteraction
-            )
-            level_info = gamification.get_user_level(uid_int)
-
+            # UserAchievement model does not exist - returning empty achievements
             return (
                 jsonify(
                     {
                         "role": "volunteer",
-                        "achievements": [a.to_dict() for a in achievements],
-                        "unlocked_count": sum(1 for a in achievements if a.unlocked),
-                        "total_count": len(achievements),
-                        "level_info": level_info,
+                        "achievements": [],
+                        "unlocked_count": 0,
+                        "total_count": 0,
+                        "level_info": {"level": 1, "xp": 0, "xp_to_next_level": 100},
                     }
                 ),
                 200,
