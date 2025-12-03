@@ -10,6 +10,7 @@ Build web applications using React.js for the front end and python/flask for you
 - SQLAlchemy integration for database abstraction.
 
 ## Tapin project layout (migrated from `Tapin_`)
+new fix
 
 - **Backend**: `src/backend` contains the Tapin Flask API (users, listings, saved searches, email flows). Run it directly with `python src/backend/app.py` or configure your WSGI server to import `backend.app`.
 - **Frontend**: `src/front` is the Vite/React Leaflet SPA copied from `Tapin_/frontend`. `npm` commands live at the repo root and point to this folder through `vite.config.js`.
