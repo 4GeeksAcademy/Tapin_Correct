@@ -32,4 +32,4 @@ pytest>=7.0
 
 # Production server
 gunicorn>=20.1  # WSGI HTTP server for production
-google-api-python-client
+

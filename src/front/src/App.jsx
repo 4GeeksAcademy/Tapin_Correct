@@ -25,13 +25,13 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [activeFilter, setActiveFilter] = useState('All');
   const [token, setToken] = useState(localStorage.getItem('access_token') || null);
-
+  // Show the marketing-style landing page when there's no token (mobile-first)
   const [showLanding, setShowLanding] = useState(!token);
   const [user, setUser] = useState(null);
-  const [viewMode, setViewMode] = useState('list');
-  const [userLocation, setUserLocation] = useState(null);
+  const [viewMode, setViewMode] = useState('list'); // 'list' or 'map'
+  const [userLocation, setUserLocation] = useState(null); // Store user's selected location
 
-
+  // Helper: fetch listings optionally filtered by q
   async function fetchListings(filter) {
     setLoading(true);
     setError(null);
@@ -50,13 +50,12 @@ export default function App() {
     }
   }
 
-
+  // Initialize filter from URL and fetch
   useEffect(() => {
     const params = new URLSearchParams(globalThis.location.search);
     const q = params.get('q') || 'All';
     setActiveFilter(q);
     fetchListings(q);
-
   }, []);
 
   useEffect(() => {
@@ -155,7 +154,7 @@ export default function App() {
       </div>
 
       <main>
-        {}
+        {/* View Mode Toggle */}
         {!loading && !error && listings.length > 0 && (
           <div style={{ marginBottom: '20px', textAlign: 'center' }}>
             <button
@@ -206,7 +205,7 @@ export default function App() {
                 ))}
               </ul>
             ) : (
-
+              // Map view shows selector + map side-by-side so both stay in sync
               <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: 20 }}>
                 <div>
                   <LocationSelector

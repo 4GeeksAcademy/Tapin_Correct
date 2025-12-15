@@ -19,7 +19,7 @@ export default function CreateListingForm({ token, onCreated, userLocation }) {
     try {
       const body = { title, description, location };
 
-
+      // Only include lat/lng if both are provided
       if (latitude && longitude) {
         body.latitude = parseFloat(latitude);
         body.longitude = parseFloat(longitude);

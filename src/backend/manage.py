@@ -10,15 +10,13 @@ Commands:
   current              Show current revision
   history              Show revision history
 """
+import os
 import shlex
 import subprocess
 import sys
 from pathlib import Path
 
 import click
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 ALEMBIC_INI = REPO_ROOT / "alembic.ini"
@@ -36,28 +34,26 @@ def cli():
 
 
 @cli.command()
-@click.argument("rev", required=False, default="head")
+@click.argument('rev', required=False, default='head')
 def upgrade(rev):
     """Upgrade the DB to REV (default: head)."""
     _run_alembic(f"-c {ALEMBIC_INI} upgrade {rev}")
 
 
 @cli.command()
-@click.argument("rev", required=True)
+@click.argument('rev', required=True)
 def downgrade(rev):
     """Downgrade the DB to REV."""
     _run_alembic(f"-c {ALEMBIC_INI} downgrade {rev}")
 
 
 @cli.command()
-@click.option("--message", "-m", required=True, help="Revision message")
-@click.option(
-    "--autogenerate", is_flag=True, default=False, help="Run alembic --autogenerate"
-)
+@click.option('--message', '-m', required=True, help='Revision message')
+@click.option('--autogenerate', is_flag=True, default=False, help='Run alembic --autogenerate')
 def revision(message, autogenerate):
     """Create a new migration revision."""
-    auto = "--autogenerate" if autogenerate else ""
-    _run_alembic(f'-c {ALEMBIC_INI} revision {auto} -m "{message}"')
+    auto = '--autogenerate' if autogenerate else ''
+    _run_alembic(f"-c {ALEMBIC_INI} revision {auto} -m \"{message}\"")
 
 
 @cli.command()
@@ -72,8 +68,5 @@ def history():
     _run_alembic(f"-c {ALEMBIC_INI} history")
 
 
-from models import User, Organization, Item, Listing, Review, UserValues  # noqa: E402
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     cli()

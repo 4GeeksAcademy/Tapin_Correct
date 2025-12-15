@@ -1,39 +1,27 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import path from "path";
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  root: "src/front",
-  publicDir: "public",
-  server: {
-    port: 5173,
-    proxy: {
-      "/api": {
-        target: "http://127.0.0.1:5000",
-        changeOrigin: true,
-      },
+    plugins: [react()],
+    root: 'src/front',
+    publicDir: 'src/front/src/assets',
+    server: {
+        port: 3000
     },
-  },
-  build: {
-    outDir: "../../dist",
-    emptyOutDir: true,
-  },
-  resolve: {
-    alias: {
-      "@": "./src",
+    build: {
+        outDir: '../dist',
+        emptyOutDir: true,
     },
-
-
-    dedupe: ["react", "react-dom"],
-  },
-  optimizeDeps: {
-    include: ["react", "react-dom"],
-  },
-  test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: "./src/test/setup.js",
-  },
-});
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, 'src/front/src')
+        }
+    },
+    test: {
+        environment: 'jsdom',
+        setupFiles: path.resolve(__dirname, 'src/front/src/test/setup.js'),
+        globals: true
+    }
+})

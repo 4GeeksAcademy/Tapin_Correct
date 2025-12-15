@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import EditListingForm from './EditListingForm';
 import ReviewForm from './ReviewForm';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
-
 export default function ListingDetail({
   listing,
   onClose,
@@ -29,19 +27,19 @@ export default function ListingDetail({
 
   const isOwner = user && listing.owner_id === user.id;
 
-
+  // Fetch reviews and average rating on mount
   useEffect(() => {
     async function fetchReviews() {
       setLoadingReviews(true);
       try {
         const [reviewsRes, ratingRes] = await Promise.all([
-          fetch(`${API_URL}/listings/${listing.id}/reviews`),
-          fetch(`${API_URL}/listings/${listing.id}/average-rating`),
+          fetch(`http://127.0.0.1:5000/listings/${listing.id}/reviews`),
+          fetch(`http://127.0.0.1:5000/listings/${listing.id}/average-rating`),
         ]);
 
         if (reviewsRes.ok) {
           const reviewsData = await reviewsRes.json();
-          setReviews(Array.isArray(reviewsData) ? reviewsData : reviewsData.reviews || []);
+          setReviews(reviewsData.reviews || []);
         }
 
         if (ratingRes.ok) {
@@ -60,7 +58,7 @@ export default function ListingDetail({
 
   function handleReviewAdded(newReview) {
     setReviews([newReview, ...reviews]);
-
+    // Recalculate average
     if (reviews.length === 0) {
       setAverageRating(newReview.rating);
     } else {
@@ -79,7 +77,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/listings/${listing.id}/signup`, {
+      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -113,7 +111,7 @@ export default function ListingDetail({
     setError(null);
 
     try {
-      const res = await fetch(`${API_URL}/listings/${listing.id}`, {
+      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -155,7 +153,7 @@ export default function ListingDetail({
               <small>Created: {new Date(listing.created_at || Date.now()).toLocaleString()}</small>
             </p>
 
-            {}
+            {/* Reviews Section */}
             <div style={{ marginTop: '24px', borderTop: '1px solid #eee', paddingTop: '16px' }}>
               <div
                 style={{

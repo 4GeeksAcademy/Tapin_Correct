@@ -125,15 +125,15 @@ describe('ReviewForm Component', () => {
       />,
     );
 
-
+    // Set rating to 5 stars
     const fiveStarButton = screen.getByRole('button', { name: /5 stars/i });
     await userEvent.click(fiveStarButton);
 
-
+    // Add comment
     const commentInput = screen.getByLabelText(/Comment/i);
     await userEvent.type(commentInput, 'Excellent!');
 
-
+    // Submit
     const submitButton = screen.getByRole('button', { name: /Submit Review/i });
     await userEvent.click(submitButton);
 

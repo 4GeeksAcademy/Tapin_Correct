@@ -1,13 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CITIES from '../data/cities_na.json';
 
-
+/**
+ * Reusable location dropdown with fuzzy matching and optional proximity sorting.
+ * Returns { name, lat, lon } when a city is selected.
+ * @param {Object} props
+ * @param {string} props.value - current input value
+ * @param {Function} props.onChange - called when input changes: (val) => void
+ * @param {Function} props.onSelect - called when city is selected: ({ name, lat, lon }) => void
+ * @param {Array} props.userCoords - optional [lat, lon] to sort by proximity
+ * @param {string} props.placeholder - input placeholder
+ * @param {string} props.countryFilter - optional country code (US, CA, MX) to filter by
+ * @param {Function} props.isLoading - optional loading state callback
+ */
 export default function LocationDropdown({ value, onChange, onSelect, userCoords, placeholder = 'Location', countryFilter, isLoading }) {
     const [isOpen, setIsOpen] = useState(false);
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
     const containerRef = useRef(null);
 
-
+    // Haversine distance
     const haversine = (a, b) => {
         if (!a || !b) return Infinity;
         const toRad = (v) => (v * Math.PI) / 180;
@@ -23,7 +34,7 @@ export default function LocationDropdown({ value, onChange, onSelect, userCoords
         return R * c;
     };
 
-
+    // Simple fuzzy score (prefix > word-start > substring)
     const scoreCity = (query, city) => {
         const name = (city.name || '').toLowerCase();
         const q = (query || '').toLowerCase().trim();
@@ -42,19 +53,19 @@ export default function LocationDropdown({ value, onChange, onSelect, userCoords
         return score;
     };
 
-
+    // Generate filtered/sorted list
     const q = (value || '').trim().toLowerCase();
     let candidates = [];
     if (!q) {
         candidates = CITIES.slice();
-
+        // Apply country filter if provided
         if (countryFilter) {
             candidates = candidates.filter(c => c.country === countryFilter);
         }
         if (userCoords) {
             candidates.sort((a, b) => {
-                const da = haversine(userCoords, [a.lat, a.lon]);
-                const db = haversine(userCoords, [b.lat, b.lon]);
+                const da = haversine(userCoords, [a.lat ?? a.coords?.[0], a.lon ?? a.coords?.[1]]);
+                const db = haversine(userCoords, [b.lat ?? b.coords?.[0], b.lon ?? b.coords?.[1]]);
                 return da - db;
             });
         }
