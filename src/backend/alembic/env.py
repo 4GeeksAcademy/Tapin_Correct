@@ -15,14 +15,12 @@ fileConfig(config.config_file_name)
 
 # add your model's MetaData object here for 'autogenerate' support
 # Import the app and db to get the metadata
-import backend.app as app_module
-target_metadata = app_module.db.metadata
+from app import app
 
-# Allow overriding the sqlalchemy URL using the environment variable
-# This lets CI or local envs set SQLALCHEMY_DATABASE_URI without editing alembic.ini
-env_db_url = os.environ.get('SQLALCHEMY_DATABASE_URI')
-if env_db_url:
-    config.set_main_option('sqlalchemy.url', env_db_url)
+config.set_main_option("sqlalchemy.url", app.config["SQLALCHEMY_DATABASE_URI"])
+from models import db
+
+target_metadata = db.metadata
 
 
 def run_migrations_offline():
@@ -36,7 +34,7 @@ def run_migrations_offline():
 def run_migrations_online():
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
-        prefix='sqlalchemy.',
+        prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 

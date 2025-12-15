@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import logoTransparent from '@/assets/brand/logo-transparent.svg';
+import logoTransparent from '../assets/brand/logo-transparent.svg';
 import AuthForm from '../components/AuthForm';
+import ValuesSelector from '../components/ValuesSelector';
+import EventSearch from '../components/EventSearch';
+import Achievements from '../components/Achievements';
 
 export default function DashboardLanding({ onLogin, onEnter }) {
   const [showAuth, setShowAuth] = useState(false);
@@ -15,12 +18,12 @@ export default function DashboardLanding({ onLogin, onEnter }) {
           <AuthForm
             onLogin={(data) => {
               try {
-                // Prefer tokens from response
+
                 if (data?.access_token) {
                   localStorage.setItem('access_token', data.access_token);
                 }
-              } catch {}
-              // Notify parent if provided
+              } catch { }
+
               if (typeof onLogin === 'function') {
                 const user = data?.user || null;
                 const token = data?.access_token || null;
@@ -76,6 +79,13 @@ export default function DashboardLanding({ onLogin, onEnter }) {
         </ul>
 
         <div className="landing-footer-note">Free to use • School Project</div>
+      </div>
+      <div className="dashboard-welcome">
+        <h2>Welcome to your dashboard</h2>
+        <p>Welcome to your dashboard. Here you can see your volunteer history, manage your profile, and find new opportunities.</p>
+        <ValuesSelector user={user} />
+        <EventSearch />
+        {user && <Achievements userId={user.id} />}
       </div>
     </div>
   );

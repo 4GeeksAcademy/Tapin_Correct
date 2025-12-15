@@ -1,4 +1,5 @@
 import React from 'react';
+import logoTransparent from '../assets/brand/logo-transparent.svg';
 
 export default function Header({ user, onLogout }) {
   return (
@@ -12,6 +13,7 @@ export default function Header({ user, onLogout }) {
         }}
       >
         <div className="brand" style={{ gridColumn: 2, justifySelf: 'center', textAlign: 'center' }}>
+          <img src={logoTransparent} alt="Tapin logo" className="logo" />
           <div>
             <h1>Tapin</h1>
             <p className="subtitle">Community Connections</p>

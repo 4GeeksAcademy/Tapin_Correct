@@ -37,7 +37,7 @@ export default function LocationSelector({ onLocationSelected, externalLocation 
     );
   };
 
-  // If parent provides an externalLocation (e.g., map click), reflect it in the display
+
   useEffect(() => {
     if (externalLocation && externalLocation.coords) {
       setSelectedCity(externalLocation.name || `${externalLocation.coords[0].toFixed(4)}, ${externalLocation.coords[1].toFixed(4)}`);

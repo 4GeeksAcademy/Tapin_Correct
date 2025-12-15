@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import LocationDropdown from './LocationDropdown';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000';
+
 export default function EditListingForm({ listing, token, onClose, onUpdated, userLocation }) {
   const [title, setTitle] = useState(listing.title);
   const [description, setDescription] = useState(listing.description || '');
@@ -38,13 +40,13 @@ export default function EditListingForm({ listing, token, onClose, onUpdated, us
         category: category || null
       };
 
-      // Only include lat/lng if both are provided
+
       if (latitude && longitude) {
         body.latitude = parseFloat(latitude);
         body.longitude = parseFloat(longitude);
       }
 
-      const res = await fetch(`http://127.0.0.1:5000/listings/${listing.id}`, {
+      const res = await fetch(`${API_URL}/listings/${listing.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
